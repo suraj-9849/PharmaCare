@@ -241,7 +241,10 @@ export class SaleService {
     });
 
     const totalSales = sales.length;
-    const totalRevenue = sales.reduce((sum: number, sale: any) => sum + Number(sale.totalAmount), 0);
+    const totalRevenue = sales.reduce(
+      (sum: number, sale: any) => sum + Number(sale.totalAmount),
+      0
+    );
 
     return {
       totalSales,
@@ -278,9 +281,13 @@ export class SaleService {
     });
 
     const totalSales = sales.length;
-    const totalRevenue = sales.reduce((sum: number, sale: any) => sum + Number(sale.totalAmount), 0);
+    const totalRevenue = sales.reduce(
+      (sum: number, sale: any) => sum + Number(sale.totalAmount),
+      0
+    );
     const totalItems = sales.reduce(
-      (sum: number, sale: any) => sum + sale.saleItems.reduce((s: number, item: any) => s + item.quantity, 0),
+      (sum: number, sale: any) =>
+        sum + sale.saleItems.reduce((s: number, item: any) => s + item.quantity, 0),
       0
     );
 

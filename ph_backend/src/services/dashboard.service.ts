@@ -21,7 +21,10 @@ export class DashboardService {
     });
 
     const todaySalesCount = todaySales.length;
-    const todayRevenue = todaySales.reduce((sum: number, sale: any) => sum + Number(sale.totalAmount), 0);
+    const todayRevenue = todaySales.reduce(
+      (sum: number, sale: any) => sum + Number(sale.totalAmount),
+      0
+    );
 
     // Total products
     const totalProducts = await prisma.drug.count();
@@ -35,7 +38,10 @@ export class DashboardService {
       where: { status: 'COMPLETED' },
     });
 
-    const totalRevenue = allSales.reduce((sum: number, sale: any) => sum + Number(sale.totalAmount), 0);
+    const totalRevenue = allSales.reduce(
+      (sum: number, sale: any) => sum + Number(sale.totalAmount),
+      0
+    );
 
     // Stock alerts
     const drugs = await prisma.drug.findMany({
@@ -51,7 +57,10 @@ export class DashboardService {
     let expiredCount = 0;
 
     for (const drug of drugs) {
-      const totalStock = drug.inventoryBatches.reduce((sum: number, batch: any) => sum + batch.quantity, 0);
+      const totalStock = drug.inventoryBatches.reduce(
+        (sum: number, batch: any) => sum + batch.quantity,
+        0
+      );
 
       if (totalStock <= drug.reorderLevel) {
         lowStockCount++;

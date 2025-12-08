@@ -117,7 +117,10 @@ export class DrugService {
     });
 
     const lowStockDrugs = drugs.filter((drug: any) => {
-      const totalStock = drug.inventoryBatches.reduce((sum: number, batch: any) => sum + batch.quantity, 0);
+      const totalStock = drug.inventoryBatches.reduce(
+        (sum: number, batch: any) => sum + batch.quantity,
+        0
+      );
       return totalStock <= drug.reorderLevel;
     });
 
