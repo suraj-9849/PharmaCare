@@ -24,7 +24,7 @@ export class SaleService {
     }
 
     // Calculate totals and create sale
-    const sale = await prisma.$transaction(async (tx) => {
+    const sale = await prisma.$transaction(async (tx: any) => {
       // Get batch prices and calculate items
       const saleItems = await Promise.all(
         data.items.map(async (item) => {
@@ -202,7 +202,7 @@ export class SaleService {
     }
 
     // Restore inventory
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       for (const item of sale.saleItems) {
         await tx.inventoryBatch.update({
           where: { id: item.batchId },
@@ -241,7 +241,7 @@ export class SaleService {
     });
 
     const totalSales = sales.length;
-    const totalRevenue = sales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0);
+    const totalRevenue = sales.reduce((sum: number, sale: any) => sum + Number(sale.totalAmount), 0);
 
     return {
       totalSales,
@@ -278,9 +278,9 @@ export class SaleService {
     });
 
     const totalSales = sales.length;
-    const totalRevenue = sales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0);
+    const totalRevenue = sales.reduce((sum: number, sale: any) => sum + Number(sale.totalAmount), 0);
     const totalItems = sales.reduce(
-      (sum, sale) => sum + sale.saleItems.reduce((s, item) => s + item.quantity, 0),
+      (sum: number, sale: any) => sum + sale.saleItems.reduce((s: number, item: any) => s + item.quantity, 0),
       0
     );
 

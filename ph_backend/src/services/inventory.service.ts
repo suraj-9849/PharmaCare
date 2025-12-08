@@ -126,7 +126,7 @@ export class InventoryService {
       },
     });
 
-    return batches.filter((batch) => isExpiringSoon(batch.expiryDate, days));
+    return batches.filter((batch: any) => isExpiringSoon(batch.expiryDate, days));
   }
 
   /**
@@ -143,7 +143,7 @@ export class InventoryService {
       },
     });
 
-    return batches.filter((batch) => isExpired(batch.expiryDate));
+    return batches.filter((batch: any) => isExpired(batch.expiryDate));
   }
 
   /**
@@ -160,12 +160,12 @@ export class InventoryService {
       },
     });
 
-    return drugs.map((drug) => {
-      const totalStock = drug.inventoryBatches.reduce((sum, batch) => sum + batch.quantity, 0);
-      const expiringBatches = drug.inventoryBatches.filter((batch) =>
+    return drugs.map((drug: any) => {
+      const totalStock = drug.inventoryBatches.reduce((sum: number, batch: any) => sum + batch.quantity, 0);
+      const expiringBatches = drug.inventoryBatches.filter((batch: any) =>
         isExpiringSoon(batch.expiryDate)
       );
-      const expiredBatches = drug.inventoryBatches.filter((batch) => isExpired(batch.expiryDate));
+      const expiredBatches = drug.inventoryBatches.filter((batch: any) => isExpired(batch.expiryDate));
 
       return {
         drugId: drug.id,

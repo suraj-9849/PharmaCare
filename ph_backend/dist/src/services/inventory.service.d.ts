@@ -242,14 +242,14 @@ export declare class InventoryService {
      * Get stock summary by drug
      */
     getStockSummary(): Promise<{
-        drugId: string;
-        brandName: string;
-        genericName: string;
-        totalStock: number;
-        reorderLevel: number;
+        drugId: any;
+        brandName: any;
+        genericName: any;
+        totalStock: any;
+        reorderLevel: any;
         isLowStock: boolean;
-        expiringCount: number;
-        expiredCount: number;
+        expiringCount: any;
+        expiredCount: any;
     }[]>;
     /**
      * Get available batches for a drug (for sale)

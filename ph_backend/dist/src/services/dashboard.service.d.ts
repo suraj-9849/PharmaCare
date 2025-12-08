@@ -33,13 +33,13 @@ export declare class DashboardService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            saleDate: Date;
+            userId: string;
             totalAmount: import("@prisma/client/runtime/client").Decimal;
-            paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
+            paymentMethod: import("../../generated/prisma/enums").PaymentMethod;
             cashReceived: import("@prisma/client/runtime/client").Decimal | null;
             changeGiven: import("@prisma/client/runtime/client").Decimal | null;
-            saleDate: Date;
-            status: import("@prisma/client").$Enums.SaleStatus;
-            userId: string;
+            status: import("../../generated/prisma/enums").SaleStatus;
         })[];
         stockAlerts: {
             id: string;
@@ -62,10 +62,10 @@ export declare class DashboardService {
      * Get top selling drugs
      */
     getTopSellingDrugs(limit?: number): Promise<{
-        drugId: string;
+        drugId: any;
         brandName: string;
         genericName: string;
-        totalQuantity: number;
+        totalQuantity: any;
         totalRevenue: number;
     }[]>;
 }

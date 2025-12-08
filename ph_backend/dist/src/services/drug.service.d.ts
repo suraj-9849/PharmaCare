@@ -140,7 +140,7 @@ export declare class DrugService {
     /**
      * Get drug categories
      */
-    getCategories(): Promise<(import("@prisma/client").Prisma.PickEnumerable<import("@prisma/client").Prisma.DrugGroupByOutputType, "category"[]> & {
+    getCategories(): Promise<(import("../../generated/prisma/internal/prismaNamespace").PickEnumerable<import("../../generated/prisma/models").DrugGroupByOutputType, "category"[]> & {
         _count: number;
     })[]>;
 }
