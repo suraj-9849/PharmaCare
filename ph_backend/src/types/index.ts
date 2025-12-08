@@ -130,10 +130,13 @@ export interface SaleItem {
 export interface CreateSaleRequest {
   paymentMethod: PaymentMethod;
   cashReceived?: number;
+  changeGiven?: number;
+  transactionId?: string; // Razorpay payment ID for UPI/Card payments
   items: {
     drugId: string;
     batchId: string;
     quantity: number;
+    unitPrice?: number;
   }[];
 }
 

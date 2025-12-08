@@ -54,10 +54,10 @@ export class SaleService {
       const totalAmount = saleItems.reduce((sum, item) => sum + item.subtotal, 0);
 
       // Calculate change if cash payment
-      let changeGiven: number | null = null;
-      if (data.paymentMethod === 'CASH' && data.cashReceived) {
-        changeGiven = data.cashReceived - totalAmount;
-      }
+      const changeGiven =
+        data.paymentMethod === 'CASH' && data.cashReceived
+          ? data.cashReceived - totalAmount
+          : (data.changeGiven ?? null);
 
       // Create sale
       const newSale = await tx.sale.create({
@@ -67,6 +67,7 @@ export class SaleService {
           paymentMethod: data.paymentMethod,
           cashReceived: data.cashReceived ?? null,
           changeGiven,
+          transactionId: data.transactionId ?? null,
           status: 'COMPLETED',
           saleItems: {
             create: saleItems.map((item) => ({

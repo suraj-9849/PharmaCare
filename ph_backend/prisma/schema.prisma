@@ -111,6 +111,7 @@ model Sale {
   paymentMethod PaymentMethod @default(CASH) @map("payment_method")
   cashReceived  Decimal?      @map("cash_received") @db.Decimal(10, 2)
   changeGiven   Decimal?      @map("change_given") @db.Decimal(10, 2)
+  transactionId String?       @map("transaction_id") // Razorpay payment ID
   saleDate      DateTime      @default(now()) @map("sale_date")
   status        SaleStatus    @default(COMPLETED)
   createdAt     DateTime      @default(now()) @map("created_at")
