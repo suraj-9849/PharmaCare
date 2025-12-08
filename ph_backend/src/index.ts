@@ -1,6 +1,8 @@
 import express, { Application } from 'express';
 import cors from 'cors';
+import swaggerUI from 'swagger-ui-express';
 import env from './config/env';
+import { specs } from './config/swagger';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
@@ -19,6 +21,9 @@ app.use(
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
 
 // API Routes
 app.use('/api', routes);

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "prisma generate && tsc",
+    "type-check": "tsc --noEmit",
     "start": "node dist/index.js",
     "seed": "tsx src/seed.ts",
     "prisma:generate": "prisma generate",
@@ -35,7 +36,9 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "lint-staged": {
     "*.ts": [
@@ -50,6 +53,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.1",
     "@types/pg": "^8.15.6",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
     "eslint": "^9.39.1",

@@ -8,8 +8,38 @@ import { AuthenticatedRequest, LoginRequest } from '../types';
 const router: Router = Router();
 
 /**
- * POST /api/auth/login
- * Login user
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login user
+ *     description: Authenticate user with email and password, returns JWT token
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   $ref: '#/components/schemas/LoginResponse'
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Missing required fields
+ *       401:
+ *         description: Invalid credentials
  */
 router.post('/login', async (req: Request, res: Response) => {
   try {
@@ -28,8 +58,30 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/auth/me
- * Get current user
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     summary: Get current user
+ *     description: Retrieve current authenticated user details
+ *     tags:
+ *       - Authentication
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized - Token missing or invalid
  */
 router.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -46,8 +98,36 @@ router.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response)
 });
 
 /**
- * POST /api/auth/validate
- * Validate token
+ * @swagger
+ * /auth/validate:
+ *   post:
+ *     summary: Validate token
+ *     description: Check if JWT token is valid
+ *     tags:
+ *       - Authentication
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token is valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     valid:
+ *                       type: boolean
+ *                       example: true
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Token is invalid
  */
 router.post('/validate', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
