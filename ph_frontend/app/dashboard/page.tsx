@@ -530,7 +530,7 @@ export default function DashboardPage() {
                 <div className="space-y-3">
                   {data.topSellingDrugs.map((drug: TopSellingDrug, index: number) => (
                     <div
-                      key={drug.id}
+                      key={drug.drugId || `drug-${index}`}
                       className="flex items-center justify-between rounded-lg border p-3"
                     >
                       <div className="flex items-center gap-3">

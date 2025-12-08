@@ -116,16 +116,34 @@ export class DashboardService {
       },
     });
 
+    // Total suppliers
+    const totalSuppliers = await prisma.supplier.count();
+
+    // Total customers
+    const totalCustomers = await prisma.customer.count();
+
+    // Calculate total inventory value
+    let totalInventoryValue = 0;
+    const inventoryBatches = await prisma.inventoryBatch.findMany();
+    for (const batch of inventoryBatches) {
+      totalInventoryValue += Number(batch.sellPrice) * batch.quantity;
+    }
+
     return {
       todaySales: todaySalesCount,
       todayRevenue,
       todayCancellations,
+      totalDrugs: totalProducts,
       totalProducts,
       totalSales: totalSalesCount,
+      totalSalesAmount: totalRevenue,
       totalRevenue,
       lowStockCount,
       expiringCount,
       expiredCount,
+      totalSuppliers,
+      totalCustomers,
+      totalInventoryValue,
       recentSales,
       stockAlerts,
     };
