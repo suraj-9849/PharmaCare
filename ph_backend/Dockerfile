@@ -29,18 +29,33 @@ RUN npm install -g pnpm
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+# Install production dependencies (skip prepare script which tries to run husky)
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
-# Copy built application from builder
+# Install prisma CLI separately for migrations
+RUN pnpm add -D prisma@7.1.0
+
+# Copy built application and generated files from builder
 COPY --from=builder /app/dist ./dist
-
-# Copy Prisma files
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+
+# Copy node_modules/.pnpm to get Prisma client
+COPY --from=builder /app/node_modules/.pnpm /app/node_modules/.pnpm
 
 # Copy environment file template
 COPY .env.example .env.example
+
+# Create .env for runtime with placeholder values
+# These will be overridden by docker-compose environment variables
+RUN echo "DATABASE_URL=postgresql://postgres:postgres@db:5432/pharmacy\n\
+NODE_ENV=production\n\
+PORT=5000\n\
+JWT_SECRET=your-super-secret-jwt-key-change-in-production\n\
+JWT_EXPIRY=7d\n\
+RAZORPAY_KEY_ID=rzp_live_placeholder_key\n\
+RAZORPAY_KEY_SECRET=razorpay_placeholder_secret" > .env
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
@@ -49,5 +64,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 5000
 
-# Run application
-CMD ["node", "dist/src/index.js"]
+# Run migrations, seed, and then start the application
+CMD sh -c "sleep 10 && pnpm exec prisma db push --accept-data-loss && node dist/src/seed.js || true && node dist/src/index.js"
