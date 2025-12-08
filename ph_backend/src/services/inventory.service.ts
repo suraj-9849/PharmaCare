@@ -211,6 +211,39 @@ export class InventoryService {
 
     return batches;
   }
+
+  /**
+   * Get all available batches (for sales dropdown)
+   */
+  async getAllAvailableBatches() {
+    const now = new Date();
+
+    const batches = await prisma.inventoryBatch.findMany({
+      where: {
+        quantity: { gt: 0 },
+        expiryDate: { gt: now },
+      },
+      orderBy: [{ drug: { brandName: 'asc' } }, { expiryDate: 'asc' }],
+      include: {
+        drug: {
+          select: {
+            id: true,
+            brandName: true,
+            genericName: true,
+            sku: true,
+          },
+        },
+        supplier: {
+          select: {
+            id: true,
+            supplierName: true,
+          },
+        },
+      },
+    });
+
+    return batches;
+  }
 }
 
 export const inventoryService = new InventoryService();

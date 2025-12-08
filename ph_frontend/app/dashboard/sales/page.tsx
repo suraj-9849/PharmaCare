@@ -5,8 +5,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
@@ -23,24 +21,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Plus,
-  Search,
-  Eye,
-  ShoppingCart,
-  AlertCircle,
-  Receipt,
-  Calendar,
-  DollarSign,
-} from 'lucide-react';
+import { Plus, Search, Eye, ShoppingCart, Receipt, DollarSign } from 'lucide-react';
 import { NewSaleDialog } from '@/components/sales/new-sale-dialog';
 import { apiClient } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/utils';
-import type { Sale, SaleItem, InventoryBatch, PaginatedResponse } from '@/lib/types';
+import type { Sale, SaleItem, PaginatedResponse } from '@/lib/types';
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
-  const [batches, setBatches] = useState<InventoryBatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewSaleOpen, setIsNewSaleOpen] = useState(false);
@@ -61,26 +49,14 @@ export default function SalesPage() {
     }
   }, []);
 
-  const fetchBatches = useCallback(async () => {
-    try {
-      const response = await apiClient.get<PaginatedResponse<InventoryBatch>>('/inventory', {
-        limit: 100,
-      });
-      // Only show batches with available quantity
-      setBatches((response.data || []).filter((b) => b.quantity > 0));
-    } catch (err) {
-      console.error('Failed to fetch batches:', err);
-    }
-  }, []);
   useEffect(() => {
     fetchSales();
-    fetchBatches();
-  }, [fetchSales, fetchBatches]);
+  }, [fetchSales]);
 
   const handleViewSale = async (sale: Sale) => {
     try {
-      const response = await apiClient.get<Sale>(`/sales/${sale.id}`);
-      setSelectedSale(response);
+      const response = await apiClient.get<{ success: boolean; data: Sale }>(`/sales/${sale.id}`);
+      setSelectedSale(response?.data || null);
       setIsViewSheetOpen(true);
     } catch (err) {
       console.error('Failed to fetch sale details:', err);
@@ -99,7 +75,6 @@ export default function SalesPage() {
 
   const handleSaleCreated = () => {
     fetchSales();
-    fetchBatches();
   };
 
   const filteredSales = sales.filter(
@@ -186,7 +161,9 @@ export default function SalesPage() {
               <Receipt className="h-12 w-12 mx-auto text-gray-300 mb-3" />
               <p className="text-gray-500 mb-2">No sales found</p>
               <p className="text-sm text-gray-400">
-                {searchQuery ? 'Try adjusting your search criteria' : 'Create your first sale to get started'}
+                {searchQuery
+                  ? 'Try adjusting your search criteria'
+                  : 'Create your first sale to get started'}
               </p>
             </div>
           ) : (
@@ -206,7 +183,9 @@ export default function SalesPage() {
                 <TableBody>
                   {filteredSales.map((sale) => (
                     <TableRow key={sale.id} className="border-b hover:bg-gray-50">
-                      <TableCell className="font-mono text-sm font-medium">{sale.id.slice(0, 8)}</TableCell>
+                      <TableCell className="font-mono text-sm font-medium">
+                        {sale.id.slice(0, 8)}
+                      </TableCell>
                       <TableCell>{sale.customer?.name || 'Offline Sale'}</TableCell>
                       <TableCell className="text-right font-semibold text-emerald-600">
                         ₹{Number(sale.totalAmount).toFixed(2)}
@@ -251,47 +230,54 @@ export default function SalesPage() {
 
       {/* View Sale Details Sheet */}
       <Sheet open={isViewSheetOpen} onOpenChange={setIsViewSheetOpen}>
-        <SheetContent side="right" className="w-full sm:w-[600px] overflow-y-auto">
-          <SheetHeader>
+        <SheetContent side="right" className="w-full sm:w-[600px] p-0 flex flex-col">
+          <SheetHeader className="px-6 py-4 border-b">
             <SheetTitle>Sale Details</SheetTitle>
             <SheetDescription>{selectedSale?.id}</SheetDescription>
           </SheetHeader>
 
           {selectedSale && (
-            <div className="space-y-6 mt-6">
+            <div className="flex-1 overflow-y-auto">
               {/* Basic Info */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Information</h3>
-                <div className="grid gap-4">
+              <div className="px-6 py-4 border-b">
+                <h3 className="font-semibold text-lg mb-3">Information</h3>
+                <div className="space-y-3">
                   <div>
-                    <p className="text-sm text-gray-600">Customer</p>
+                    <p className="text-sm text-gray-600 mb-1">Customer</p>
                     <p className="font-medium">{selectedSale.customer?.name || 'Offline Sale'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Date & Time</p>
-                    <p className="font-medium">{formatDateTime(selectedSale.createdAt || selectedSale.saleDate)}</p>
+                    <p className="text-sm text-gray-600 mb-1">Date & Time</p>
+                    <p className="font-medium">
+                      {formatDateTime(selectedSale.createdAt || selectedSale.saleDate)}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Payment Method</p>
-                    <Badge className={`${getPaymentMethodColor(selectedSale.paymentMethod)} border-0 mt-1`}>
-                      {selectedSale.paymentMethod}
+                    <p className="text-sm text-gray-600 mb-1">Payment Method</p>
+                    <Badge
+                      className={`${getPaymentMethodColor(selectedSale.paymentMethod)} border-0`}
+                    >
+                      {selectedSale.paymentMethod || 'N/A'}
                     </Badge>
                   </div>
                 </div>
               </div>
 
               {/* Items */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Items</h3>
-                <div className="space-y-3">
-                  {selectedSale.items?.map((item: SaleItem) => (
-                    <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <div className="px-6 py-4 border-b">
+                <h3 className="font-semibold text-lg mb-3">Items</h3>
+                <div className="space-y-2">
+                  {(selectedSale.items || selectedSale.saleItems || []).map((item: SaleItem) => (
+                    <div
+                      key={item.id}
+                      className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                    >
                       <div>
-                        <p className="font-medium">{item.drug?.brandName}</p>
+                        <p className="font-medium">{item.drug?.brandName || 'Unknown Product'}</p>
                         <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                       </div>
                       <p className="font-semibold text-emerald-600">
-                        ₹{(Number(item.unitPrice) * item.quantity).toFixed(2)}
+                        ₹{((Number(item.unitPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)}
                       </p>
                     </div>
                   ))}
@@ -299,10 +285,12 @@ export default function SalesPage() {
               </div>
 
               {/* Summary */}
-              <div className="space-y-3 border-t pt-4">
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>Total Amount</span>
-                  <span className="text-emerald-600">₹{Number(selectedSale.totalAmount).toFixed(2)}</span>
+              <div className="px-6 py-4 bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold">Total Amount</span>
+                  <span className="text-2xl font-bold text-emerald-600">
+                    ₹{(Number(selectedSale.totalAmount) || 0).toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>

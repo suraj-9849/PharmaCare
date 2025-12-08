@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
@@ -24,9 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle, Plus, X, Trash2, ShoppingCart, UtensilsCrossed } from 'lucide-react';
+import { AlertCircle, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { formatCurrency } from '@/lib/utils';
 import type { InventoryBatch } from '@/lib/types';
 
 interface CartItem {
@@ -74,9 +72,11 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
   const loadBatches = async () => {
     try {
       setIsLoadingBatches(true);
-      const response = await apiClient.get<{ data: InventoryBatch[] }>('/inventory/drug/all/available');
-      setBatches(response.data || []);
-    } catch (err) {
+      const response = await apiClient.get<{ success: boolean; data: InventoryBatch[] }>(
+        '/inventory/available'
+      );
+      setBatches(response?.data || []);
+    } catch {
       setError('Failed to load available products');
     } finally {
       setIsLoadingBatches(false);
@@ -158,7 +158,7 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
 
   const handleRazorpayPayment = async () => {
     const total = getTotal();
-    
+
     try {
       setPaymentProcessing(true);
       setError('');
@@ -174,7 +174,7 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
           currency: 'INR',
           name: 'PharmaCare',
           description: 'Medicine Purchase',
-          handler: async (response: any) => {
+          handler: async (response: { razorpay_payment_id: string }) => {
             // Payment successful - create sale
             await createSale('UPI', response.razorpay_payment_id);
           },
@@ -193,7 +193,22 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
           },
         };
 
-        const rzp = new (window as any).Razorpay(options);
+        interface RazorpayOptions {
+          key: string | undefined;
+          amount: number;
+          currency: string;
+          name: string;
+          description: string;
+          handler: (response: { razorpay_payment_id: string }) => Promise<void>;
+          prefill: { contact: string; email: string };
+          theme: { color: string };
+          modal: { ondismiss: () => void };
+        }
+
+        interface RazorpayWindow extends Window {
+          Razorpay: new (options: RazorpayOptions) => { open: () => void };
+        }
+        const rzp = new (window as unknown as RazorpayWindow).Razorpay(options);
         rzp.open();
       };
       document.body.appendChild(script);
@@ -267,7 +282,10 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
 
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent side="right" className="w-full sm:w-[90vw] md:w-[85vw] lg:w-[80vw] flex flex-col max-h-screen overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="w-full sm:w-[90vw] md:w-[85vw] lg:w-[80vw] flex flex-col max-h-screen overflow-y-auto"
+      >
         <SheetHeader className="border-b pb-4">
           <SheetTitle className="text-2xl">New Sale</SheetTitle>
           <SheetDescription>Add items to cart and complete the sale transaction</SheetDescription>
@@ -301,7 +319,8 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
                         ) : (
                           batches.map((batch) => (
                             <SelectItem key={batch.id} value={batch.id}>
-                              {batch.drug?.brandName} ({batch.quantity} avail.) - ₹{Number(batch.sellPrice).toFixed(2)}
+                              {batch.drug?.brandName} ({batch.quantity} avail.) - ₹
+                              {Number(batch.sellPrice).toFixed(2)}
                             </SelectItem>
                           ))
                         )}
@@ -354,9 +373,12 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
                         className="flex items-center justify-between gap-4 rounded-lg border bg-white p-4 hover:bg-gray-50 transition"
                       >
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{item.batch.drug?.brandName}</p>
+                          <p className="font-semibold text-gray-900">
+                            {item.batch.drug?.brandName}
+                          </p>
                           <p className="text-xs text-gray-500">
-                            Batch: {item.batch.batchNumber} • ₹{Number(item.unitPrice).toFixed(2)}/unit
+                            Batch: {item.batch.batchNumber} • ₹{Number(item.unitPrice).toFixed(2)}
+                            /unit
                           </p>
                         </div>
                         <div className="flex items-center gap-3">

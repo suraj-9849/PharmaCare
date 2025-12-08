@@ -78,6 +78,20 @@ router.get('/expired', async (_req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/inventory/available
+ * Get all available batches for sale
+ */
+router.get('/available', async (_req: Request, res: Response) => {
+  try {
+    const batches = await inventoryService.getAllAvailableBatches();
+    return successResponse(res, batches, SUCCESS_MESSAGES.FETCH_SUCCESS);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
+    return errorResponse(res, message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+/**
  * GET /api/inventory/drug/:drugId/available
  * Get available batches for a drug (for sale)
  */
