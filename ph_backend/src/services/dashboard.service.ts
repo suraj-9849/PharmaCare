@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import { getStartOfToday, getEndOfToday, isExpiringSoon, isExpired } from '../utils/helpers';
+import { Sale, InventoryBatch, Drug } from '@prisma/client';
 
 export class DashboardService {
   /**
@@ -22,7 +23,7 @@ export class DashboardService {
 
     const todaySalesCount = todaySales.length;
     const todayRevenue = todaySales.reduce(
-      (sum: number, sale: any) => sum + Number(sale.totalAmount),
+      (sum: number, sale: Sale) => sum + Number(sale.totalAmount),
       0
     );
 
@@ -39,7 +40,7 @@ export class DashboardService {
     });
 
     const totalRevenue = allSales.reduce(
-      (sum: number, sale: any) => sum + Number(sale.totalAmount),
+      (sum: number, sale: Sale) => sum + Number(sale.totalAmount),
       0
     );
 
@@ -58,7 +59,7 @@ export class DashboardService {
 
     for (const drug of drugs) {
       const totalStock = drug.inventoryBatches.reduce(
-        (sum: number, batch: any) => sum + batch.quantity,
+        (sum: number, batch: InventoryBatch) => sum + batch.quantity,
         0
       );
 
@@ -185,13 +186,15 @@ export class DashboardService {
       take: limit,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const drugIds = saleItems.map((item: any) => item.drugId);
     const drugs = await prisma.drug.findMany({
       where: { id: { in: drugIds } },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return saleItems.map((item: any) => {
-      const drug = drugs.find((d: any) => d.id === item.drugId);
+      const drug = drugs.find((d: Drug) => d.id === item.drugId);
       return {
         drugId: item.drugId,
         brandName: drug?.brandName || 'Unknown',

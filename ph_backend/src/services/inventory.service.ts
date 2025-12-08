@@ -2,6 +2,7 @@ import prisma from '../config/database';
 import { CreateBatchRequest } from '../types';
 import { calculatePagination, isExpired, isExpiringSoon } from '../utils/helpers';
 import { ERROR_MESSAGES } from '../constants';
+import { InventoryBatch, Drug } from '@prisma/client';
 
 export class InventoryService {
   /**
@@ -126,7 +127,7 @@ export class InventoryService {
       },
     });
 
-    return batches.filter((batch: any) => isExpiringSoon(batch.expiryDate, days));
+    return batches.filter((batch: InventoryBatch) => isExpiringSoon(batch.expiryDate, days));
   }
 
   /**
@@ -143,7 +144,7 @@ export class InventoryService {
       },
     });
 
-    return batches.filter((batch: any) => isExpired(batch.expiryDate));
+    return batches.filter((batch: InventoryBatch) => isExpired(batch.expiryDate));
   }
 
   /**
@@ -160,15 +161,15 @@ export class InventoryService {
       },
     });
 
-    return drugs.map((drug: any) => {
+    return drugs.map((drug: Drug & { inventoryBatches: InventoryBatch[] }) => {
       const totalStock = drug.inventoryBatches.reduce(
-        (sum: number, batch: any) => sum + batch.quantity,
+        (sum: number, batch: InventoryBatch) => sum + batch.quantity,
         0
       );
-      const expiringBatches = drug.inventoryBatches.filter((batch: any) =>
+      const expiringBatches = drug.inventoryBatches.filter((batch: InventoryBatch) =>
         isExpiringSoon(batch.expiryDate)
       );
-      const expiredBatches = drug.inventoryBatches.filter((batch: any) =>
+      const expiredBatches = drug.inventoryBatches.filter((batch: InventoryBatch) =>
         isExpired(batch.expiryDate)
       );
 

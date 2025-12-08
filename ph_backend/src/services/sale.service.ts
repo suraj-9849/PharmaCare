@@ -2,6 +2,7 @@ import prisma from '../config/database';
 import { CreateSaleRequest } from '../types';
 import { calculatePagination, getStartOfToday, getEndOfToday } from '../utils/helpers';
 import { ERROR_MESSAGES } from '../constants';
+import { Sale, SaleItem } from '@prisma/client';
 
 export class SaleService {
   /**
@@ -24,7 +25,7 @@ export class SaleService {
     }
 
     // Calculate totals and create sale
-    const sale = await prisma.$transaction(async (tx: any) => {
+    const sale = await prisma.$transaction(async (tx) => {
       // Get batch prices and calculate items
       const saleItems = await Promise.all(
         data.items.map(async (item) => {
@@ -202,7 +203,7 @@ export class SaleService {
     }
 
     // Restore inventory
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx) => {
       for (const item of sale.saleItems) {
         await tx.inventoryBatch.update({
           where: { id: item.batchId },
@@ -242,7 +243,7 @@ export class SaleService {
 
     const totalSales = sales.length;
     const totalRevenue = sales.reduce(
-      (sum: number, sale: any) => sum + Number(sale.totalAmount),
+      (sum: number, sale: Sale) => sum + Number(sale.totalAmount),
       0
     );
 
@@ -282,12 +283,12 @@ export class SaleService {
 
     const totalSales = sales.length;
     const totalRevenue = sales.reduce(
-      (sum: number, sale: any) => sum + Number(sale.totalAmount),
+      (sum: number, sale: Sale) => sum + Number(sale.totalAmount),
       0
     );
     const totalItems = sales.reduce(
-      (sum: number, sale: any) =>
-        sum + sale.saleItems.reduce((s: number, item: any) => s + item.quantity, 0),
+      (sum: number, sale: Sale & { saleItems: SaleItem[] }) =>
+        sum + sale.saleItems.reduce((s: number, item: SaleItem) => s + item.quantity, 0),
       0
     );
 

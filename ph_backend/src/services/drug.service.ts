@@ -2,6 +2,7 @@ import prisma from '../config/database';
 import { CreateDrugRequest } from '../types';
 import { generateSKU, calculatePagination } from '../utils/helpers';
 import { ERROR_MESSAGES } from '../constants';
+import { Drug, InventoryBatch } from '@prisma/client';
 
 export class DrugService {
   /**
@@ -116,9 +117,9 @@ export class DrugService {
       },
     });
 
-    const lowStockDrugs = drugs.filter((drug: any) => {
+    const lowStockDrugs = drugs.filter((drug: Drug & { inventoryBatches: InventoryBatch[] }) => {
       const totalStock = drug.inventoryBatches.reduce(
-        (sum: number, batch: any) => sum + batch.quantity,
+        (sum: number, batch: InventoryBatch) => sum + batch.quantity,
         0
       );
       return totalStock <= drug.reorderLevel;
