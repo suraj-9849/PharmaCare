@@ -196,7 +196,8 @@ export default function SalesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {sale.items?.length || 0} item{(sale.items?.length || 0) !== 1 ? 's' : ''}
+                        {sale.items?.length || sale.saleItems?.length || 0} item
+                        {(sale.items?.length || sale.saleItems?.length || 0) !== 1 ? 's' : ''}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
                         {formatDateTime(sale.createdAt || sale.saleDate)}

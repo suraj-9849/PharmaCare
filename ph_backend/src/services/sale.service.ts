@@ -3,6 +3,7 @@ import { CreateSaleRequest } from '../types';
 import { calculatePagination, getStartOfToday, getEndOfToday } from '../utils/helpers';
 import { ERROR_MESSAGES } from '../constants';
 import { Sale, SaleItem } from '@prisma/client';
+import { emailService } from './email.service';
 
 export class SaleService {
   /**
@@ -95,22 +96,91 @@ export class SaleService {
         },
       });
 
-      // Update inventory quantities
+      // Update inventory quantities and check stock levels
+      const lowStockAlerts: Array<{
+        drugName: string;
+        brandName: string;
+        currentStock: number;
+        reorderLevel: number;
+        stockPercentage: number;
+        category: string;
+        sku: string;
+      }> = [];
+
+      const outOfStockAlerts: Array<{
+        drugName: string;
+        brandName: string;
+        currentStock: number;
+        reorderLevel: number;
+        stockPercentage: number;
+        category: string;
+        sku: string;
+      }> = [];
+
       for (const item of data.items) {
-        await tx.inventoryBatch.update({
+        // Update batch quantity
+        const updatedBatch = await tx.inventoryBatch.update({
           where: { id: item.batchId },
           data: {
             quantity: {
               decrement: item.quantity,
             },
           },
+          include: {
+            drug: true,
+          },
         });
+
+        // Calculate total stock for this drug across all batches
+        const allBatches = await tx.inventoryBatch.findMany({
+          where: { drugId: updatedBatch.drugId },
+        });
+
+        const totalStock = allBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+        const drug = updatedBatch.drug;
+        const stockPercentage = (totalStock / drug.reorderLevel) * 100;
+
+        // Check for out of stock (0 stock)
+        if (totalStock === 0) {
+          outOfStockAlerts.push({
+            drugName: drug.genericName || drug.brandName,
+            brandName: drug.brandName,
+            currentStock: totalStock,
+            reorderLevel: drug.reorderLevel,
+            stockPercentage: 0,
+            category: drug.category || 'N/A',
+            sku: drug.sku || 'N/A',
+          });
+        }
+        // Check for low stock (10% or 25%)
+        else if (stockPercentage <= 25) {
+          lowStockAlerts.push({
+            drugName: drug.genericName || drug.brandName,
+            brandName: drug.brandName,
+            currentStock: totalStock,
+            reorderLevel: drug.reorderLevel,
+            stockPercentage: Math.round(stockPercentage),
+            category: drug.category || 'N/A',
+            sku: drug.sku || 'N/A',
+          });
+        }
       }
 
-      return newSale;
+      return { newSale, lowStockAlerts, outOfStockAlerts };
     });
 
-    return sale;
+    // Send email alerts if any (async, don't block the response)
+    if (sale.outOfStockAlerts.length > 0) {
+      emailService.sendOutOfStockAlert(sale.outOfStockAlerts).catch((err) => {
+        console.error('Failed to send out of stock email:', err);
+      });
+    } else if (sale.lowStockAlerts.length > 0) {
+      emailService.sendLowStockAlert(sale.lowStockAlerts).catch((err) => {
+        console.error('Failed to send low stock email:', err);
+      });
+    }
+
+    return sale.newSale;
   }
 
   /**

@@ -21,6 +21,10 @@ interface Environment {
   APP_NAME: string;
   APP_VERSION: string;
 
+  // Email
+  RESEND_API_KEY: string;
+  ADMIN_EMAIL: string;
+
   // Helpers
   isDevelopment: boolean;
   isProduction: boolean;
@@ -44,6 +48,10 @@ const env: Environment = {
   // Application
   APP_NAME: process.env.APP_NAME || 'PharmaCare',
   APP_VERSION: process.env.APP_VERSION || '1.0.0',
+
+  // Email
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
 
   // Helpers
   isDevelopment: process.env.NODE_ENV === 'development',

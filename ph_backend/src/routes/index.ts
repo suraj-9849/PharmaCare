@@ -7,6 +7,7 @@ import supplierRoutes from './supplier.routes';
 import customerRoutes from './customer.routes';
 import dashboardRoutes from './dashboard.routes';
 import paymentRoutes from './payment.routes';
+import alertRoutes from './alert.routes';
 
 const router: ExpressRouter = Router();
 
@@ -19,6 +20,7 @@ router.use('/suppliers', supplierRoutes);
 router.use('/customers', customerRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/alerts', alertRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {
