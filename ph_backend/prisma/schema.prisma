@@ -1,0 +1,176 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client"
+  output     = "../generated/prisma"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  ADMIN
+  PHARMACIST
+  CASHIER
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  CREDIT
+}
+
+enum SaleStatus {
+  COMPLETED
+  PENDING
+  CANCELLED
+  REFUNDED
+}
+
+// ==================== MODELS ====================
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(PHARMACIST)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  sales Sale[]
+
+  @@map("users")
+}
+
+model Drug {
+  id                   String   @id @default(cuid())
+  brandName            String   @map("brand_name")
+  genericName          String   @map("generic_name")
+  category             String
+  manufacturer         String
+  requiresPrescription Boolean  @default(false) @map("requires_prescription")
+  reorderLevel         Int      @default(10) @map("reorder_level")
+  sku                  String   @unique
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  inventoryBatches InventoryBatch[]
+  saleItems        SaleItem[]
+
+  @@map("drugs")
+}
+
+model Supplier {
+  id            String   @id @default(cuid())
+  supplierName  String   @map("supplier_name")
+  contactNumber String   @map("contact_number")
+  email         String
+  address       String
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  inventoryBatches InventoryBatch[]
+
+  @@map("suppliers")
+}
+
+model InventoryBatch {
+  id            String   @id @default(cuid())
+  drugId        String   @map("drug_id")
+  batchNumber   String   @map("batch_number")
+  quantity      Int
+  purchasePrice Decimal  @map("purchase_price") @db.Decimal(10, 2)
+  sellPrice     Decimal  @map("sell_price") @db.Decimal(10, 2)
+  expiryDate    DateTime @map("expiry_date")
+  supplierId    String   @map("supplier_id")
+  location      String?
+  dateAdded     DateTime @default(now()) @map("date_added")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  drug      Drug       @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  supplier  Supplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  saleItems SaleItem[]
+
+  @@map("inventory_batches")
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @default(CASH) @map("payment_method")
+  cashReceived  Decimal?      @map("cash_received") @db.Decimal(10, 2)
+  changeGiven   Decimal?      @map("change_given") @db.Decimal(10, 2)
+  saleDate      DateTime      @default(now()) @map("sale_date")
+  status        SaleStatus    @default(COMPLETED)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  saleItems SaleItem[]
+
+  @@map("sales")
+}
+
+model SaleItem {
+  id        String  @id @default(cuid())
+  saleId    String  @map("sale_id")
+  drugId    String  @map("drug_id")
+  batchId   String  @map("batch_id")
+  quantity  Int
+  unitPrice Decimal @map("unit_price") @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  // Relations
+  sale  Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  drug  Drug           @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  batch InventoryBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@map("sale_items")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("customers")
+}
+
+model StockAlert {
+  id        String   @id @default(cuid())
+  drugId    String   @map("drug_id")
+  alertType String   @map("alert_type") // LOW_STOCK, EXPIRING_SOON, EXPIRED
+  message   String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("stock_alerts")
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
