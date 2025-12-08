@@ -554,7 +554,9 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-gray-900">{drug.totalQuantity || drug.totalSold || 0} units</p>
+                        <p className="font-medium text-gray-900">
+                          {drug.totalQuantity || drug.totalSold || 0} units
+                        </p>
                         <p className="text-xs text-gray-500">
                           {formatCurrency(drug.totalRevenue || 0)}
                         </p>
