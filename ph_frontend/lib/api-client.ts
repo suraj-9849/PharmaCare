@@ -187,7 +187,7 @@ class ApiClient {
       this.post<{
         response: string;
         tools_used?: string[];
-      }>('/agent/chat', { message, history }),
+      }>('/agent/refined-chat', { message, history }),
     health: () => this.get<{ status: string }>('/agent/health'),
     inventory: () => this.get<unknown[]>('/agent/inventory'),
     clear: () => this.post<{ cleared: boolean }>('/agent/clear'),

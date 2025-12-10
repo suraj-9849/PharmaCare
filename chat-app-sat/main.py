@@ -40,6 +40,19 @@ from agent_tools import (
     get_sales_analytics
 )
 
+# Import Refined Agent Tools
+from agent_tools_agent import (
+    check_low_stock as check_low_stock_v2,
+    check_expiring_stock as check_expiring_stock_v2,
+    get_inventory_summary as get_inventory_summary_v2,
+    place_order as place_order_v2,
+    add_stock_to_inventory as add_stock_to_inventory_v2,
+    remove_stock_from_inventory as remove_stock_from_inventory_v2,
+    get_sales_analytics as get_sales_analytics_v2,
+    forecast_demand,
+    get_full_inventory
+)
+
 # ==================== APP SETUP ====================
 
 app = FastAPI(
@@ -163,6 +176,49 @@ agent_tools = [
 
 # Create agent using langgraph
 agent_executor = create_react_agent(llm, agent_tools, prompt=AGENT_SYSTEM_PROMPT)
+
+# ==================== REFINED AGENT SETUP ====================
+
+AGENT_SYSTEM_PROMPT_V2 = """You are the PharmaCare Inventory Manager - an intelligent agent that helps manage pharmacy operations.
+
+You have access to these tools:
+- check_low_stock: Find items below reorder level
+- check_expiring_stock: Find items expiring soon (input: days, e.g., 30)
+- get_inventory_summary: Get overall inventory statistics
+- place_order: Create purchase order comparison (input: list of items)
+- add_stock_to_inventory: Add stock. REQUIRES: drug_name, quantity, purchase_price, expiry_date (YYYY-MM-DD).
+- remove_stock_from_inventory: Remove stock (FIFO method)
+- get_sales_analytics: Get sales data (input: today/week/month/all)
+- forecast_demand: Predict future medicine requirements based on season and college context
+
+IMPORTANT GUIDELINES:
+1. **Adding Stock**: You MUST ask the user for the `expiry_date` and `purchase_price` if they are not provided. Do NOT guess these values.
+2. **Ordering**: Use `place_order` to compare prices. When the user confirms an order, ask for the specific details needed for `add_stock_to_inventory` before adding it.
+3. **Formatting**: Return tables and lists in Markdown.
+4. **Proactive**: Suggest actions (e.g., "Should I place an order for these low stock items?").
+
+Commands:
+- /reorder or /lowstock - Check low stock items
+- /expiry - Check expiring items
+- /summary - Inventory overview
+- /sales - Today's sales analytics
+- /forecast - Predict future demand based on season and college events
+- /get_inventory - Show detailed inventory list
+- /help - Show available commands"""
+
+agent_tools_v2 = [
+    check_low_stock_v2,
+    check_expiring_stock_v2,
+    get_inventory_summary_v2,
+    place_order_v2,
+    add_stock_to_inventory_v2,
+    remove_stock_from_inventory_v2,
+    get_sales_analytics_v2,
+    forecast_demand,
+    get_full_inventory
+]
+
+agent_executor_v2 = create_react_agent(llm, agent_tools_v2, prompt=AGENT_SYSTEM_PROMPT_V2)
 
 # ==================== PYDANTIC MODELS ====================
 
@@ -319,27 +375,106 @@ async def agent_chat(request: ChatRequest):
 
         # Extract response and tools used
         tools_used = []
-        final_output = ""
+        tool_outputs = []
+        ai_response = ""
 
         for msg in result["messages"]:
             # Check for tool calls
             if hasattr(msg, 'tool_calls') and msg.tool_calls:
                 for tc in msg.tool_calls:
                     tools_used.append(tc.get('name', 'unknown'))
+            
+            # Get tool outputs
+            if hasattr(msg, 'content') and msg.type == "tool":
+                if isinstance(msg.content, str) and len(msg.content) > 50:
+                    tool_outputs.append(msg.content)
+
             # Get final AI response
             if hasattr(msg, 'content') and msg.content and msg.type == "ai":
                 # Skip if it's just a tool call message
                 if not (hasattr(msg, 'tool_calls') and msg.tool_calls):
-                    final_output = msg.content
-            # Get tool outputs
-            if hasattr(msg, 'content') and msg.type == "tool":
-                if isinstance(msg.content, str) and len(msg.content) > 100:
-                    if msg.content[:80] not in final_output:
-                        final_output = msg.content + "\n\n---\n\n" + final_output
+                    ai_response = msg.content
+
+        final_output = ai_response
+        if tool_outputs:
+            combined_tools = "\n\n---\n\n".join(tool_outputs)
+            if combined_tools[:50] not in ai_response:
+                final_output = combined_tools + "\n\n" + ai_response
 
         if not final_output:
             # Fallback - get last message content
             final_output = result["messages"][-1].content if result["messages"] else "I couldn't process that request."
+
+        print(f"[{datetime.now().isoformat()}] AGENT RESPONSE: {final_output}")
+
+        return AgentResponse(response=final_output, tools_used=list(set(tools_used)))
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/agent/refined-chat", response_model=AgentResponse)
+async def agent_chat_refined(request: ChatRequest):
+    """Refined Intelligent Agent endpoint using new tools"""
+    try:
+        user_input = request.message.strip()
+
+        # Handle slash commands
+        commands = {
+            "/help": "## 🤖 Available Commands\n\n- `/reorder` - Check low stock items\n- `/expiry` - Check expiring items (30 days)\n- `/summary` - Inventory overview\n- `/sales` - Today's sales\n\nOr just ask naturally: 'What's running low?' or 'Order 50 Paracetamol'",
+            "/reorder": "Check for low stock items that need reordering",
+            "/lowstock": "Check for low stock items that need reordering",
+            "/expiry": "Check for items expiring in the next 30 days",
+            "/summary": "Show inventory summary and overview",
+            "/sales": "Show today's sales analytics",
+            "/forecast": "Predict future medicine demand based on season and college events",
+            "/get_inventory": "Show detailed list of all inventory items"
+        }
+
+        if user_input.lower() in commands:
+            if user_input.lower() == "/help":
+                return AgentResponse(response=commands["/help"], tools_used=[])
+            user_input = commands[user_input.lower()]
+
+        # Build messages for langgraph agent
+        history = convert_history(request.history[-20:])
+        messages = history + [HumanMessage(content=user_input)]
+
+        # Invoke refined agent
+        result = agent_executor_v2.invoke({"messages": messages})
+
+        # Extract response and tools used
+        tools_used = []
+        tool_outputs = []
+        ai_response = ""
+
+        for msg in result["messages"]:
+            # Check for tool calls
+            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    tools_used.append(tc.get('name', 'unknown'))
+            
+            # Get tool outputs
+            if hasattr(msg, 'content') and msg.type == "tool":
+                if isinstance(msg.content, str) and len(msg.content) > 50:
+                    tool_outputs.append(msg.content)
+
+            # Get final AI response
+            if hasattr(msg, 'content') and msg.content and msg.type == "ai":
+                # Skip if it's just a tool call message
+                if not (hasattr(msg, 'tool_calls') and msg.tool_calls):
+                    ai_response = msg.content
+
+        final_output = ai_response
+        if tool_outputs:
+            combined_tools = "\n\n---\n\n".join(tool_outputs)
+            if combined_tools[:50] not in ai_response:
+                final_output = combined_tools + "\n\n" + ai_response
+
+        if not final_output:
+            # Fallback - get last message content
+            final_output = result["messages"][-1].content if result["messages"] else "I couldn't process that request."
+
+        print(f"[{datetime.now().isoformat()}] REFINED AGENT RESPONSE: {final_output}")
 
         return AgentResponse(response=final_output, tools_used=list(set(tools_used)))
 

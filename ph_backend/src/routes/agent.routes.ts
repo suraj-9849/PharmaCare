@@ -76,6 +76,39 @@ router.post('/chat', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/agent/refined-chat
+ * Send message to refined agent and get response
+ */
+router.post('/refined-chat', async (req: Request, res: Response) => {
+  try {
+    const { message, history = [] } = req.body;
+
+    if (!message || typeof message !== 'string') {
+      return errorResponse(res, 'Message is required', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const response = await fetch(`${AGENT_SERVICE_URL}/agent/refined-chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message, history }),
+    });
+
+    if (!response.ok) {
+      const errorData = (await response.json().catch(() => ({}))) as { detail?: string };
+      throw new Error(errorData.detail || 'Agent service error');
+    }
+
+    const data = await response.json();
+    return successResponse(res, data, 'Agent response generated');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
+    return errorResponse(res, message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+/**
  * GET /api/agent/inventory
  * Get current inventory from agent service
  */

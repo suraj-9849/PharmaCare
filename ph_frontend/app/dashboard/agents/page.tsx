@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -168,7 +169,7 @@ export default function AgentsPage() {
     { label: 'Check Low Stock', icon: Package, query: 'Check for low stock items' },
     { label: 'Forecast Demand', icon: TrendingUp, query: 'Run demand forecast analysis' },
     { label: 'Check Expiring', icon: AlertCircle, query: 'Show items expiring soon' },
-    { label: 'Inventory Summary', icon: ShoppingCart, query: 'Give me an inventory summary' },
+    { label: 'Full Inventory', icon: ShoppingCart, query: '/get_inventory' },
   ];
 
   return (
@@ -502,7 +503,7 @@ function MessageBubble({ message, formatTime }: MessageBubbleProps) {
             <p className="text-sm leading-relaxed">{message.content}</p>
           ) : (
             <div className="markdown-content">
-              <ReactMarkdown>{message.content}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
             </div>
           )}
         </div>
