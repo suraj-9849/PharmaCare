@@ -103,11 +103,12 @@ export default function AgentsPage() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
+    } catch {
       const errorMessage: ChatMessage = {
         id: generateId(),
         role: 'assistant',
-        content: 'I\'m having trouble connecting to the agent service. Please check if the AI service is running.',
+        content:
+          "I'm having trouble connecting to the agent service. Please check if the AI service is running.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -210,8 +211,8 @@ export default function AgentsPage() {
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900">Pharmacy Agent</h3>
                   <p className="mt-2 max-w-md text-sm leading-relaxed text-gray-500">
-                    I can help you manage inventory, check stock levels, forecast demand,
-                    place orders, and more. Try one of the quick actions below.
+                    I can help you manage inventory, check stock levels, forecast demand, place
+                    orders, and more. Try one of the quick actions below.
                   </p>
 
                   {/* Quick Actions */}
@@ -235,11 +236,7 @@ export default function AgentsPage() {
               ) : (
                 <div className="space-y-1 p-4">
                   {messages.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      formatTime={formatTime}
-                    />
+                    <MessageBubble key={message.id} message={message} formatTime={formatTime} />
                   ))}
 
                   {/* Loading State */}
@@ -433,10 +430,16 @@ export default function AgentsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-2 px-3 font-medium text-gray-700">Brand Name</th>
-                        <th className="text-left py-2 px-3 font-medium text-gray-700">Batch Number</th>
+                        <th className="text-left py-2 px-3 font-medium text-gray-700">
+                          Brand Name
+                        </th>
+                        <th className="text-left py-2 px-3 font-medium text-gray-700">
+                          Batch Number
+                        </th>
                         <th className="text-left py-2 px-3 font-medium text-gray-700">Quantity</th>
-                        <th className="text-left py-2 px-3 font-medium text-gray-700">Expiry Date</th>
+                        <th className="text-left py-2 px-3 font-medium text-gray-700">
+                          Expiry Date
+                        </th>
                         <th className="text-left py-2 px-3 font-medium text-gray-700">Location</th>
                       </tr>
                     </thead>

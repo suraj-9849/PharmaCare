@@ -7,11 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Table,
   TableBody,
@@ -115,11 +111,12 @@ export default function ChatbotPage() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
+    } catch {
       const errorMessage: ChatMessage = {
         id: generateId(),
         role: 'assistant',
-        content: 'I\'m having trouble connecting to the service. Please check if the AI service is running.',
+        content:
+          "I'm having trouble connecting to the service. Please check if the AI service is running.",
         timestamp: new Date(),
         queryType: 'general',
       };
@@ -191,8 +188,8 @@ export default function ChatbotPage() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900">How can I help you today?</h3>
               <p className="mt-2 max-w-md text-sm leading-relaxed text-gray-500">
-                Ask me about your pharmacy data - inventory levels, sales reports,
-                expiring medicines, supplier information, and more.
+                Ask me about your pharmacy data - inventory levels, sales reports, expiring
+                medicines, supplier information, and more.
               </p>
             </div>
           ) : (
@@ -272,12 +269,12 @@ function MessageBubble({ message, onCopySql, copiedSql, formatTime }: MessageBub
 
   return (
     <div className={cn('flex gap-3 py-3', isUser ? 'flex-row-reverse' : '')}>
-      <Avatar className={cn(
-        'h-9 w-9 shrink-0 rounded-xl border',
-        isUser
-          ? 'border-gray-200 bg-gray-100'
-          : 'border-emerald-100 bg-emerald-50'
-      )}>
+      <Avatar
+        className={cn(
+          'h-9 w-9 shrink-0 rounded-xl border',
+          isUser ? 'border-gray-200 bg-gray-100' : 'border-emerald-100 bg-emerald-50'
+        )}
+      >
         <AvatarFallback className="rounded-xl bg-transparent">
           {isUser ? (
             <User className="h-4 w-4 text-gray-600" />
@@ -316,7 +313,11 @@ function MessageBubble({ message, onCopySql, copiedSql, formatTime }: MessageBub
               >
                 <Database className="h-3.5 w-3.5" />
                 SQL Query
-                {isSqlOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                {isSqlOpen ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent>
@@ -355,7 +356,11 @@ function MessageBubble({ message, onCopySql, copiedSql, formatTime }: MessageBub
               >
                 <TableIcon className="h-3.5 w-3.5" />
                 View Results ({message.data.length} rows)
-                {isDataOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                {isDataOpen ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent>
@@ -364,7 +369,10 @@ function MessageBubble({ message, onCopySql, copiedSql, formatTime }: MessageBub
                   <TableHeader>
                     <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
                       {message.columns.map((col) => (
-                        <TableHead key={col} className="whitespace-nowrap text-xs font-semibold text-gray-700">
+                        <TableHead
+                          key={col}
+                          className="whitespace-nowrap text-xs font-semibold text-gray-700"
+                        >
                           {col}
                         </TableHead>
                       ))}
@@ -393,7 +401,9 @@ function MessageBubble({ message, onCopySql, copiedSql, formatTime }: MessageBub
         )}
 
         {/* Timestamp */}
-        <span className="px-1 text-[10px] font-medium text-gray-400">{formatTime(message.timestamp)}</span>
+        <span className="px-1 text-[10px] font-medium text-gray-400">
+          {formatTime(message.timestamp)}
+        </span>
       </div>
     </div>
   );

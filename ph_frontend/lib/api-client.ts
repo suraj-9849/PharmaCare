@@ -194,7 +194,9 @@ class ApiClient {
   };
 
   // File upload for agent (FormData)
-  async uploadInventory(file: File): Promise<ApiResponse<{ message: string; added_count: number; errors: string[] }>> {
+  async uploadInventory(
+    file: File
+  ): Promise<ApiResponse<{ message: string; added_count: number; errors: string[] }>> {
     const token = this.getToken();
     const formData = new FormData();
     formData.append('file', file);

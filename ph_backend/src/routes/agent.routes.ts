@@ -14,13 +14,15 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        file.mimetype === 'application/vnd.ms-excel') {
+    if (
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.mimetype === 'application/vnd.ms-excel'
+    ) {
       cb(null, true);
     } else {
       cb(new Error('Only Excel files are allowed'));
     }
-  }
+  },
 });
 
 // All routes require authentication
@@ -35,12 +37,8 @@ router.get('/health', async (_req: Request, res: Response) => {
     const response = await fetch(`${AGENT_SERVICE_URL}/agent/health`);
     const data = await response.json();
     return successResponse(res, data, 'Agent service is healthy');
-  } catch (error) {
-    return errorResponse(
-      res,
-      'Agent service is unavailable',
-      HTTP_STATUS.INTERNAL_SERVER_ERROR
-    );
+  } catch (_error) {
+    return errorResponse(res, 'Agent service is unavailable', HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 });
 
@@ -65,7 +63,7 @@ router.post('/chat', async (req: Request, res: Response) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = (await response.json().catch(() => ({}))) as { detail?: string };
       throw new Error(errorData.detail || 'Agent service error');
     }
 
@@ -118,7 +116,7 @@ router.post('/upload-inventory', upload.single('file'), async (req: Request, res
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = (await response.json().catch(() => ({}))) as { detail?: string };
       throw new Error(errorData.detail || 'Failed to upload inventory');
     }
 
