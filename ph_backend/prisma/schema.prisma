@@ -56,13 +56,14 @@ model Drug {
   manufacturer         String
   requiresPrescription Boolean  @default(false) @map("requires_prescription")
   reorderLevel         Int      @default(10) @map("reorder_level")
-  sku                  String   @unique
+  sku                  String   @unique @default(cuid())
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
   // Relations
   inventoryBatches InventoryBatch[]
   saleItems        SaleItem[]
+  stockAlerts      StockAlert[]
 
   @@map("drugs")
 }
@@ -71,8 +72,8 @@ model Supplier {
   id            String   @id @default(cuid())
   supplierName  String   @map("supplier_name")
   contactNumber String   @map("contact_number")
-  email         String
-  address       String
+  email         String   @unique
+  address       String?
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -90,7 +91,7 @@ model InventoryBatch {
   purchasePrice Decimal  @map("purchase_price") @db.Decimal(10, 2)
   sellPrice     Decimal  @map("sell_price") @db.Decimal(10, 2)
   expiryDate    DateTime @map("expiry_date")
-  supplierId    String   @map("supplier_id")
+  supplierId    String?  @map("supplier_id")
   location      String?
   dateAdded     DateTime @default(now()) @map("date_added")
   createdAt     DateTime @default(now()) @map("created_at")
@@ -98,7 +99,7 @@ model InventoryBatch {
 
   // Relations
   drug      Drug       @relation(fields: [drugId], references: [id], onDelete: Cascade)
-  supplier  Supplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplier  Supplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   saleItems SaleItem[]
 
   @@map("inventory_batches")
@@ -107,6 +108,7 @@ model InventoryBatch {
 model Sale {
   id            String        @id @default(cuid())
   userId        String        @map("user_id")
+  customerId    String?       @map("customer_id")
   totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
   paymentMethod PaymentMethod @default(CASH) @map("payment_method")
   cashReceived  Decimal?      @map("cash_received") @db.Decimal(10, 2)
@@ -119,6 +121,7 @@ model Sale {
 
   // Relations
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer  Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
   saleItems SaleItem[]
 
   @@map("sales")
@@ -150,6 +153,9 @@ model Customer {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  // Relations
+  sales Sale[]
+
   @@map("customers")
 }
 
@@ -160,6 +166,9 @@ model StockAlert {
   message   String
   isRead    Boolean  @default(false) @map("is_read")
   createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  drug Drug @relation(fields: [drugId], references: [id], onDelete: Cascade)
 
   @@map("stock_alerts")
 }
