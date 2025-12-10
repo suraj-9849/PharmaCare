@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,8 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Eye, ShoppingCart, Receipt, DollarSign } from 'lucide-react';
+import { Plus, Search, Eye, ShoppingCart, Receipt, DollarSign, FileText } from 'lucide-react';
 import { NewSaleDialog } from '@/components/sales/new-sale-dialog';
+import { ReceiptTemplate } from '@/components/sales/receipt-template';
+import { InvoiceTemplate } from '@/components/sales/invoice-template';
 import { apiClient } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/utils';
 import type { Sale, SaleItem, PaginatedResponse } from '@/lib/types';
@@ -34,6 +36,8 @@ export default function SalesPage() {
   const [isNewSaleOpen, setIsNewSaleOpen] = useState(false);
   const [isViewSheetOpen, setIsViewSheetOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   const fetchSales = useCallback(async () => {
     try {
@@ -71,6 +75,76 @@ export default function SalesPage() {
       CREDIT: 'bg-yellow-100 text-yellow-800',
     };
     return colors[method] || 'bg-gray-100 text-gray-800';
+  };
+
+  const handlePrintReceipt = () => {
+    if (!receiptRef.current) return;
+
+    const printWindow = window.open('', '', 'width=400,height=600');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Receipt - ${selectedSale?.id}</title>
+            <style>
+              body {
+                font-family: monospace;
+                margin: 0;
+                padding: 10px;
+                background-color: white;
+              }
+              * {
+                font-size: 12px;
+              }
+            </style>
+          </head>
+          <body>
+            ${receiptRef.current.innerHTML}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    }
+  };
+
+  const handlePrintInvoice = () => {
+    if (!invoiceRef.current) return;
+
+    const printWindow = window.open('', '', 'width=1200,height=800');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Invoice - ${selectedSale?.id}</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: white;
+              }
+              * {
+                box-sizing: border-box;
+              }
+              @media print {
+                body { margin: 0; padding: 0; }
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            ${invoiceRef.current.innerHTML}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    }
   };
 
   const handleSaleCreated = () => {
@@ -196,7 +270,8 @@ export default function SalesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {sale.items?.length || 0} item{(sale.items?.length || 0) !== 1 ? 's' : ''}
+                        {sale.items?.length || sale.saleItems?.length || 0} item
+                        {(sale.items?.length || sale.saleItems?.length || 0) !== 1 ? 's' : ''}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
                         {formatDateTime(sale.createdAt || sale.saleDate)}
@@ -230,8 +305,11 @@ export default function SalesPage() {
 
       {/* View Sale Details Sheet */}
       <Sheet open={isViewSheetOpen} onOpenChange={setIsViewSheetOpen}>
-        <SheetContent side="right" className="w-full sm:w-[600px] p-0 flex flex-col">
-          <SheetHeader className="px-6 py-4 border-b">
+        <SheetContent
+          side="right"
+          className="w-full sm:w-[600px] p-0 flex flex-col max-h-screen overflow-hidden"
+        >
+          <SheetHeader className="px-6 py-4 border-b shrink-0">
             <SheetTitle>Sale Details</SheetTitle>
             <SheetDescription>{selectedSale?.id}</SheetDescription>
           </SheetHeader>
@@ -285,13 +363,40 @@ export default function SalesPage() {
               </div>
 
               {/* Summary */}
-              <div className="px-6 py-4 bg-gray-50">
+              <div className="px-6 py-4 bg-gray-50 border-b">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total Amount</span>
                   <span className="text-2xl font-bold text-emerald-600">
                     ₹{(Number(selectedSale.totalAmount) || 0).toFixed(2)}
                   </span>
                 </div>
+              </div>
+
+              {/* Print Options */}
+              <div className="px-6 py-4 space-y-3">
+                <h3 className="font-semibold text-lg">Print Documents</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    onClick={handlePrintReceipt}
+                    className="gap-2 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Receipt className="h-4 w-4" />
+                    Print Receipt
+                  </Button>
+                  <Button
+                    onClick={handlePrintInvoice}
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Print Invoice
+                  </Button>
+                </div>
+              </div>
+
+              {/* Hidden Templates for Printing */}
+              <div className="hidden">
+                <ReceiptTemplate ref={receiptRef} sale={selectedSale} />
+                <InvoiceTemplate ref={invoiceRef} sale={selectedSale} />
               </div>
             </div>
           )}

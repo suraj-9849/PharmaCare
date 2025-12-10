@@ -88,8 +88,16 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const data: CreateSaleRequest = req.body;
-    const sale = await saleService.createSale(req.user.id, data);
-    return successResponse(res, sale, SUCCESS_MESSAGES.SALE_COMPLETED, HTTP_STATUS.CREATED);
+    const result = await saleService.createSale(req.user.id, data);
+
+    // If there are skipped items, include them in the response message
+    let message: string = SUCCESS_MESSAGES.SALE_COMPLETED;
+    if (result.skippedItems && result.skippedItems.length > 0) {
+      const skippedNames = result.skippedItems.map((item) => item.drugName).join(', ');
+      message = `Sale completed. Note: ${result.skippedItems.length} item(s) were out of stock and skipped: ${skippedNames}`;
+    }
+
+    return successResponse(res, result, message, HTTP_STATUS.CREATED);
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
     return errorResponse(res, message, HTTP_STATUS.BAD_REQUEST);

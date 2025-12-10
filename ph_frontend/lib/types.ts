@@ -190,6 +190,27 @@ export interface StockAlert {
   createdAt: string;
 }
 
+// Reorder Request types
+export type ReorderStatus = 'PENDING' | 'APPROVED' | 'ORDERED' | 'RECEIVED' | 'REJECTED';
+export type ReorderPriority = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface ReorderRequest {
+  id: string;
+  drugId: string;
+  requestedBy: string;
+  requestedQty: number;
+  currentStock: number;
+  reorderLevel: number;
+  status: ReorderStatus;
+  priority: ReorderPriority;
+  notes?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  orderedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Dashboard types
 export interface DashboardStats {
   todaySales?: number;

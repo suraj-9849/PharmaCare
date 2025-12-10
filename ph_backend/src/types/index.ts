@@ -128,6 +128,7 @@ export interface SaleItem {
 }
 
 export interface CreateSaleRequest {
+  customerId?: string; // Optional - for customer tracking (null = walk-in customer)
   paymentMethod: PaymentMethod;
   cashReceived?: number;
   changeGiven?: number;
@@ -205,6 +206,6 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 // Request with user
 import { Request } from 'express';
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Omit<Request, 'user'> {
   user?: UserResponse;
 }

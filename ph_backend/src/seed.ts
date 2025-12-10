@@ -1,371 +1,544 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaClient, PaymentMethod } from '@prisma/client';
 import { hashPassword } from './utils/helpers';
-import dotenv from 'dotenv';
+import env from './config/env';
 
-dotenv.config();
+const pool = new Pool({
+  connectionString: env.DATABASE_URL,
+  connectionTimeoutMillis: 60000,
+  statement_timeout: 60000,
+  query_timeout: 60000,
+});
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+const adapter = new PrismaPg(pool);
+
+const prisma = new PrismaClient({
+  adapter,
+});
 
 async function main() {
-  console.log('🌱 Starting database seeding...\n');
+  console.log('🌱 Starting comprehensive database seeding...\n');
 
-  // Clear existing data from dependent tables first
-  console.log('🗑️ Clearing existing data...');
-  await prisma.prescriptionHistory.deleteMany({});
-  await prisma.reorderRequest.deleteMany({});
-  await prisma.saleItem.deleteMany({});
-  await prisma.sale.deleteMany({});
-  await prisma.stockAlert.deleteMany({});
-  await prisma.inventoryBatch.deleteMany({});
-  await prisma.drug.deleteMany({});
-  console.log('   ✅ Cleared existing drugs and inventory data');
-
-  // Create Admin User (ph@gmail.com / ph@123)
-  console.log('\n👤 Creating admin user...');
-  const hashedPassword = await hashPassword('ph@123');
-
-  const adminUser = await prisma.user.upsert({
-    where: { email: 'ph@gmail.com' },
-    update: {},
-    create: {
-      username: 'admin',
-      email: 'ph@gmail.com',
-      passwordHash: hashedPassword,
-      role: 'ADMIN',
-    },
-  });
-  console.log(`   ✅ Admin user created: ${adminUser.email}`);
-
-  // Create sample suppliers
-  console.log('\n📦 Creating suppliers...');
-  void (await prisma.supplier.upsert({
-    where: { id: 'supplier-medplus' },
-    update: {},
-    create: {
-      id: 'supplier-medplus',
-      supplierName: 'MedPlus Corp',
-      contactNumber: '+91-9876543210',
-      email: 'contact@medplus.com',
-      address: '123 Medical Street, Mumbai, Maharashtra 400001',
-    },
-  }));
-
-  void (await prisma.supplier.upsert({
-    where: { id: 'supplier-pharmaworld' },
-    update: {},
-    create: {
-      id: 'supplier-pharmaworld',
-      supplierName: 'PharmaWorld Distributors',
-      contactNumber: '+91-9876543211',
-      email: 'sales@pharmaworld.in',
-      address: '456 Health Avenue, Delhi 110001',
-    },
-  }));
-  console.log(`   ✅ Created ${2} suppliers`);
-
-  // Create sample drugs
-  console.log('\n💊 Creating drugs...');
-  const drugs = [
-    {
-      id: 'drug-paracetamol',
-      brandName: 'Dolo 650',
-      genericName: 'Paracetamol',
-      chemicalName: 'N-acetyl-para-aminophenol',
-      dosage: '650mg',
-      category: 'Analgesics',
-      manufacturer: 'Micro Labs Ltd',
-      requiresPrescription: false,
-      reorderLevel: 50,
-      sku: 'ANA-DOL-001',
-    },
-    {
-      id: 'drug-amoxicillin',
-      brandName: 'Mox 500',
-      genericName: 'Amoxicillin',
-      chemicalName: '(2S,5R,6R)-6-[(R)-(-)-2-Amino-2-(p-hydroxyphenyl)acetamido]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid',
-      dosage: '500mg',
-      category: 'Antibiotics',
-      manufacturer: 'Cipla Ltd',
-      requiresPrescription: true,
-      reorderLevel: 30,
-      sku: 'ANT-MOX-001',
-    },
-    {
-      id: 'drug-cetirizine',
-      brandName: 'Cetzine',
-      genericName: 'Cetirizine',
-      chemicalName: '2-[2-[4-[(4-chlorophenyl)-phenylmethyl]piperazin-1-yl]ethoxy]acetic acid',
-      dosage: '10mg',
-      category: 'Antihistamines',
-      manufacturer: 'Sun Pharma',
-      requiresPrescription: false,
-      reorderLevel: 40,
-      sku: 'ANH-CET-001',
-    },
-    {
-      id: 'drug-omeprazole',
-      brandName: 'Omez',
-      genericName: 'Omeprazole',
-      chemicalName: '5-Methoxy-2-[(4-methoxy-3,5-dimethylpyridin-2-yl)methylsulfinyl]-1H-benzimidazole',
-      dosage: '20mg',
-      category: 'Gastrointestinal',
-      manufacturer: "Dr. Reddy's",
-      requiresPrescription: false,
-      reorderLevel: 35,
-      sku: 'GAS-OME-001',
-    },
-    {
-      id: 'drug-metformin',
-      brandName: 'Glycomet',
-      genericName: 'Metformin',
-      chemicalName: 'N,N-Dimethylimidodicarbonimidic diamide',
-      dosage: '500mg',
-      category: 'Diabetes',
-      manufacturer: 'USV Pvt Ltd',
-      requiresPrescription: true,
-      reorderLevel: 25,
-      sku: 'DIA-GLY-001',
-    },
-  ];
-
-  for (const drug of drugs) {
-    await prisma.drug.upsert({
-      where: { id: drug.id },
-      update: {},
-      create: drug,
+  try {
+    // Check if admin already exists
+    const existingAdmin = await prisma.user.findUnique({
+      where: { email: 'ph@gmail.com' },
     });
-  }
-  console.log(`   ✅ Created ${drugs.length} drugs`);
 
-  // Create sample inventory batches
-  console.log('\n📋 Creating inventory batches...');
-  const batches = [
-    {
-      id: 'batch-dolo-001',
-      drugId: 'drug-paracetamol',
-      batchNumber: 'DL-2024-001',
-      quantity: 500,
-      purchasePrice: 8.0,
-      sellPrice: 12.5,
-      expiryDate: new Date('2026-06-30'),
-      supplierId: 'supplier-medplus',
-      location: 'Shelf A-1',
-    },
-    {
-      id: 'batch-dolo-002',
-      drugId: 'drug-paracetamol',
-      batchNumber: 'DL-2024-002',
-      quantity: 300,
-      purchasePrice: 8.5,
-      sellPrice: 13.0,
-      expiryDate: new Date('2026-12-31'),
-      supplierId: 'supplier-pharmaworld',
-      location: 'Shelf A-1',
-    },
-    {
-      id: 'batch-mox-001',
-      drugId: 'drug-amoxicillin',
-      batchNumber: 'MX-2024-001',
-      quantity: 200,
-      purchasePrice: 25.0,
-      sellPrice: 38.0,
-      expiryDate: new Date('2025-12-31'),
-      supplierId: 'supplier-medplus',
-      location: 'Shelf B-2',
-    },
-    {
-      id: 'batch-cet-001',
-      drugId: 'drug-cetirizine',
-      batchNumber: 'CT-2024-001',
-      quantity: 400,
-      purchasePrice: 5.0,
-      sellPrice: 8.0,
-      expiryDate: new Date('2026-03-31'),
-      supplierId: 'supplier-pharmaworld',
-      location: 'Shelf C-1',
-    },
-    {
-      id: 'batch-omez-001',
-      drugId: 'drug-omeprazole',
-      batchNumber: 'OM-2024-001',
-      quantity: 250,
-      purchasePrice: 15.0,
-      sellPrice: 22.0,
-      expiryDate: new Date('2026-09-30'),
-      supplierId: 'supplier-medplus',
-      location: 'Shelf D-1',
-    },
-    {
-      id: 'batch-glyc-001',
-      drugId: 'drug-metformin',
-      batchNumber: 'GL-2024-001',
-      quantity: 150,
-      purchasePrice: 12.0,
-      sellPrice: 18.0,
-      expiryDate: new Date('2026-08-31'),
-      supplierId: 'supplier-pharmaworld',
-      location: 'Shelf E-1',
-    },
-  ];
+    let adminUser;
 
-  for (const batch of batches) {
-    await prisma.inventoryBatch.upsert({
-      where: { id: batch.id },
-      update: {},
-      create: batch,
+    if (existingAdmin) {
+      console.log('✅ Admin user already exists.\n');
+      adminUser = existingAdmin;
+    } else {
+      console.log('👤 Creating admin user...');
+      const hashedPassword = await hashPassword('ph@123');
+
+      adminUser = await prisma.user.create({
+        data: {
+          username: 'admin',
+          email: 'ph@gmail.com',
+          passwordHash: hashedPassword,
+          role: 'ADMIN',
+        },
+      });
+      console.log(`✅ Admin user created: ${adminUser.email}\n`);
+    }
+
+    // Create Pharmacist User
+    console.log('👨‍⚕️  Creating pharmacist user...');
+    const existingPharmacist = await prisma.user.findUnique({
+      where: { email: 'pharmacist@gmail.com' },
     });
-  }
-  console.log(`   ✅ Created ${batches.length} inventory batches`);
 
-  // Create sample customers
-  console.log('\n👥 Creating customers...');
-  const customers = [
-    {
-      id: 'customer-001',
-      name: 'Rahul Sharma',
-      phone: '+91-9876543001',
-      email: 'rahul.sharma@email.com',
-      address: '789 Wellness Lane, Bangalore 560001',
-    },
-    {
-      id: 'customer-002',
-      name: 'Priya Patel',
-      phone: '+91-9876543002',
-      email: 'priya.patel@email.com',
-      address: '456 Health Road, Chennai 600001',
-    },
-    {
-      id: 'customer-003',
-      name: 'Amit Kumar',
-      phone: '+91-9876543003',
-      email: null,
-      address: '123 Medical Colony, Hyderabad 500001',
-    },
-  ];
+    if (!existingPharmacist) {
+      const pharmacistPassword = await hashPassword('pharma@123');
+      await prisma.user.create({
+        data: {
+          username: 'pharmacist',
+          email: 'pharmacist@gmail.com',
+          passwordHash: pharmacistPassword,
+          role: 'PHARMACIST',
+        },
+      });
+      console.log('✅ Pharmacist user created\n');
+    } else {
+      console.log('✅ Pharmacist user already exists\n');
+    }
 
-  for (const customer of customers) {
-    await prisma.customer.upsert({
-      where: { id: customer.id },
-      update: {},
-      create: customer,
+    // Create Cashier User
+    console.log('💳 Creating cashier user...');
+    const existingCashier = await prisma.user.findUnique({
+      where: { email: 'cashier@gmail.com' },
     });
-  }
-  console.log(`   ✅ Created ${customers.length} customers`);
 
-  // Create sample sales
-  console.log('\n💰 Creating sample sales...');
-  void (await prisma.sale.create({
-    data: {
-      userId: adminUser.id,
-      totalAmount: 50.0,
-      paymentMethod: 'CASH',
-      cashReceived: 100.0,
-      changeGiven: 50.0,
-      status: 'COMPLETED',
-      saleItems: {
-        create: [
-          {
-            drugId: 'drug-paracetamol',
-            batchId: 'batch-dolo-001',
-            quantity: 4,
-            unitPrice: 12.5,
-            subtotal: 50.0,
-          },
-        ],
-      },
-    },
-  }));
+    if (!existingCashier) {
+      const cashierPassword = await hashPassword('cashier@123');
+      await prisma.user.create({
+        data: {
+          username: 'cashier',
+          email: 'cashier@gmail.com',
+          passwordHash: cashierPassword,
+          role: 'CASHIER',
+        },
+      });
+      console.log('✅ Cashier user created\n');
+    } else {
+      console.log('✅ Cashier user already exists\n');
+    }
 
-  void (await prisma.sale.create({
-    data: {
-      userId: adminUser.id,
-      totalAmount: 114.0,
-      paymentMethod: 'UPI',
-      status: 'COMPLETED',
-      saleItems: {
-        create: [
-          {
-            drugId: 'drug-amoxicillin',
-            batchId: 'batch-mox-001',
-            quantity: 3,
-            unitPrice: 38.0,
-            subtotal: 114.0,
-          },
-        ],
-      },
-    },
-  }));
-
-  // Update inventory after sales
-  await prisma.inventoryBatch.update({
-    where: { id: 'batch-dolo-001' },
-    data: { quantity: { decrement: 4 } },
-  });
-
-  await prisma.inventoryBatch.update({
-    where: { id: 'batch-mox-001' },
-    data: { quantity: { decrement: 3 } },
-  });
-
-  console.log(`   ✅ Created 2 sample sales`);
-
-  // Create stock alerts
-  console.log('\n🔔 Creating stock alerts...');
-  await prisma.stockAlert.createMany({
-    data: [
+    // Create Suppliers
+    console.log('📦 Creating suppliers...');
+    const suppliers = [];
+    const supplierData = [
       {
-        drugId: 'drug-metformin',
-        alertType: 'LOW_STOCK',
-        message: 'Glycomet stock is running low (150 units remaining)',
-        isRead: false,
+        name: 'MedPlus Pharma',
+        phone: '+91-9876543210',
+        email: 'contact@medplus.com',
+        address: '123 Medical Street, Mumbai',
       },
       {
-        drugId: 'drug-amoxicillin',
-        alertType: 'EXPIRING_SOON',
-        message: 'Mox 500 batch MX-2024-001 expiring in 12 months',
-        isRead: false,
+        name: 'PharmaWorld',
+        phone: '+91-9876543211',
+        email: 'sales@pharmaworld.in',
+        address: '456 Health Avenue, Delhi',
       },
-    ],
-  });
-  console.log('   ✅ Created stock alerts');
+      {
+        name: 'HealthCare Solutions',
+        phone: '+91-9876543212',
+        email: 'info@hcs.com',
+        address: '789 Wellness Road, Bangalore',
+      },
+    ];
 
-  // Create system settings
-  console.log('\n⚙️ Creating system settings...');
-  const settings = [
-    { key: 'store_name', value: 'PharmaCare Pharmacy' },
-    { key: 'store_address', value: '123 Health Street, Mumbai 400001' },
-    { key: 'store_phone', value: '+91-22-12345678' },
-    { key: 'store_email', value: 'contact@pharmacare.in' },
-    { key: 'gst_number', value: '27XXXXX1234X1ZX' },
-    { key: 'currency', value: 'INR' },
-    { key: 'low_stock_threshold', value: '20' },
-    { key: 'expiry_alert_days', value: '30' },
-  ];
+    for (const supplier of supplierData) {
+      const existing = await prisma.supplier.findFirst({
+        where: { supplierName: supplier.name },
+      });
 
-  for (const setting of settings) {
-    await prisma.systemSetting.upsert({
-      where: { key: setting.key },
-      update: { value: setting.value },
-      create: setting,
+      if (!existing) {
+        const created = await prisma.supplier.create({
+          data: {
+            supplierName: supplier.name,
+            contactNumber: supplier.phone,
+            email: supplier.email,
+            address: supplier.address,
+          },
+        });
+        suppliers.push(created);
+      } else {
+        suppliers.push(existing);
+      }
+    }
+    console.log(`✅ Created/Retrieved ${suppliers.length} suppliers\n`);
+
+    // Create Drugs
+    console.log('💊 Creating drugs...');
+    const drugs: Array<{ id: string; brandName: string }> = [];
+    const drugData = [
+      {
+        brand: 'Paracetamol',
+        generic: 'Acetaminophen',
+        category: 'Analgesic',
+        mfg: 'ABC Pharma',
+        rx: false,
+        reorder: 50,
+      },
+      {
+        brand: 'Aspirin',
+        generic: 'Acetylsalicylic Acid',
+        category: 'Analgesic',
+        mfg: 'XYZ Pharma',
+        rx: false,
+        reorder: 40,
+      },
+      {
+        brand: 'Amoxicillin',
+        generic: 'Amoxicillin Trihydrate',
+        category: 'Antibiotic',
+        mfg: 'DEF Pharma',
+        rx: true,
+        reorder: 30,
+      },
+      {
+        brand: 'Ibuprofen',
+        generic: 'Ibuprofen',
+        category: 'Anti-inflammatory',
+        mfg: 'GHI Pharma',
+        rx: false,
+        reorder: 45,
+      },
+      {
+        brand: 'Kortex',
+        generic: 'Hydrocortisone',
+        category: 'Corticosteroid',
+        mfg: 'JKL Pharma',
+        rx: true,
+        reorder: 25,
+      },
+      {
+        brand: 'Cough Syrup',
+        generic: 'Dextromethorphan',
+        category: 'Cough Suppressant',
+        mfg: 'MNO Pharma',
+        rx: false,
+        reorder: 35,
+      },
+      {
+        brand: 'Metformin',
+        generic: 'Metformin HCl',
+        category: 'Antidiabetic',
+        mfg: 'PQR Pharma',
+        rx: true,
+        reorder: 60,
+      },
+      {
+        brand: 'Atorvastatin',
+        generic: 'Atorvastatin Calcium',
+        category: 'Statin',
+        mfg: 'STU Pharma',
+        rx: true,
+        reorder: 40,
+      },
+      {
+        brand: 'Omeprazole',
+        generic: 'Omeprazole',
+        category: 'Proton Pump Inhibitor',
+        mfg: 'VWX Pharma',
+        rx: true,
+        reorder: 30,
+      },
+      {
+        brand: 'Vitamin C',
+        generic: 'Ascorbic Acid',
+        category: 'Vitamin',
+        mfg: 'YZA Pharma',
+        rx: false,
+        reorder: 100,
+      },
+    ];
+
+    for (const drug of drugData) {
+      const existing = await prisma.drug.findFirst({
+        where: { brandName: drug.brand },
+      });
+
+      if (!existing) {
+        const created = await prisma.drug.create({
+          data: {
+            brandName: drug.brand,
+            genericName: drug.generic,
+            category: drug.category,
+            manufacturer: drug.mfg,
+            requiresPrescription: drug.rx,
+            reorderLevel: drug.reorder,
+          },
+        });
+        drugs.push(created);
+      } else {
+        drugs.push(existing);
+      }
+    }
+    console.log(`✅ Created/Retrieved ${drugs.length} drugs\n`);
+
+    // Create Inventory Batches
+    console.log('📊 Creating inventory batches...');
+    const batches = [];
+    for (let i = 0; i < drugs.length; i++) {
+      const drug = drugs[i];
+      const supplier = suppliers[i % suppliers.length];
+
+      const batchNumber = `${drug.brandName.substring(0, 3).toUpperCase()}-${String(i + 1).padStart(3, '0')}-2024`;
+      const quantity = i === 4 ? 0 : Math.floor(Math.random() * 500) + 100; // Make one out of stock
+
+      const existing = await prisma.inventoryBatch.findFirst({
+        where: { batchNumber },
+      });
+
+      if (!existing) {
+        const created = await prisma.inventoryBatch.create({
+          data: {
+            drugId: drug.id,
+            batchNumber,
+            quantity,
+            purchasePrice: Math.floor(Math.random() * 50) + 10,
+            sellPrice: Math.floor(Math.random() * 100) + 20,
+            expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+            supplierId: supplier.id,
+            location: `Shelf-${String.fromCharCode(65 + (i % 5))}-${(i % 10) + 1}`,
+          },
+        });
+        batches.push(created);
+      } else {
+        batches.push(existing);
+      }
+    }
+    console.log(`✅ Created/Retrieved ${batches.length} inventory batches\n`);
+
+    // Create Customers
+    console.log('👥 Creating customers...');
+    const customers = [];
+    const firstNames = [
+      'John',
+      'Jane',
+      'Rajesh',
+      'Priya',
+      'Amit',
+      'Sneha',
+      'Vikram',
+      'Anita',
+      'Rohan',
+      'Divya',
+      'Arjun',
+      'Neha',
+      'Sanjay',
+      'Pooja',
+      'Arun',
+      'Sakshi',
+      'Nikhil',
+      'Isha',
+      'Varun',
+      'Meera',
+    ];
+    const lastNames = [
+      'Doe',
+      'Smith',
+      'Kumar',
+      'Sharma',
+      'Patel',
+      'Singh',
+      'Gupta',
+      'Verma',
+      'Khan',
+      'Rao',
+    ];
+    const cities = [
+      'Mumbai',
+      'Delhi',
+      'Bangalore',
+      'Pune',
+      'Hyderabad',
+      'Chennai',
+      'Kolkata',
+      'Ahmedabad',
+    ];
+
+    // Generate 50 customers
+    for (let i = 0; i < 50; i++) {
+      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      const name = `${firstName} ${lastName}`;
+      const city = cities[Math.floor(Math.random() * cities.length)];
+      const phone = `+91-${Math.floor(Math.random() * 9000000000) + 1000000000}`;
+      const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@example.com`;
+      const address = `${Math.floor(Math.random() * 999) + 1} ${['Main', 'Oak', 'Park', 'River', 'Grand', 'Hill'][Math.floor(Math.random() * 6)]} Street, ${city}`;
+
+      const existing = await prisma.customer.findFirst({
+        where: { email },
+      });
+
+      if (!existing) {
+        const created = await prisma.customer.create({
+          data: {
+            name,
+            phone,
+            email,
+            address,
+          },
+        });
+        customers.push(created);
+      } else {
+        customers.push(existing);
+      }
+    }
+    console.log(`✅ Created/Retrieved ${customers.length} customers\n`);
+
+    // Create Sales with Items
+    console.log('💰 Creating sales transactions...');
+    let saleCount = 0;
+    const doctors = [
+      'Dr. Smith',
+      'Dr. Johnson',
+      'Dr. Patel',
+      'Dr. Williams',
+      'Dr. Brown',
+      'Dr. Anderson',
+      'Dr. Davis',
+      'Dr. Miller',
+    ];
+
+    // Create 80 sales transactions
+    for (let i = 0; i < 80; i++) {
+      const customer = customers[Math.floor(Math.random() * customers.length)];
+      const user = adminUser;
+
+      // Generate 1-5 random items for each sale
+      const itemCount = Math.floor(Math.random() * 5) + 1;
+      const saleItems = [];
+      let totalAmount = 0;
+
+      for (let j = 0; j < itemCount; j++) {
+        const batch = batches[Math.floor(Math.random() * batches.length)];
+        const quantity = Math.floor(Math.random() * 10) + 1;
+        const unitPrice = Number(batch.sellPrice);
+        const subtotal = quantity * unitPrice;
+        totalAmount += subtotal;
+
+        saleItems.push({
+          drugId: batch.drugId,
+          batchId: batch.id,
+          quantity,
+          unitPrice,
+          subtotal,
+        });
+      }
+
+      try {
+        const saleDate = new Date();
+        saleDate.setDate(saleDate.getDate() - Math.floor(Math.random() * 30)); // Random past 30 days
+
+        const sale = await prisma.sale.create({
+          data: {
+            userId: user.id,
+            customerId: customer.id,
+            totalAmount,
+            paymentMethod: ['CASH', 'CARD', 'UPI', 'CREDIT'][
+              Math.floor(Math.random() * 4)
+            ] as PaymentMethod,
+            cashReceived: totalAmount + (Math.random() > 0.5 ? Math.floor(Math.random() * 100) : 0),
+            changeGiven: 0,
+            saleDate,
+            status: 'COMPLETED',
+            saleItems: {
+              create: saleItems,
+            },
+          },
+        });
+
+        // Create corresponding prescription history
+        const medications = saleItems.map((item) => {
+          const drug = drugs.find((d) => d.id === item.drugId);
+          return {
+            medicationName: drug?.brandName || 'Unknown',
+            dosage: `${Math.floor(Math.random() * 500) + 100}mg`,
+            frequency: ['Once daily', 'Twice daily', 'Thrice daily', 'Four times daily'][
+              Math.floor(Math.random() * 4)
+            ],
+            duration: `${Math.floor(Math.random() * 14) + 1} days`,
+            quantity: item.quantity,
+            instructions: [
+              'Take with food',
+              'Take on empty stomach',
+              'Take with water',
+              'Take after meals',
+            ][Math.floor(Math.random() * 4)],
+          };
+        });
+
+        await prisma.prescriptionHistory.create({
+          data: {
+            saleId: sale.id,
+            patientName: customer.name,
+            doctorName: doctors[Math.floor(Math.random() * doctors.length)],
+            prescriptionDate: saleDate,
+            medications: JSON.stringify(medications),
+            totalAmount,
+            paymentMethod: sale.paymentMethod,
+            customerName: customer.name,
+            customerPhone: customer.phone,
+            customerEmail: customer.email,
+            customerAddress: customer.address,
+            confidence: Math.floor(Math.random() * 20) + 80, // 80-100%
+          },
+        });
+
+        saleCount++;
+      } catch (_error) {
+        // Skip duplicate or errored sales
+        continue;
+      }
+    }
+    console.log(`✅ Created ${saleCount} sales transactions with prescription histories\n`);
+
+    // Create Stock Alerts
+    console.log('🚨 Creating stock alerts...');
+    let alertCount = 0;
+    for (const batch of batches) {
+      if (batch.quantity < 50) {
+        const existing = await prisma.stockAlert.findFirst({
+          where: { drugId: batch.drugId },
+        });
+
+        if (!existing) {
+          await prisma.stockAlert.create({
+            data: {
+              drugId: batch.drugId,
+              alertType: batch.quantity === 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK',
+              message:
+                batch.quantity === 0
+                  ? 'Item is out of stock'
+                  : `Stock below reorder level: ${batch.quantity} units`,
+            },
+          });
+          alertCount++;
+        }
+      }
+    }
+    console.log(`✅ Created ${alertCount} stock alerts\n`);
+
+    // Create System Settings
+    console.log('⚙️  Creating system settings...');
+    const existingSettings = await prisma.systemSetting.findFirst({
+      where: { key: 'tax_rate' },
     });
-  }
-  console.log('   ✅ Created system settings');
 
-  console.log('\n✨ Database seeding completed successfully!\n');
-  console.log('═══════════════════════════════════════════════════════════');
-  console.log('  Login Credentials:');
-  console.log('  Email: ph@gmail.com');
-  console.log('  Password: ph@123');
-  console.log('═══════════════════════════════════════════════════════════\n');
+    if (!existingSettings) {
+      await prisma.systemSetting.create({
+        data: { key: 'tax_rate', value: '18' },
+      });
+      await prisma.systemSetting.create({
+        data: { key: 'currency', value: 'INR' },
+      });
+      await prisma.systemSetting.create({
+        data: { key: 'company_name', value: 'PharmaCare' },
+      });
+      console.log('✅ System settings created\n');
+    } else {
+      console.log('✅ System settings already exist\n');
+    }
+
+    console.log('✨ Database seeding completed successfully!');
+    console.log('\n═══════════════════════════════════════════════════════════');
+    console.log('  📊 SEEDING SUMMARY');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log(`  Users: Admin, Pharmacist, Cashier`);
+    console.log(`  Suppliers: ${suppliers.length}`);
+    console.log(`  Drugs: ${drugs.length}`);
+    console.log(`  Inventory Batches: ${batches.length}`);
+    console.log(`  Customers: ${customers.length}`);
+    console.log(`  Sales Transactions: ${saleCount}`);
+    console.log(`  Stock Alerts: ${alertCount}`);
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('  🔐 LOGIN CREDENTIALS:');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('  Admin:');
+    console.log('    Email: ph@gmail.com');
+    console.log('    Password: ph@123');
+    console.log('\n  Pharmacist:');
+    console.log('    Email: pharmacist@gmail.com');
+    console.log('    Password: pharma@123');
+    console.log('\n  Cashier:');
+    console.log('    Email: cashier@gmail.com');
+    console.log('    Password: cashier@123');
+    console.log('═══════════════════════════════════════════════════════════\n');
+  } catch (error) {
+    console.error('❌ Seeding failed:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+    await pool.end();
+  }
 }
 
-main()
-  .catch((e) => {
-    console.error('❌ Seeding failed:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main();

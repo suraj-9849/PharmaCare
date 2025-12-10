@@ -26,6 +26,7 @@ import {
 import { AlertCircle, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import type { InventoryBatch } from '@/lib/types';
+import { CustomerSearchInput } from './customer-search-input';
 
 interface CartItem {
   batchId: string;
@@ -53,6 +54,7 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState('');
   const [itemQuantity, setItemQuantity] = useState(1);
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const [formData, setFormData] = useState<SaleFormData>({
     paymentMethod: 'CASH',
     cashReceived: 0,
@@ -157,6 +159,11 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
   };
 
   const handleRazorpayPayment = async () => {
+    if (cart.length === 0) {
+      setError('Please add at least one item to the cart');
+      return;
+    }
+
     const total = getTotal();
 
     try {
@@ -168,15 +175,37 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.async = true;
       script.onload = () => {
+        const currentCart = cart;
+        const currentTotal = total;
+
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: Math.round(total * 100), // Amount in paise
+          amount: Math.round(currentTotal * 100), // Amount in paise
           currency: 'INR',
           name: 'PharmaCare',
           description: 'Medicine Purchase',
           handler: async (response: { razorpay_payment_id: string }) => {
-            // Payment successful - create sale
-            await createSale('UPI', response.razorpay_payment_id);
+            try {
+              const payload = {
+                customerId: customerId || undefined,
+                paymentMethod: 'UPI',
+                transactionId: response.razorpay_payment_id,
+                items: currentCart.map((item) => ({
+                  drugId: item.drugId,
+                  batchId: item.batchId,
+                  quantity: item.quantity,
+                  unitPrice: item.unitPrice,
+                })),
+              };
+
+              await apiClient.post('/sales', payload);
+              setError('');
+              onSaleCreated();
+              handleClose();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Failed to create sale');
+              setPaymentProcessing(false);
+            }
           },
           prefill: {
             contact: '',
@@ -230,6 +259,7 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
       }
 
       const payload = {
+        customerId: customerId || undefined,
         paymentMethod,
         cashReceived: paymentMethod === 'CASH' ? formData.cashReceived : null,
         changeGiven: paymentMethod === 'CASH' ? getChangeGiven() : null,
@@ -272,6 +302,7 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
 
   const handleClose = () => {
     setCart([]);
+    setCustomerId(null);
     setFormData({ paymentMethod: 'CASH', cashReceived: 0 });
     setSelectedBatchId('');
     setItemQuantity(1);
@@ -410,6 +441,13 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
                   </div>
                 </ScrollArea>
               )}
+            </div>
+
+            <Separator />
+
+            {/* Customer Selection */}
+            <div className="space-y-3">
+              <CustomerSearchInput value={customerId} onChange={(id) => setCustomerId(id)} />
             </div>
 
             <Separator />
