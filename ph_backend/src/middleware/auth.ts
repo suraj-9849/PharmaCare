@@ -6,6 +6,46 @@ import prisma from '../config/database';
 import { AuthenticatedRequest, UserRole } from '../types';
 
 /**
+ * Retry utility for database operations with exponential backoff
+ */
+async function retryDbOperation<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 100
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: unknown) {
+      lastError = error;
+
+      // Only retry on transient errors (timeouts, connection errors)
+      const isTransientError =
+        (error as { code?: string }).code === 'ETIMEDOUT' ||
+        (error as { code?: string }).code === 'ECONNRESET' ||
+        (error as { code?: string }).code === 'ENOTFOUND' ||
+        (error as { code?: string }).code === 'P1001' || // Prisma connection error
+        (error as { code?: string }).code === 'P1008' || // Prisma timeout error
+        (error as { code?: string }).code === 'P1017'; // Prisma server closed connection
+
+      if (!isTransientError || attempt === maxRetries - 1) {
+        throw error;
+      }
+
+      // Exponential backoff: wait before retrying
+      const delay = baseDelay * Math.pow(2, attempt);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      console.log(`Retrying database operation (attempt ${attempt + 2}/${maxRetries})...`);
+    }
+  }
+
+  throw lastError;
+}
+
+/**
  * Authentication middleware
  */
 export const authenticate = async (
@@ -29,16 +69,18 @@ export const authenticate = async (
       return;
     }
 
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
+    // Check if user exists with retry logic for transient errors
+    const user = await retryDbOperation(async () => {
+      return await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          createdAt: true,
+        },
+      });
     });
 
     if (!user) {
