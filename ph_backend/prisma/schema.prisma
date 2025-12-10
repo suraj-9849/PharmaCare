@@ -62,6 +62,8 @@ model Drug {
   id                   String   @id @default(cuid())
   brandName            String   @map("brand_name")
   genericName          String   @map("generic_name")
+  chemicalName         String?  @map("chemical_name")
+  dosage               String?
   category             String
   manufacturer         String
   requiresPrescription Boolean  @default(false) @map("requires_prescription")

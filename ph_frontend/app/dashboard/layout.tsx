@@ -32,6 +32,8 @@ import {
   X,
   AlertTriangle,
   Calendar,
+  MessageSquare,
+  Bot,
   FileText,
   Scan,
   RefreshCw,
@@ -58,6 +60,8 @@ const navItems: NavItem[] = [
   { title: 'Reorders', href: '/dashboard/reorders', icon: RefreshCw },
   { title: 'Expiry Alerts', href: '/dashboard/expiry', icon: AlertTriangle },
   { title: 'Low Stock', href: '/dashboard/low-stock', icon: Package },
+  { title: 'AI Assistant', href: '/dashboard/chatbot', icon: MessageSquare },
+  { title: 'Agents', href: '/dashboard/agents', icon: Bot },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
