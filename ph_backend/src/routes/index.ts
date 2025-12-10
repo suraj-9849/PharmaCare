@@ -7,6 +7,8 @@ import supplierRoutes from './supplier.routes';
 import customerRoutes from './customer.routes';
 import dashboardRoutes from './dashboard.routes';
 import paymentRoutes from './payment.routes';
+import chatbotRoutes from './chatbot.routes';
+import agentRoutes from './agent.routes';
 
 const router: ExpressRouter = Router();
 
@@ -19,6 +21,8 @@ router.use('/suppliers', supplierRoutes);
 router.use('/customers', customerRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/chatbot', chatbotRoutes);
+router.use('/agent', agentRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {

@@ -166,6 +166,53 @@ class ApiClient {
     update: (id: string, data: unknown) => this.put<unknown>(`/customers/${id}`, data),
     delete: (id: string) => this.delete<unknown>(`/customers/${id}`),
   };
+
+  // Chatbot endpoints
+  chatbot = {
+    chat: (message: string, history: { role: string; content: string }[] = []) =>
+      this.post<{
+        response: string;
+        sql?: string;
+        data?: Record<string, unknown>[];
+        columns?: string[];
+        error?: string;
+      }>('/chatbot/chat', { message, history }),
+    health: () => this.get<{ status: string; database: string; model: string }>('/chatbot/health'),
+    clear: () => this.post<{ cleared: boolean }>('/chatbot/clear'),
+  };
+
+  // Agent endpoints
+  agent = {
+    chat: (message: string, history: { role: string; content: string }[] = []) =>
+      this.post<{
+        response: string;
+        tools_used?: string[];
+      }>('/agent/chat', { message, history }),
+    health: () => this.get<{ status: string }>('/agent/health'),
+    inventory: () => this.get<unknown[]>('/agent/inventory'),
+    clear: () => this.post<{ cleared: boolean }>('/agent/clear'),
+  };
+
+  // File upload for agent (FormData)
+  async uploadInventory(file: File): Promise<ApiResponse<{ message: string; added_count: number; errors: string[] }>> {
+    const token = this.getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${this.baseUrl}/agent/upload-inventory`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Upload failed');
+    }
+    return data;
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

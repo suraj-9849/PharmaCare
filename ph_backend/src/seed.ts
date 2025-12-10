@@ -11,8 +11,19 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Starting database seeding...\n');
 
+  // Clear existing data from dependent tables first
+  console.log('🗑️ Clearing existing data...');
+  await prisma.prescriptionHistory.deleteMany({});
+  await prisma.reorderRequest.deleteMany({});
+  await prisma.saleItem.deleteMany({});
+  await prisma.sale.deleteMany({});
+  await prisma.stockAlert.deleteMany({});
+  await prisma.inventoryBatch.deleteMany({});
+  await prisma.drug.deleteMany({});
+  console.log('   ✅ Cleared existing drugs and inventory data');
+
   // Create Admin User (ph@gmail.com / ph@123)
-  console.log('👤 Creating admin user...');
+  console.log('\n👤 Creating admin user...');
   const hashedPassword = await hashPassword('ph@123');
 
   const adminUser = await prisma.user.upsert({
@@ -61,6 +72,8 @@ async function main() {
       id: 'drug-paracetamol',
       brandName: 'Dolo 650',
       genericName: 'Paracetamol',
+      chemicalName: 'N-acetyl-para-aminophenol',
+      dosage: '650mg',
       category: 'Analgesics',
       manufacturer: 'Micro Labs Ltd',
       requiresPrescription: false,
@@ -71,6 +84,8 @@ async function main() {
       id: 'drug-amoxicillin',
       brandName: 'Mox 500',
       genericName: 'Amoxicillin',
+      chemicalName: '(2S,5R,6R)-6-[(R)-(-)-2-Amino-2-(p-hydroxyphenyl)acetamido]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid',
+      dosage: '500mg',
       category: 'Antibiotics',
       manufacturer: 'Cipla Ltd',
       requiresPrescription: true,
@@ -81,6 +96,8 @@ async function main() {
       id: 'drug-cetirizine',
       brandName: 'Cetzine',
       genericName: 'Cetirizine',
+      chemicalName: '2-[2-[4-[(4-chlorophenyl)-phenylmethyl]piperazin-1-yl]ethoxy]acetic acid',
+      dosage: '10mg',
       category: 'Antihistamines',
       manufacturer: 'Sun Pharma',
       requiresPrescription: false,
@@ -91,6 +108,8 @@ async function main() {
       id: 'drug-omeprazole',
       brandName: 'Omez',
       genericName: 'Omeprazole',
+      chemicalName: '5-Methoxy-2-[(4-methoxy-3,5-dimethylpyridin-2-yl)methylsulfinyl]-1H-benzimidazole',
+      dosage: '20mg',
       category: 'Gastrointestinal',
       manufacturer: "Dr. Reddy's",
       requiresPrescription: false,
@@ -101,6 +120,8 @@ async function main() {
       id: 'drug-metformin',
       brandName: 'Glycomet',
       genericName: 'Metformin',
+      chemicalName: 'N,N-Dimethylimidodicarbonimidic diamide',
+      dosage: '500mg',
       category: 'Diabetes',
       manufacturer: 'USV Pvt Ltd',
       requiresPrescription: true,

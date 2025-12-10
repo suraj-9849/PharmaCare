@@ -32,6 +32,8 @@ import {
   X,
   AlertTriangle,
   Calendar,
+  MessageSquare,
+  Bot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +53,8 @@ const navItems: NavItem[] = [
   { title: 'Customers', href: '/dashboard/customers', icon: Users },
   { title: 'Expiry Alerts', href: '/dashboard/expiry', icon: AlertTriangle },
   { title: 'Low Stock', href: '/dashboard/low-stock', icon: Package },
+  { title: 'AI Assistant', href: '/dashboard/chatbot', icon: MessageSquare },
+  { title: 'Agents', href: '/dashboard/agents', icon: Bot },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

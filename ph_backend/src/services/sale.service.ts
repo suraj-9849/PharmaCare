@@ -67,7 +67,6 @@ export class SaleService {
           paymentMethod: data.paymentMethod,
           cashReceived: data.cashReceived ?? null,
           changeGiven,
-          transactionId: data.transactionId ?? null,
           status: 'COMPLETED',
           saleItems: {
             create: saleItems.map((item) => ({
