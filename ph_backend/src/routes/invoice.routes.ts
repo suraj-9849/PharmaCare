@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
+import type { Router as RouterType } from 'express';
 import multer from 'multer';
 import { InvoiceService } from '../services/invoice.service';
 import { authenticate } from '../middleware/auth';
 import { successResponse, errorResponse } from '../utils/response';
 
-const router = Router();
+const router: RouterType = Router();
 const invoiceService = new InvoiceService();
 
 // Configure multer for memory storage (stores file in memory as Buffer)
@@ -58,8 +59,7 @@ router.post(
       );
     } catch (error) {
       console.error('Invoice extraction error:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to process invoice';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process invoice';
       return errorResponse(res, errorMessage, 500);
     }
   }
@@ -93,8 +93,7 @@ router.post('/process', authenticate, async (req: Request, res: Response) => {
     );
   } catch (error) {
     console.error('Invoice processing error:', error);
-    const errorMessage =
-      error instanceof Error ? error.message : 'Failed to save invoice data';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to save invoice data';
     return errorResponse(res, errorMessage, 500);
   }
 });
@@ -105,11 +104,7 @@ router.post('/process', authenticate, async (req: Request, res: Response) => {
  * @access  Private
  */
 router.get('/test', authenticate, (req: Request, res: Response) => {
-  return successResponse(
-    res,
-    { message: 'Invoice routes are working!' },
-    'Test successful'
-  );
+  return successResponse(res, { message: 'Invoice routes are working!' }, 'Test successful');
 });
 
 export default router;

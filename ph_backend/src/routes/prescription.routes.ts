@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
+import type { Router as RouterType } from 'express';
 import multer from 'multer';
 import { PrescriptionService } from '../services/prescription.service';
 import { authenticate } from '../middleware/auth';
 import { successResponse, errorResponse } from '../utils/response';
 
-const router = Router();
+const router: RouterType = Router();
 const prescriptionService = new PrescriptionService();
 
 // Configure multer for memory storage
@@ -18,9 +19,7 @@ const upload = multer({
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
-      cb(
-        new Error('Only image files are allowed (jpg, jpeg, png, webp, gif)')
-      );
+      cb(new Error('Only image files are allowed (jpg, jpeg, png, webp, gif)'));
     }
   },
 });
@@ -62,8 +61,7 @@ router.post(
       );
     } catch (error) {
       console.error('Prescription scan error:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to scan prescription';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to scan prescription';
       return errorResponse(res, errorMessage, 500);
     }
   }
@@ -74,58 +72,44 @@ router.post(
  * @desc    Check availability of prescribed medications in inventory
  * @access  Private (requires authentication)
  */
-router.post(
-  '/check-availability',
-  authenticate,
-  async (req: Request, res: Response) => {
-    try {
-      const { medications } = req.body;
+router.post('/check-availability', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { medications } = req.body;
 
-      if (!medications || !Array.isArray(medications) || medications.length === 0) {
-        return errorResponse(res, 'No medications provided', 400);
-      }
-
-      console.log('Checking availability for', medications.length, 'medications');
-
-      // Check availability using Gemini 3 Pro for smart matching
-      const availabilityResults =
-        await prescriptionService.checkAvailability(medications);
-
-      // Count statuses
-      const inStock = availabilityResults.filter(
-        (r) => r.status === 'IN_STOCK'
-      ).length;
-      const lowStock = availabilityResults.filter(
-        (r) => r.status === 'LOW_STOCK'
-      ).length;
-      const outOfStock = availabilityResults.filter(
-        (r) => r.status === 'OUT_OF_STOCK'
-      ).length;
-
-      return successResponse(
-        res,
-        {
-          results: availabilityResults,
-          summary: {
-            total: medications.length,
-            inStock,
-            lowStock,
-            outOfStock,
-          },
-        },
-        `Availability checked: ${inStock} in stock, ${lowStock} low stock, ${outOfStock} out of stock`,
-        200
-      );
-    } catch (error) {
-      console.error('Availability check error:', error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'Failed to check availability';
-      return errorResponse(res, errorMessage, 500);
+    if (!medications || !Array.isArray(medications) || medications.length === 0) {
+      return errorResponse(res, 'No medications provided', 400);
     }
+
+    console.log('Checking availability for', medications.length, 'medications');
+
+    // Check availability using Gemini 3 Pro for smart matching
+    const availabilityResults = await prescriptionService.checkAvailability(medications);
+
+    // Count statuses
+    const inStock = availabilityResults.filter((r) => r.status === 'IN_STOCK').length;
+    const lowStock = availabilityResults.filter((r) => r.status === 'LOW_STOCK').length;
+    const outOfStock = availabilityResults.filter((r) => r.status === 'OUT_OF_STOCK').length;
+
+    return successResponse(
+      res,
+      {
+        results: availabilityResults,
+        summary: {
+          total: medications.length,
+          inStock,
+          lowStock,
+          outOfStock,
+        },
+      },
+      `Availability checked: ${inStock} in stock, ${lowStock} low stock, ${outOfStock} out of stock`,
+      200
+    );
+  } catch (error) {
+    console.error('Availability check error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to check availability';
+    return errorResponse(res, errorMessage, 500);
   }
-);
+});
 
 /**
  * @route   POST /api/prescriptions/purchase
@@ -134,8 +118,7 @@ router.post(
  */
 router.post('/purchase', authenticate, async (req: Request, res: Response) => {
   try {
-    const { prescriptionData, availabilityResults, paymentMethod, customerId } =
-      req.body;
+    const { prescriptionData, availabilityResults, paymentMethod, customerId } = req.body;
     const userId = req.user!.id;
 
     // Validate inputs
@@ -147,11 +130,7 @@ router.post('/purchase', authenticate, async (req: Request, res: Response) => {
       );
     }
 
-    if (
-      !['CASH', 'CARD', 'UPI', 'CREDIT'].includes(
-        paymentMethod.toUpperCase()
-      )
-    ) {
+    if (!['CASH', 'CARD', 'UPI', 'CREDIT'].includes(paymentMethod.toUpperCase())) {
       return errorResponse(
         res,
         'Invalid payment method. Must be one of: CASH, CARD, UPI, CREDIT',
@@ -159,11 +138,7 @@ router.post('/purchase', authenticate, async (req: Request, res: Response) => {
       );
     }
 
-    console.log(
-      'Processing prescription purchase with',
-      availabilityResults.length,
-      'items'
-    );
+    console.log('Processing prescription purchase with', availabilityResults.length, 'items');
 
     // Process purchase and reduce stock
     const result = await prescriptionService.processPurchase(
@@ -182,8 +157,7 @@ router.post('/purchase', authenticate, async (req: Request, res: Response) => {
     );
   } catch (error) {
     console.error('Purchase processing error:', error);
-    const errorMessage =
-      error instanceof Error ? error.message : 'Failed to process purchase';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to process purchase';
     return errorResponse(res, errorMessage, 500);
   }
 });
@@ -194,11 +168,7 @@ router.post('/purchase', authenticate, async (req: Request, res: Response) => {
  * @access  Private
  */
 router.get('/test', authenticate, (req: Request, res: Response) => {
-  return successResponse(
-    res,
-    { message: 'Prescription routes are working!' },
-    'Test successful'
-  );
+  return successResponse(res, { message: 'Prescription routes are working!' }, 'Test successful');
 });
 
 export default router;

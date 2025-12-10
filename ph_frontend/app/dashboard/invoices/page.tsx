@@ -6,7 +6,7 @@ import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import Image from 'next/image';
 
 interface InvoiceItem {
   drugName: string;
@@ -33,6 +33,10 @@ interface ExtractedData {
   totalAmount: number | null;
   gstAmount: number | null;
   confidence: number;
+}
+
+interface ProcessResponse {
+  message: string;
 }
 
 export default function InvoiceUploadPage() {
@@ -109,7 +113,7 @@ export default function InvoiceUploadPage() {
 
     try {
       const response = await apiClient.invoices.process(extractedData);
-      setSuccess((response as any).message || 'Invoice processed successfully!');
+      setSuccess((response as ProcessResponse).message || 'Invoice processed successfully!');
 
       // Reset form after 3 seconds
       setTimeout(() => {
@@ -131,21 +135,6 @@ export default function InvoiceUploadPage() {
     setExtractedData(null);
     setError(null);
     setSuccess(null);
-  };
-
-  const updateItemField = (index: number, field: keyof InvoiceItem, value: string | number) => {
-    if (!extractedData) return;
-
-    const updatedItems = [...extractedData.items];
-    updatedItems[index] = {
-      ...updatedItems[index],
-      [field]: value,
-    };
-
-    setExtractedData({
-      ...extractedData,
-      items: updatedItems,
-    });
   };
 
   return (
@@ -200,9 +189,7 @@ export default function InvoiceUploadPage() {
                 <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-lg font-medium mb-1">Drop invoice image here</p>
                 <p className="text-sm text-muted-foreground mb-4">or click to browse</p>
-                <p className="text-xs text-muted-foreground">
-                  Supports: JPG, PNG, WEBP (Max 10MB)
-                </p>
+                <p className="text-xs text-muted-foreground">Supports: JPG, PNG, WEBP (Max 10MB)</p>
                 <input
                   id="file-input"
                   type="file"
@@ -214,10 +201,13 @@ export default function InvoiceUploadPage() {
             ) : (
               <div className="space-y-4">
                 <div className="relative rounded-lg overflow-hidden border">
-                  <img
+                  <Image
                     src={previewUrl}
                     alt="Invoice preview"
+                    width={800}
+                    height={600}
                     className="w-full h-auto max-h-96 object-contain"
+                    unoptimized
                   />
                 </div>
                 <div className="flex gap-2">
@@ -278,12 +268,19 @@ export default function InvoiceUploadPage() {
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <h3 className="font-medium mb-2">Supplier</h3>
                     <div className="space-y-1 text-sm">
-                      <p><span className="font-medium">Name:</span> {extractedData.supplier.name}</p>
+                      <p>
+                        <span className="font-medium">Name:</span> {extractedData.supplier.name}
+                      </p>
                       {extractedData.supplier.email && (
-                        <p><span className="font-medium">Email:</span> {extractedData.supplier.email}</p>
+                        <p>
+                          <span className="font-medium">Email:</span> {extractedData.supplier.email}
+                        </p>
                       )}
                       {extractedData.supplier.contactNumber && (
-                        <p><span className="font-medium">Phone:</span> {extractedData.supplier.contactNumber}</p>
+                        <p>
+                          <span className="font-medium">Phone:</span>{' '}
+                          {extractedData.supplier.contactNumber}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -308,7 +305,9 @@ export default function InvoiceUploadPage() {
                               <div>
                                 <p className="font-medium">{item.drugName}</p>
                                 {item.genericName && (
-                                  <p className="text-xs text-muted-foreground">{item.genericName}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {item.genericName}
+                                  </p>
                                 )}
                                 <p className="text-xs text-muted-foreground">
                                   Batch: {item.batchNumber}
@@ -316,7 +315,9 @@ export default function InvoiceUploadPage() {
                               </div>
                             </td>
                             <td className="text-right p-2">{item.quantity}</td>
-                            <td className="text-right p-2">₹{item.unitPrice?.toFixed(2) ?? 'N/A'}</td>
+                            <td className="text-right p-2">
+                              ₹{item.unitPrice?.toFixed(2) ?? 'N/A'}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -328,7 +329,9 @@ export default function InvoiceUploadPage() {
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Total Amount</span>
-                    <span className="text-xl font-bold">₹{extractedData.totalAmount?.toFixed(2) ?? 'N/A'}</span>
+                    <span className="text-xl font-bold">
+                      ₹{extractedData.totalAmount?.toFixed(2) ?? 'N/A'}
+                    </span>
                   </div>
                 </div>
 

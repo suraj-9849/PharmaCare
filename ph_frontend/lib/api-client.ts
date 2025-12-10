@@ -215,7 +215,12 @@ class ApiClient {
     },
     checkAvailability: (medications: unknown) =>
       this.post<unknown>('/prescriptions/check-availability', { medications }),
-    purchase: (prescriptionData: unknown, availabilityResults: unknown, paymentMethod: string, customerId?: string) =>
+    purchase: (
+      prescriptionData: unknown,
+      availabilityResults: unknown,
+      paymentMethod: string,
+      customerId?: string
+    ) =>
       this.post<unknown>('/prescriptions/purchase', {
         prescriptionData,
         availabilityResults,

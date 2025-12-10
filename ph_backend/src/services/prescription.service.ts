@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { prisma } from '../config/database';
 import { config } from '../config/env';
+import { Prisma } from '@prisma/client';
 
 const openai = new OpenAI({
   apiKey: config.OPENAI_API_KEY || '',
@@ -31,10 +32,16 @@ interface MedicationMatchResult {
   alternativeSuggestions: string[];
 }
 
+type DrugWithBatches = Prisma.DrugGetPayload<{
+  include: { inventoryBatches: true };
+}>;
+
+type InventoryBatch = Prisma.InventoryBatchGetPayload<Record<string, never>>;
+
 interface AvailabilityResult {
   prescribedMedication: PrescriptionData['medications'][0];
   matchResult: MedicationMatchResult;
-  availableBatches: any[];
+  availableBatches: InventoryBatch[];
   status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 }
 
@@ -42,10 +49,7 @@ export class PrescriptionService {
   /**
    * Extract medications from prescription image using GPT-4o
    */
-  async extractPrescriptionData(
-    imageBuffer: Buffer,
-    mimeType: string
-  ): Promise<PrescriptionData> {
+  async extractPrescriptionData(imageBuffer: Buffer, mimeType: string): Promise<PrescriptionData> {
     const base64Image = imageBuffer.toString('base64');
 
     const completion = await openai.chat.completions.create({
@@ -124,7 +128,7 @@ Important instructions:
 
     for (const med of medications) {
       // Get all drugs from database with their inventory batches
-      let allDrugs: any[] = [];
+      let allDrugs: DrugWithBatches[] = [];
 
       try {
         console.log('Processing medication:', med.medicationName);
@@ -138,14 +142,16 @@ Important instructions:
           });
           console.log(`\n========== DATABASE INVENTORY ==========`);
           console.log(`Total drugs in DB: ${allDrugsRaw.length}`);
-          allDrugsRaw.forEach(drug => {
+          allDrugsRaw.forEach((drug) => {
             console.log(`\n  Drug: ${drug.brandName} (Generic: ${drug.genericName})`);
             console.log(`  Batches: ${drug.inventoryBatches.length}`);
-            drug.inventoryBatches.forEach(batch => {
+            drug.inventoryBatches.forEach((batch) => {
               const isExpired = new Date(batch.expiryDate) < new Date();
               console.log(`    - Batch ${batch.batchNumber}:`);
               console.log(`      Quantity: ${batch.quantity}`);
-              console.log(`      Expiry: ${batch.expiryDate.toISOString().split('T')[0]} ${isExpired ? '(EXPIRED!)' : '(Valid)'}`);
+              console.log(
+                `      Expiry: ${batch.expiryDate.toISOString().split('T')[0]} ${isExpired ? '(EXPIRED!)' : '(Valid)'}`
+              );
             });
           });
           console.log(`========================================\n`);
@@ -163,7 +169,9 @@ Important instructions:
             },
           });
           // Filter to only include drugs that have at least one valid batch
-          allDrugs = allDrugs.filter(drug => drug.inventoryBatches && drug.inventoryBatches.length > 0);
+          allDrugs = allDrugs.filter(
+            (drug) => drug.inventoryBatches && drug.inventoryBatches.length > 0
+          );
         } catch (dbError) {
           console.error('Database query error:', dbError);
           allDrugs = [];
@@ -226,7 +234,7 @@ ${JSON.stringify(
     requiresPrescription: d.requiresPrescription,
     manufacturer: d.manufacturer,
     availableQuantity: d.inventoryBatches.reduce(
-      (sum: number, b: any) => sum + b.quantity,
+      (sum: number, b: InventoryBatch) => sum + b.quantity,
       0
     ),
   })),
@@ -270,7 +278,7 @@ Matching rules:
       const matchData: MedicationMatchResult = JSON.parse(cleanedMatch);
 
       // Get detailed batch info if matched
-      let batches: any[] = [];
+      let batches: InventoryBatch[] = [];
       if (matchData.matchedDrugId) {
         const drug = allDrugs.find((d) => d.id === matchData.matchedDrugId);
         if (drug && drug.inventoryBatches) {
@@ -313,15 +321,13 @@ Matching rules:
       // Validate all items are available before processing
       for (const result of availabilityResults) {
         if (result.status === 'OUT_OF_STOCK') {
-          throw new Error(
-            `${result.prescribedMedication.medicationName} is out of stock`
-          );
+          throw new Error(`${result.prescribedMedication.medicationName} is out of stock`);
         }
       }
 
       // Calculate total amount and prepare sale items
       let totalAmount = 0;
-      const saleItems: any[] = [];
+      const saleItems: Prisma.SaleItemCreateWithoutSaleInput[] = [];
 
       for (const result of availabilityResults) {
         const requestedQty = result.prescribedMedication.quantity;
@@ -332,16 +338,17 @@ Matching rules:
           if (remainingQty <= 0) break;
 
           const qtyFromBatch = Math.min(remainingQty, batch.quantity);
+          const sellPrice = Number(batch.sellPrice);
 
           saleItems.push({
-            drugId: result.matchResult.matchedDrugId,
-            batchId: batch.id,
+            drug: { connect: { id: result.matchResult.matchedDrugId! } },
+            batch: { connect: { id: batch.id } },
             quantity: qtyFromBatch,
-            unitPrice: batch.sellPrice,
-            subtotal: qtyFromBatch * batch.sellPrice,
+            unitPrice: sellPrice,
+            subtotal: qtyFromBatch * sellPrice,
           });
 
-          totalAmount += qtyFromBatch * batch.sellPrice;
+          totalAmount += qtyFromBatch * sellPrice;
           remainingQty -= qtyFromBatch;
 
           // Update batch quantity (reduce stock)
@@ -392,26 +399,38 @@ Matching rules:
       }
 
       // Create sale record
+      const saleCreateData: Prisma.SaleCreateInput = {
+        user: {
+          connect: { id: userId },
+        },
+        totalAmount,
+        paymentMethod,
+        status: 'COMPLETED',
+        saleItems: {
+          create: saleItems,
+        },
+      };
+
+      if (customerId) {
+        saleCreateData.customer = { connect: { id: customerId } };
+      }
+
+      const saleInclude: Prisma.SaleInclude = {
+        saleItems: {
+          include: {
+            drug: true,
+            batch: true,
+          },
+        },
+      };
+
+      if (customerId) {
+        saleInclude.customer = true;
+      }
+
       const sale = await tx.sale.create({
-        data: {
-          userId,
-          customerId,
-          totalAmount,
-          paymentMethod,
-          status: 'COMPLETED',
-          saleItems: {
-            create: saleItems,
-          },
-        },
-        include: {
-          saleItems: {
-            include: {
-              drug: true,
-              batch: true,
-            },
-          },
-          customer: true,
-        },
+        data: saleCreateData,
+        include: saleInclude,
       });
 
       return {

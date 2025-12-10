@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import Image from 'next/image';
 
 interface Medication {
   medicationName: string;
@@ -31,6 +32,14 @@ interface PrescriptionData {
   confidence: number;
 }
 
+interface InventoryBatch {
+  id: string;
+  batchNumber: string;
+  quantity: number;
+  expiryDate: string;
+  sellPrice: number;
+}
+
 interface AvailabilityResult {
   prescribedMedication: Medication;
   matchResult: {
@@ -42,8 +51,12 @@ interface AvailabilityResult {
     isAvailable: boolean;
     alternativeSuggestions: string[];
   };
-  availableBatches: any[];
+  availableBatches: InventoryBatch[];
   status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
+}
+
+interface PurchaseResponse {
+  message: string;
 }
 
 export default function PrescriptionVerificationPage() {
@@ -139,7 +152,7 @@ export default function PrescriptionVerificationPage() {
     if (!prescriptionData || !availabilityResults) return;
 
     // Check if all items are at least partially available
-    const allOutOfStock = availabilityResults.every(r => r.status === 'OUT_OF_STOCK');
+    const allOutOfStock = availabilityResults.every((r) => r.status === 'OUT_OF_STOCK');
     if (allOutOfStock) {
       setError('All prescribed medications are out of stock');
       return;
@@ -156,7 +169,7 @@ export default function PrescriptionVerificationPage() {
         paymentMethod
       );
 
-      const data = response as any;
+      const data = response as PurchaseResponse;
       setSuccess(data.message || 'Purchase completed successfully! Stock updated.');
 
       // Reset form after 3 seconds
@@ -259,10 +272,13 @@ export default function PrescriptionVerificationPage() {
             ) : (
               <div className="space-y-4">
                 <div className="relative rounded-lg overflow-hidden border">
-                  <img
+                  <Image
                     src={previewUrl}
                     alt="Prescription preview"
+                    width={800}
+                    height={600}
                     className="w-full h-auto max-h-96 object-contain"
+                    unoptimized
                   />
                 </div>
                 <div className="flex gap-2">
@@ -343,10 +359,12 @@ export default function PrescriptionVerificationPage() {
                       <div className="flex-1">
                         <p className="font-medium">{result.prescribedMedication.medicationName}</p>
                         <p className="text-sm text-muted-foreground">
-                          {result.prescribedMedication.dosage} • {result.prescribedMedication.frequency}
+                          {result.prescribedMedication.dosage} •{' '}
+                          {result.prescribedMedication.frequency}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Duration: {result.prescribedMedication.duration} • Qty: {result.prescribedMedication.quantity}
+                          Duration: {result.prescribedMedication.duration} • Qty:{' '}
+                          {result.prescribedMedication.quantity}
                         </p>
                       </div>
                       {getStatusBadge(result.status)}
@@ -407,7 +425,9 @@ export default function PrescriptionVerificationPage() {
 
                 <Button
                   onClick={handlePurchase}
-                  disabled={isPurchasing || availabilityResults.every(r => r.status === 'OUT_OF_STOCK')}
+                  disabled={
+                    isPurchasing || availabilityResults.every((r) => r.status === 'OUT_OF_STOCK')
+                  }
                   className="w-full"
                   size="lg"
                 >

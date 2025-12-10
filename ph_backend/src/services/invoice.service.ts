@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { prisma } from '../config/database';
 import { config } from '../config/env';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 const openai = new OpenAI({
   apiKey: config.OPENAI_API_KEY || '',
@@ -44,10 +45,7 @@ export class InvoiceService {
   /**
    * Extract invoice data using GPT-4o
    */
-  async extractInvoiceData(
-    imageBuffer: Buffer,
-    mimeType: string
-  ): Promise<InvoiceData> {
+  async extractInvoiceData(imageBuffer: Buffer, mimeType: string): Promise<InvoiceData> {
     const base64Image = imageBuffer.toString('base64');
 
     const completion = await openai.chat.completions.create({
@@ -123,10 +121,7 @@ Important rules:
   /**
    * Match extracted drug name with existing drugs in database using GPT-4o
    */
-  async matchDrug(
-    extractedName: string,
-    genericName?: string | null
-  ): Promise<DrugMatchResult> {
+  async matchDrug(extractedName: string, genericName?: string | null): Promise<DrugMatchResult> {
     // Get existing drugs from database
     const existingDrugs = await prisma.drug.findMany({
       select: {
@@ -184,7 +179,7 @@ Matching rules:
   /**
    * Process and save invoice to database
    */
-  async processInvoice(extractedData: InvoiceData, verifiedBy: string) {
+  async processInvoice(extractedData: InvoiceData, _verifiedBy: string) {
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Upsert supplier if provided
       let supplier;
@@ -198,13 +193,13 @@ Matching rules:
           update: {
             supplierName: extractedData.supplier.name,
             contactNumber: extractedData.supplier.contactNumber || undefined,
-            address: extractedData.supplier.address || undefined,
+            address: extractedData.supplier.address || null,
           },
           create: {
             supplierName: extractedData.supplier.name,
             contactNumber: extractedData.supplier.contactNumber || 'N/A',
             email: supplierEmail,
-            address: extractedData.supplier.address || undefined,
+            address: extractedData.supplier.address || null,
           },
         });
       }
@@ -233,10 +228,7 @@ Matching rules:
         }
 
         // Match drug with existing or create new
-        const matchResult = await this.matchDrug(
-          item.drugName,
-          item.genericName
-        );
+        const matchResult = await this.matchDrug(item.drugName, item.genericName);
 
         let drugId = matchResult.matchedDrugId;
 
@@ -253,6 +245,7 @@ Matching rules:
               manufacturer: item.manufacturer || 'Unknown',
               requiresPrescription: false, // Default, can be updated later
               reorderLevel: 20, // Default reorder level
+              sku: `SKU-${randomUUID()}`,
             },
           });
           drugId = newDrug.id;
@@ -265,17 +258,24 @@ Matching rules:
         const sellPrice = item.unitPrice * 1.3;
 
         // Create inventory batch
-        const batch = await tx.inventoryBatch.create({
-          data: {
-            drugId: drugId!,
-            batchNumber: item.batchNumber,
-            quantity: item.quantity,
-            purchasePrice: item.unitPrice,
-            sellPrice: sellPrice,
-            expiryDate: expiryDate,
-            supplierId: supplier?.id,
-            location: 'Pending Assignment', // Can be updated later
+        const batchCreateData: Prisma.InventoryBatchCreateInput = {
+          drug: {
+            connect: { id: drugId! },
           },
+          batchNumber: item.batchNumber,
+          quantity: item.quantity,
+          purchasePrice: item.unitPrice,
+          sellPrice,
+          expiryDate,
+          location: 'Pending Assignment', // Can be updated later
+        };
+
+        if (supplier) {
+          batchCreateData.supplier = { connect: { id: supplier.id } };
+        }
+
+        const batch = await tx.inventoryBatch.create({
+          data: batchCreateData,
         });
 
         processedBatches.push(batch);
