@@ -21,6 +21,8 @@ interface Environment {
   APP_NAME: string;
   APP_VERSION: string;
 
+  // OpenAI
+  OPENAI_API_KEY: string;
   // Email
   RESEND_API_KEY: string;
   ADMIN_EMAIL: string;
@@ -49,6 +51,8 @@ const env: Environment = {
   APP_NAME: process.env.APP_NAME || 'PharmaCare',
   APP_VERSION: process.env.APP_VERSION || '1.0.0',
 
+  // OpenAI
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
   // Email
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
@@ -68,4 +72,5 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
+export { env as config };
 export default env;

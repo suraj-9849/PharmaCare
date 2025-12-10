@@ -166,6 +166,69 @@ class ApiClient {
     update: (id: string, data: unknown) => this.put<unknown>(`/customers/${id}`, data),
     delete: (id: string) => this.delete<unknown>(`/customers/${id}`),
   };
+
+  // Invoice endpoints (Image Recognition with Gemini AI)
+  invoices = {
+    extract: async (file: File): Promise<ApiResponse<unknown>> => {
+      const token = this.getToken();
+      const formData = new FormData();
+      formData.append('invoice', file);
+
+      const response = await fetch(`${this.baseUrl}/invoices/extract`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to extract invoice data');
+      }
+      return data;
+    },
+    process: (extractedData: unknown) => this.post<unknown>('/invoices/process', { extractedData }),
+    test: () => this.get<unknown>('/invoices/test'),
+  };
+
+  // Prescription endpoints (Image Recognition with Gemini AI)
+  prescriptions = {
+    scan: async (file: File): Promise<ApiResponse<unknown>> => {
+      const token = this.getToken();
+      const formData = new FormData();
+      formData.append('prescription', file);
+
+      const response = await fetch(`${this.baseUrl}/prescriptions/scan`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to scan prescription');
+      }
+      return data;
+    },
+    checkAvailability: (medications: unknown) =>
+      this.post<unknown>('/prescriptions/check-availability', { medications }),
+    purchase: (
+      prescriptionData: unknown,
+      availabilityResults: unknown,
+      paymentMethod: string,
+      customerId?: string
+    ) =>
+      this.post<unknown>('/prescriptions/purchase', {
+        prescriptionData,
+        availabilityResults,
+        paymentMethod,
+        customerId,
+      }),
+    test: () => this.get<unknown>('/prescriptions/test'),
+  };
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

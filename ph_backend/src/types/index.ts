@@ -205,6 +205,6 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 // Request with user
 import { Request } from 'express';
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Omit<Request, 'user'> {
   user?: UserResponse;
 }
