@@ -34,6 +34,7 @@ import {
   Calendar,
   FileText,
   Scan,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -53,6 +54,8 @@ const navItems: NavItem[] = [
   { title: 'Customers', href: '/dashboard/customers', icon: Users },
   { title: 'Invoice Upload', href: '/dashboard/invoices', icon: FileText },
   { title: 'Prescriptions', href: '/dashboard/prescriptions', icon: Scan },
+  { title: 'Prescription History', href: '/dashboard/prescription-history', icon: Calendar },
+  { title: 'Reorders', href: '/dashboard/reorders', icon: RefreshCw },
   { title: 'Expiry Alerts', href: '/dashboard/expiry', icon: AlertTriangle },
   { title: 'Low Stock', href: '/dashboard/low-stock', icon: Package },
 ];

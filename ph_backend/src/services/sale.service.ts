@@ -10,10 +10,20 @@ export class SaleService {
    * Create a new sale
    */
   async createSale(userId: string, data: CreateSaleRequest) {
-    // Validate stock availability
+    // Validate stock availability and separate valid/invalid items
+    const validItems: typeof data.items = [];
+    const outOfStockItems: Array<{
+      drugId: string;
+      batchId: string;
+      requestedQuantity: number;
+      availableQuantity: number;
+      drugName: string;
+    }> = [];
+
     for (const item of data.items) {
       const batch = await prisma.inventoryBatch.findUnique({
         where: { id: item.batchId },
+        include: { drug: true },
       });
 
       if (!batch) {
@@ -21,15 +31,32 @@ export class SaleService {
       }
 
       if (batch.quantity < item.quantity) {
-        throw new Error(`${ERROR_MESSAGES.INSUFFICIENT_STOCK} for batch ${item.batchId}`);
+        // Item is out of stock or insufficient - skip it and track for reorder
+        outOfStockItems.push({
+          drugId: item.drugId,
+          batchId: item.batchId,
+          requestedQuantity: item.quantity,
+          availableQuantity: batch.quantity,
+          drugName: batch.drug.brandName,
+        });
+      } else {
+        // Item has sufficient stock - include it in the sale
+        validItems.push(item);
       }
     }
 
-    // Calculate totals and create sale
+    // If no valid items, throw error
+    if (validItems.length === 0) {
+      throw new Error(
+        'None of the requested items are available in sufficient quantity. Please check stock levels.'
+      );
+    }
+
+    // Calculate totals and create sale with valid items only
     const sale = await prisma.$transaction(async (tx) => {
       // Get batch prices and calculate items
       const saleItems = await Promise.all(
-        data.items.map(async (item) => {
+        validItems.map(async (item) => {
           const batch = await tx.inventoryBatch.findUnique({
             where: { id: item.batchId },
           });
@@ -64,6 +91,7 @@ export class SaleService {
       const newSale = await tx.sale.create({
         data: {
           userId,
+          customerId: data.customerId ?? null,
           totalAmount,
           paymentMethod: data.paymentMethod,
           cashReceived: data.cashReceived ?? null,
@@ -93,6 +121,7 @@ export class SaleService {
               username: true,
             },
           },
+          customer: true,
         },
       });
 
@@ -117,7 +146,7 @@ export class SaleService {
         sku: string;
       }> = [];
 
-      for (const item of data.items) {
+      for (const item of validItems) {
         // Update batch quantity
         const updatedBatch = await tx.inventoryBatch.update({
           where: { id: item.batchId },
@@ -166,7 +195,7 @@ export class SaleService {
         }
       }
 
-      return { newSale, lowStockAlerts, outOfStockAlerts };
+      return { newSale, lowStockAlerts, outOfStockAlerts, skippedItems: outOfStockItems };
     });
 
     // Send email alerts if any (async, don't block the response)
@@ -180,7 +209,44 @@ export class SaleService {
       });
     }
 
-    return sale.newSale;
+    // Auto-create reorder requests for out-of-stock items
+    if (sale.skippedItems.length > 0) {
+      for (const item of sale.skippedItems) {
+        // Check if a pending reorder request already exists for this drug
+        const existingRequest = await prisma.reorderRequest.findFirst({
+          where: {
+            drugId: item.drugId,
+            status: 'PENDING',
+          },
+        });
+
+        // Only create if no pending request exists
+        if (!existingRequest) {
+          const drug = await prisma.drug.findUnique({
+            where: { id: item.drugId },
+          });
+
+          if (drug) {
+            await prisma.reorderRequest.create({
+              data: {
+                drugId: item.drugId,
+                requestedBy: userId,
+                requestedQty: Math.max(item.requestedQuantity, drug.reorderLevel * 2),
+                currentStock: item.availableQuantity,
+                reorderLevel: drug.reorderLevel,
+                priority: item.availableQuantity === 0 ? 'HIGH' : 'MEDIUM',
+                notes: `Auto-created from sale request. Customer requested ${item.requestedQuantity} units but only ${item.availableQuantity} available.`,
+              },
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      sale: sale.newSale,
+      skippedItems: sale.skippedItems,
+    };
   }
 
   /**
@@ -214,6 +280,7 @@ export class SaleService {
             username: true,
           },
         },
+        customer: true,
         saleItems: {
           include: {
             drug: {
@@ -244,6 +311,7 @@ export class SaleService {
             email: true,
           },
         },
+        customer: true,
         saleItems: {
           include: {
             drug: true,

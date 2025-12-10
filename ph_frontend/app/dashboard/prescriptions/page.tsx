@@ -1,11 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, Pill, CheckCircle, AlertCircle, Loader2, X, ShoppingCart } from 'lucide-react';
+import {
+  Upload,
+  Pill,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  X,
+  ShoppingCart,
+  RefreshCw,
+  Plus,
+} from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -13,6 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import Image from 'next/image';
 
 interface Medication {
@@ -59,6 +77,46 @@ interface PurchaseResponse {
   message: string;
 }
 
+interface CustomerDetails {
+  id?: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  address?: string;
+}
+
+interface MedicationDialogState {
+  isOpen: boolean;
+  medicationName: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  quantity: number;
+}
+
+interface Drug {
+  id: string;
+  brandName: string;
+  genericName: string;
+  category: string;
+  manufacturer: string;
+  requiresPrescription: boolean;
+  sku: string;
+}
+
+interface ReorderDialogState {
+  isOpen: boolean;
+  medication: AvailabilityResult | null;
+}
+
 export default function PrescriptionVerificationPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -70,6 +128,30 @@ export default function PrescriptionVerificationPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>('CASH');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+  });
+  const [customerSearchResults, setCustomerSearchResults] = useState<Customer[]>([]);
+  const [isSearchingCustomers, setIsSearchingCustomers] = useState(false);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [medicationDialog, setMedicationDialog] = useState<MedicationDialogState>({
+    isOpen: false,
+    medicationName: '',
+    dosage: '',
+    frequency: '',
+    duration: '',
+    quantity: 1,
+  });
+  const [drugSearchResults, setDrugSearchResults] = useState<Drug[]>([]);
+  const [isSearchingDrugs, setIsSearchingDrugs] = useState(false);
+  const [showDrugDropdown, setShowDrugDropdown] = useState(false);
+  const [reorderDialog, setReorderDialog] = useState<ReorderDialogState>({
+    isOpen: false,
+    medication: null,
+  });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -91,6 +173,47 @@ export default function PrescriptionVerificationPage() {
     setPrescriptionData(null);
     setAvailabilityResults(null);
     setSuccess(null);
+  };
+
+  const handleCustomerSearch = async (searchTerm: string) => {
+    setCustomerDetails({ ...customerDetails, name: searchTerm });
+
+    if (searchTerm.length < 2) {
+      setCustomerSearchResults([]);
+      setShowCustomerDropdown(false);
+      return;
+    }
+
+    setIsSearchingCustomers(true);
+    try {
+      const response = await apiClient.get<{ data: Customer[] }>('/customers', {
+        search: searchTerm,
+        limit: 10,
+      });
+
+      // API returns: { success, message, data: [...], pagination }
+      const customers = response.data || [];
+      console.log('Customer search response:', response);
+      setCustomerSearchResults(customers);
+      setShowCustomerDropdown(customers.length > 0);
+    } catch (err) {
+      console.error('Failed to search customers:', err);
+      setCustomerSearchResults([]);
+    } finally {
+      setIsSearchingCustomers(false);
+    }
+  };
+
+  const handleSelectCustomer = (customer: Customer) => {
+    setCustomerDetails({
+      id: customer.id,
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email,
+      address: customer.address || '',
+    });
+    setShowCustomerDropdown(false);
+    setCustomerSearchResults([]);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -158,6 +281,12 @@ export default function PrescriptionVerificationPage() {
       return;
     }
 
+    // Validate at least customer name is provided
+    if (!customerDetails.name.trim()) {
+      setError('Please provide customer name');
+      return;
+    }
+
     setIsPurchasing(true);
     setError(null);
     setSuccess(null);
@@ -166,7 +295,12 @@ export default function PrescriptionVerificationPage() {
       const response = await apiClient.prescriptions.purchase(
         prescriptionData,
         availabilityResults,
-        paymentMethod
+        paymentMethod,
+        customerDetails.id,
+        customerDetails.name,
+        customerDetails.phone,
+        customerDetails.email,
+        customerDetails.address
       );
 
       const data = response as PurchaseResponse;
@@ -191,6 +325,107 @@ export default function PrescriptionVerificationPage() {
     setError(null);
     setSuccess(null);
     setPaymentMethod('CASH');
+    setCustomerDetails({
+      name: '',
+      phone: '',
+      email: '',
+      address: '',
+    });
+  };
+
+  const handleAddManualMedication = () => {
+    if (!medicationDialog.medicationName || !medicationDialog.dosage) {
+      setError('Please fill in medicine name and dosage');
+      return;
+    }
+
+    const newMedication: Medication = {
+      medicationName: medicationDialog.medicationName,
+      dosage: medicationDialog.dosage,
+      frequency: medicationDialog.frequency,
+      duration: medicationDialog.duration,
+      quantity: medicationDialog.quantity,
+      instructions: null,
+    };
+
+    if (prescriptionData) {
+      const updatedPrescriptionData = {
+        ...prescriptionData,
+        medications: [...prescriptionData.medications, newMedication],
+      };
+      setPrescriptionData(updatedPrescriptionData);
+
+      // Automatically check availability for the updated medications
+      checkAvailability(updatedPrescriptionData.medications);
+    }
+
+    setMedicationDialog({
+      isOpen: false,
+      medicationName: '',
+      dosage: '',
+      frequency: '',
+      duration: '',
+      quantity: 1,
+    });
+
+    setError(null);
+  };
+  const handleRequestReorder = async (medicationName: string) => {
+    try {
+      await apiClient.post('/reorders', {
+        medicineName: medicationName,
+        priority: 'HIGH',
+        notes: `Requested from prescription: ${medicationName}`,
+      });
+      setSuccess(`Reorder request created for ${medicationName}`);
+      setReorderDialog({
+        isOpen: false,
+        medication: null,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create reorder request');
+    }
+  };
+
+  const handleDrugSearch = async (searchTerm: string) => {
+    setMedicationDialog({
+      ...medicationDialog,
+      medicationName: searchTerm,
+    });
+
+    if (searchTerm.length < 2) {
+      setDrugSearchResults([]);
+      setShowDrugDropdown(false);
+      return;
+    }
+
+    setIsSearchingDrugs(true);
+    try {
+      const response = await apiClient.get<{ data: Drug[] }>('/drugs', {
+        search: searchTerm,
+        limit: 10,
+      });
+
+      // API returns: { success, message, data: [...], pagination }
+      const drugs = response.data || [];
+      console.log('Drug search response:', response);
+      setDrugSearchResults(drugs);
+      setShowDrugDropdown(drugs.length > 0);
+    } catch (err) {
+      console.error('Failed to search drugs:', err);
+      setDrugSearchResults([]);
+    } finally {
+      setIsSearchingDrugs(false);
+    }
+  };
+
+  const handleSelectDrug = (drug: Drug) => {
+    setMedicationDialog({
+      ...medicationDialog,
+      medicationName: drug.brandName,
+    });
+    setShowDrugDropdown(false);
+    setDrugSearchResults([]);
   };
 
   const getStatusBadge = (status: string) => {
@@ -350,6 +585,22 @@ export default function PrescriptionVerificationPage() {
                 <h2 className="text-xl font-semibold">
                   Medications ({availabilityResults.length})
                 </h2>
+                {prescriptionData && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      setMedicationDialog({
+                        ...medicationDialog,
+                        isOpen: true,
+                      })
+                    }
+                    className="gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add Medicine
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
@@ -391,9 +642,25 @@ export default function PrescriptionVerificationPage() {
                     )}
 
                     {result.status === 'OUT_OF_STOCK' && (
-                      <p className="text-xs text-destructive mt-2">
-                        This medication is currently out of stock
-                      </p>
+                      <div className="space-y-2 mt-3 pt-3 border-t">
+                        <p className="text-xs text-destructive font-medium">
+                          This medication is currently out of stock
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs gap-1"
+                          onClick={() =>
+                            setReorderDialog({
+                              isOpen: true,
+                              medication: result,
+                            })
+                          }
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          Request Reorder
+                        </Button>
+                      </div>
                     )}
                   </Card>
                 ))}
@@ -405,6 +672,70 @@ export default function PrescriptionVerificationPage() {
                   <p className="text-sm text-muted-foreground">Checking availability...</p>
                 </div>
               )}
+
+              {/* Customer Details */}
+              <div className="space-y-3 pb-4 border-b">
+                <h3 className="font-medium text-sm">Customer Details</h3>
+                <div className="relative">
+                  <Input
+                    placeholder="Customer Name (Search or create new)"
+                    value={customerDetails.name}
+                    onChange={(e) => handleCustomerSearch(e.target.value)}
+                    onFocus={() =>
+                      customerSearchResults.length > 0 && setShowCustomerDropdown(true)
+                    }
+                    className="text-sm"
+                  />
+                  {isSearchingCustomers && (
+                    <div className="absolute right-3 top-2.5">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
+                  )}
+                  {showCustomerDropdown && customerSearchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-white border rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                      {customerSearchResults.map((customer) => (
+                        <button
+                          key={customer.id}
+                          onClick={() => handleSelectCustomer(customer)}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-100 border-b last:border-b-0 text-sm"
+                        >
+                          <div className="font-medium">{customer.name}</div>
+                          <div className="text-xs text-gray-600">{customer.phone}</div>
+                          {customer.email && (
+                            <div className="text-xs text-gray-600">{customer.email}</div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Input
+                  placeholder="Phone (Optional)"
+                  type="tel"
+                  value={customerDetails.phone}
+                  onChange={(e) =>
+                    setCustomerDetails({ ...customerDetails, phone: e.target.value })
+                  }
+                  className="text-sm"
+                />
+                <Input
+                  placeholder="Email (Optional)"
+                  type="email"
+                  value={customerDetails.email}
+                  onChange={(e) =>
+                    setCustomerDetails({ ...customerDetails, email: e.target.value })
+                  }
+                  className="text-sm"
+                />
+                <Input
+                  placeholder="Address (Optional)"
+                  value={customerDetails.address}
+                  onChange={(e) =>
+                    setCustomerDetails({ ...customerDetails, address: e.target.value })
+                  }
+                  className="text-sm"
+                />
+              </div>
 
               {/* Payment & Purchase */}
               <div className="space-y-4 pt-4 border-t">
@@ -455,6 +786,152 @@ export default function PrescriptionVerificationPage() {
           )}
         </div>
       </div>
+
+      {/* Add Manual Medicine Dialog */}
+      <Dialog
+        open={medicationDialog.isOpen}
+        onOpenChange={(open) => setMedicationDialog({ ...medicationDialog, isOpen: open })}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Medicine Manually</DialogTitle>
+            <DialogDescription>
+              Add medicine that couldn&apos;t be scanned or detected by AI
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Medicine Name</label>
+              <div className="relative">
+                <Input
+                  value={medicationDialog.medicationName}
+                  onChange={(e) => handleDrugSearch(e.target.value)}
+                  onFocus={() => drugSearchResults.length > 0 && setShowDrugDropdown(true)}
+                  placeholder="Type medicine name to search"
+                />
+                {isSearchingDrugs && (
+                  <div className="absolute right-3 top-2.5">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </div>
+                )}
+                {showDrugDropdown && drugSearchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white border rounded-md shadow-lg z-10 max-h-48 overflow-y-auto mt-1">
+                    {drugSearchResults.map((drug) => (
+                      <button
+                        key={drug.id}
+                        onClick={() => handleSelectDrug(drug)}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 border-b last:border-b-0 text-sm"
+                      >
+                        <div className="font-medium">{drug.brandName}</div>
+                        <div className="text-xs text-gray-600">{drug.genericName}</div>
+                        <div className="text-xs text-gray-500">{drug.manufacturer}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Dosage</label>
+              <Input
+                value={medicationDialog.dosage}
+                onChange={(e) =>
+                  setMedicationDialog({
+                    ...medicationDialog,
+                    dosage: e.target.value,
+                  })
+                }
+                placeholder="e.g., 500mg"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Frequency</label>
+              <Input
+                value={medicationDialog.frequency}
+                onChange={(e) =>
+                  setMedicationDialog({
+                    ...medicationDialog,
+                    frequency: e.target.value,
+                  })
+                }
+                placeholder="e.g., 2 times daily"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Duration</label>
+              <Input
+                value={medicationDialog.duration}
+                onChange={(e) =>
+                  setMedicationDialog({
+                    ...medicationDialog,
+                    duration: e.target.value,
+                  })
+                }
+                placeholder="e.g., 5 days"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Quantity</label>
+              <Input
+                type="number"
+                value={medicationDialog.quantity}
+                onChange={(e) =>
+                  setMedicationDialog({
+                    ...medicationDialog,
+                    quantity: parseInt(e.target.value) || 1,
+                  })
+                }
+                placeholder="1"
+                min="1"
+              />
+            </div>
+            <Button onClick={handleAddManualMedication} className="w-full">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Medicine
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reorder Request Dialog */}
+      <Dialog
+        open={reorderDialog.isOpen}
+        onOpenChange={(open) => setReorderDialog({ ...reorderDialog, isOpen: open })}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request Reorder</DialogTitle>
+            <DialogDescription>
+              Create a reorder request for out-of-stock medicine
+            </DialogDescription>
+          </DialogHeader>
+          {reorderDialog.medication && (
+            <div className="space-y-4 py-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Medicine Name</label>
+                <p className="text-sm p-2 bg-gray-50 rounded">
+                  {reorderDialog.medication.matchResult.matchedDrugName}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Required Quantity</label>
+                <p className="text-sm p-2 bg-gray-50 rounded">
+                  {reorderDialog.medication.prescribedMedication.quantity}
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  handleRequestReorder(reorderDialog.medication!.matchResult.matchedDrugName);
+                }}
+                className="w-full"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Create Reorder Request
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

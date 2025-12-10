@@ -9,7 +9,9 @@ import dashboardRoutes from './dashboard.routes';
 import paymentRoutes from './payment.routes';
 import invoiceRoutes from './invoice.routes';
 import prescriptionRoutes from './prescription.routes';
+import prescriptionHistoryRoutes from './prescription-history.routes';
 import alertRoutes from './alert.routes';
+import reorderRoutes from './reorder.routes';
 
 const router: ExpressRouter = Router();
 
@@ -24,7 +26,9 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/prescriptions', prescriptionRoutes);
+router.use('/prescription-histories', prescriptionHistoryRoutes);
 router.use('/alerts', alertRoutes);
+router.use('/reorders', reorderRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {

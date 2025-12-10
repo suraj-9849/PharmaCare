@@ -118,7 +118,16 @@ router.post('/check-availability', authenticate, async (req: Request, res: Respo
  */
 router.post('/purchase', authenticate, async (req: Request, res: Response) => {
   try {
-    const { prescriptionData, availabilityResults, paymentMethod, customerId } = req.body;
+    const {
+      prescriptionData,
+      availabilityResults,
+      paymentMethod,
+      customerId,
+      customerName,
+      customerPhone,
+      customerEmail,
+      customerAddress,
+    } = req.body;
     const userId = req.user!.id;
 
     // Validate inputs
@@ -138,15 +147,24 @@ router.post('/purchase', authenticate, async (req: Request, res: Response) => {
       );
     }
 
+    // Validate at least customer name is provided
+    if (!customerId && !customerName) {
+      return errorResponse(res, 'Either customerId or customerName must be provided', 400);
+    }
+
     console.log('Processing prescription purchase with', availabilityResults.length, 'items');
 
     // Process purchase and reduce stock
     const result = await prescriptionService.processPurchase(
       prescriptionData,
       availabilityResults,
-      paymentMethod.toUpperCase(),
+      paymentMethod.toUpperCase() as 'CASH' | 'CARD' | 'UPI' | 'CREDIT',
       userId,
-      customerId
+      customerId,
+      customerName,
+      customerPhone,
+      customerEmail,
+      customerAddress
     );
 
     return successResponse(

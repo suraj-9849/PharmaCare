@@ -31,6 +31,14 @@ enum SaleStatus {
   REFUNDED
 }
 
+enum ReorderStatus {
+  PENDING
+  APPROVED
+  ORDERED
+  RECEIVED
+  REJECTED
+}
+
 // ==================== MODELS ====================
 
 model User {
@@ -43,7 +51,9 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  sales Sale[]
+  sales             Sale[]           @relation
+  requestedReorders ReorderRequest[] @relation("RequestedReorders")
+  approvedReorders  ReorderRequest[] @relation("ApprovedReorders")
 
   @@map("users")
 }
@@ -64,6 +74,7 @@ model Drug {
   inventoryBatches InventoryBatch[]
   saleItems        SaleItem[]
   stockAlerts      StockAlert[]
+  reorderRequests  ReorderRequest[]
 
   @@map("drugs")
 }
@@ -79,6 +90,7 @@ model Supplier {
 
   // Relations
   inventoryBatches InventoryBatch[]
+  reorderRequests  ReorderRequest[]
 
   @@map("suppliers")
 }
@@ -120,9 +132,10 @@ model Sale {
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  customer  Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  saleItems SaleItem[]
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer               Customer?               @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  saleItems              SaleItem[]
+  prescriptionHistories  PrescriptionHistory[]
 
   @@map("sales")
 }
@@ -182,3 +195,56 @@ model SystemSetting {
 
   @@map("system_settings")
 }
+
+model ReorderRequest {
+  id               String        @id @default(cuid())
+  drugId           String        @map("drug_id")
+  requestedBy      String        @map("requested_by") // User ID
+  requestedQty     Int           @map("requested_qty")
+  currentStock     Int           @default(0) @map("current_stock")
+  reorderLevel     Int           @map("reorder_level")
+  status           ReorderStatus @default(PENDING)
+  priority         String        @default("MEDIUM") // HIGH, MEDIUM, LOW
+  notes            String?
+  approvedBy       String?       @map("approved_by") // User ID
+  approvedAt       DateTime?     @map("approved_at")
+  orderedAt        DateTime?     @map("ordered_at")
+  receivedAt       DateTime?     @map("received_at")
+  supplierId       String?       @map("supplier_id")
+  estimatedCost    Decimal?      @map("estimated_cost") @db.Decimal(10, 2)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  drug           Drug      @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  requestedByUser User     @relation("RequestedReorders", fields: [requestedBy], references: [id], onDelete: Cascade)
+  approvedByUser  User?    @relation("ApprovedReorders", fields: [approvedBy], references: [id], onDelete: SetNull)
+  supplier        Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@map("reorder_requests")
+}
+
+model PrescriptionHistory {
+  id                  String   @id @default(cuid())
+  saleId              String   @map("sale_id")
+  patientName         String   @map("patient_name")
+  doctorName          String?  @map("doctor_name")
+  prescriptionDate    DateTime? @map("prescription_date")
+  medications         String   @db.Text // JSON array of medications
+  totalAmount         Decimal  @map("total_amount") @db.Decimal(10, 2)
+  paymentMethod       String   @map("payment_method")
+  customerName        String   @map("customer_name")
+  customerPhone       String?  @map("customer_phone")
+  customerEmail       String?  @map("customer_email")
+  customerAddress     String?  @map("customer_address")
+  notes               String?
+  confidence          Float?   @default(0.0) // AI scan confidence score
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@map("prescription_histories")
+}
+

@@ -26,6 +26,7 @@ import {
 import { AlertCircle, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import type { InventoryBatch } from '@/lib/types';
+import { CustomerSearchInput } from './customer-search-input';
 
 interface CartItem {
   batchId: string;
@@ -53,6 +54,7 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState('');
   const [itemQuantity, setItemQuantity] = useState(1);
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const [formData, setFormData] = useState<SaleFormData>({
     paymentMethod: 'CASH',
     cashReceived: 0,
@@ -185,6 +187,7 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
           handler: async (response: { razorpay_payment_id: string }) => {
             try {
               const payload = {
+                customerId: customerId || undefined,
                 paymentMethod: 'UPI',
                 transactionId: response.razorpay_payment_id,
                 items: currentCart.map((item) => ({
@@ -256,6 +259,7 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
       }
 
       const payload = {
+        customerId: customerId || undefined,
         paymentMethod,
         cashReceived: paymentMethod === 'CASH' ? formData.cashReceived : null,
         changeGiven: paymentMethod === 'CASH' ? getChangeGiven() : null,
@@ -298,6 +302,7 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
 
   const handleClose = () => {
     setCart([]);
+    setCustomerId(null);
     setFormData({ paymentMethod: 'CASH', cashReceived: 0 });
     setSelectedBatchId('');
     setItemQuantity(1);
@@ -436,6 +441,13 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
                   </div>
                 </ScrollArea>
               )}
+            </div>
+
+            <Separator />
+
+            {/* Customer Selection */}
+            <div className="space-y-3">
+              <CustomerSearchInput value={customerId} onChange={(id) => setCustomerId(id)} />
             </div>
 
             <Separator />

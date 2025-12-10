@@ -315,13 +315,53 @@ Matching rules:
     availabilityResults: AvailabilityResult[],
     paymentMethod: 'CASH' | 'CARD' | 'UPI' | 'CREDIT',
     userId: string,
-    customerId?: string
+    customerId?: string,
+    customerName?: string,
+    customerPhone?: string,
+    customerEmail?: string,
+    customerAddress?: string
   ) {
     return await prisma.$transaction(async (tx) => {
       // Validate all items are available before processing
       for (const result of availabilityResults) {
         if (result.status === 'OUT_OF_STOCK') {
           throw new Error(`${result.prescribedMedication.medicationName} is out of stock`);
+        }
+      }
+
+      // Handle customer - either use existing ID or create/update new one
+      let finalCustomerId = customerId;
+      if (customerName && !customerId) {
+        // Check if customer with this phone exists
+        if (customerPhone) {
+          const existingCustomer = await tx.customer.findFirst({
+            where: { phone: customerPhone },
+          });
+          if (existingCustomer) {
+            finalCustomerId = existingCustomer.id;
+          } else {
+            // Create new customer
+            const newCustomer = await tx.customer.create({
+              data: {
+                name: customerName,
+                phone: customerPhone,
+                email: customerEmail || '',
+                address: customerAddress || '',
+              },
+            });
+            finalCustomerId = newCustomer.id;
+          }
+        } else {
+          // Create new customer with just name and email
+          const newCustomer = await tx.customer.create({
+            data: {
+              name: customerName,
+              phone: '',
+              email: customerEmail || '',
+              address: customerAddress || '',
+            },
+          });
+          finalCustomerId = newCustomer.id;
         }
       }
 
@@ -411,8 +451,8 @@ Matching rules:
         },
       };
 
-      if (customerId) {
-        saleCreateData.customer = { connect: { id: customerId } };
+      if (finalCustomerId) {
+        saleCreateData.customer = { connect: { id: finalCustomerId } };
       }
 
       const saleInclude: Prisma.SaleInclude = {
@@ -424,13 +464,44 @@ Matching rules:
         },
       };
 
-      if (customerId) {
+      if (finalCustomerId) {
         saleInclude.customer = true;
       }
 
       const sale = await tx.sale.create({
         data: saleCreateData,
         include: saleInclude,
+      });
+
+      // Create prescription history record
+      const medicationsJson = JSON.stringify(
+        availabilityResults.map((result) => ({
+          medicationName: result.prescribedMedication.medicationName,
+          dosage: result.prescribedMedication.dosage,
+          frequency: result.prescribedMedication.frequency,
+          duration: result.prescribedMedication.duration,
+          quantity: result.prescribedMedication.quantity,
+          instructions: result.prescribedMedication.instructions,
+        }))
+      );
+
+      await tx.prescriptionHistory.create({
+        data: {
+          saleId: sale.id,
+          patientName: prescriptionData.patientName || 'N/A',
+          doctorName: prescriptionData.doctorName || null,
+          prescriptionDate: prescriptionData.prescriptionDate
+            ? new Date(prescriptionData.prescriptionDate)
+            : null,
+          medications: medicationsJson,
+          totalAmount,
+          paymentMethod,
+          customerName: customerName || 'N/A',
+          customerPhone: customerPhone || null,
+          customerEmail: customerEmail || null,
+          customerAddress: customerAddress || null,
+          confidence: prescriptionData.confidence,
+        },
       });
 
       return {

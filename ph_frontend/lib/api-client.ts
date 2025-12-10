@@ -219,13 +219,21 @@ class ApiClient {
       prescriptionData: unknown,
       availabilityResults: unknown,
       paymentMethod: string,
-      customerId?: string
+      customerId?: string,
+      customerName?: string,
+      customerPhone?: string,
+      customerEmail?: string,
+      customerAddress?: string
     ) =>
       this.post<unknown>('/prescriptions/purchase', {
         prescriptionData,
         availabilityResults,
         paymentMethod,
         customerId,
+        customerName,
+        customerPhone,
+        customerEmail,
+        customerAddress,
       }),
     test: () => this.get<unknown>('/prescriptions/test'),
   };

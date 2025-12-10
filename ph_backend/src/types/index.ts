@@ -128,6 +128,7 @@ export interface SaleItem {
 }
 
 export interface CreateSaleRequest {
+  customerId?: string; // Optional - for customer tracking (null = walk-in customer)
   paymentMethod: PaymentMethod;
   cashReceived?: number;
   changeGiven?: number;
