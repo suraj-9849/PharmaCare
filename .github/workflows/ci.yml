@@ -15,9 +15,6 @@ jobs:
   frontend-lint:
     name: Frontend - Lint & Format
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./ph_frontend
     
     steps:
       - name: Checkout code
@@ -43,7 +40,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('ph_frontend/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -51,17 +48,16 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
+        working-directory: ./ph_frontend
         run: pnpm format:check
 
       - name: Run ESLint
+        working-directory: ./ph_frontend
         run: pnpm lint
 
   frontend-type-check:
     name: Frontend - Type Check
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./ph_frontend
     
     steps:
       - name: Checkout code
@@ -87,7 +83,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('ph_frontend/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -95,15 +91,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: TypeScript type check
+        working-directory: ./ph_frontend
         run: pnpm type-check
 
   frontend-build:
     name: Frontend - Build
     runs-on: ubuntu-latest
     needs: [frontend-lint, frontend-type-check]
-    defaults:
-      run:
-        working-directory: ./ph_frontend
     
     steps:
       - name: Checkout code
@@ -129,7 +123,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('ph_frontend/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -137,6 +131,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Next.js application
+        working-directory: ./ph_frontend
         run: pnpm build
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api' }}
@@ -145,9 +140,6 @@ jobs:
   backend-lint:
     name: Backend - Lint & Format
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./ph_backend
     
     steps:
       - name: Checkout code
@@ -173,7 +165,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('ph_backend/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -181,17 +173,16 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
+        working-directory: ./ph_backend
         run: pnpm format:check
 
       - name: Run ESLint
+        working-directory: ./ph_backend
         run: pnpm lint
 
   backend-type-check:
     name: Backend - Type Check & Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./ph_backend
     
     steps:
       - name: Checkout code
@@ -217,7 +208,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('ph_backend/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -225,14 +216,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: TypeScript type check & build
+        working-directory: ./ph_backend
         run: pnpm build
 
   backend-prisma:
     name: Backend - Prisma Check
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./ph_backend
     
     steps:
       - name: Checkout code
@@ -258,7 +247,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('ph_backend/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -266,18 +255,17 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma Client
+        working-directory: ./ph_backend
         run: pnpm prisma:generate
 
       - name: Validate Prisma schema
+        working-directory: ./ph_backend
         run: npx prisma validate
 
   backend-build:
     name: Backend - Build
     runs-on: ubuntu-latest
     needs: [backend-lint, backend-type-check, backend-prisma]
-    defaults:
-      run:
-        working-directory: ./ph_backend
     
     steps:
       - name: Checkout code
@@ -303,7 +291,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('ph_backend/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -311,9 +299,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma Client
+        working-directory: ./ph_backend
         run: pnpm prisma:generate
 
       - name: Build TypeScript
+        working-directory: ./ph_backend
         run: pnpm build
 
   # Final status check
