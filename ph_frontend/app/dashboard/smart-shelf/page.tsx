@@ -508,19 +508,6 @@ export default function SmartShelfPage() {
 
         {/* Visual Shelf Map Tab - Enhanced Layout */}
         <TabsContent value="shelves" className="space-y-6">
-          {/* <Card className="border-slate-200">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl font-bold">Shelf Inventory Map</CardTitle>
-                  <CardDescription className="text-sm mt-1">Visual representation of all shelf locations and stock</CardDescription>
-                </div>
-                <Button size="sm" onClick={() => { setEditingShelf(null); setSelectedZone('General'); setShowAddShelfDialog(true); }} className="bg-emerald-600 hover:bg-emerald-700">
-                  <Plus className="mr-2 h-4 w-4" /> Add Shelf
-                </Button>
-              </div>
-            </CardHeader>
-          </Card> */}
 
           {shelves.length === 0 ? (
             <Card className="border-dashed border-2 border-slate-300">
