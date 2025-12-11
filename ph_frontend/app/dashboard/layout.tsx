@@ -37,6 +37,7 @@ import {
   FileText,
   Scan,
   RefreshCw,
+  Warehouse,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +52,7 @@ const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Drugs', href: '/dashboard/drugs', icon: Pill },
   { title: 'Inventory', href: '/dashboard/inventory', icon: Boxes },
+  { title: 'Medicine Shelf', href: '/dashboard/smart-shelf', icon: Warehouse },
   { title: 'Sales', href: '/dashboard/sales', icon: ShoppingCart },
   { title: 'Suppliers', href: '/dashboard/suppliers', icon: Truck },
   { title: 'Customers', href: '/dashboard/customers', icon: Users },
