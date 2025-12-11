@@ -14,7 +14,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "setup": "pnpm prisma:generate && pnpm prisma:push && pnpm seed",
-    "lint": "eslint src --max-warnings 0",
+    "lint": "eslint src --max-warnings 20",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",

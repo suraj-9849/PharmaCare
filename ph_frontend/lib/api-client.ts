@@ -285,6 +285,58 @@ class ApiClient {
       }),
     test: () => this.get<unknown>('/prescriptions/test'),
   };
+
+  // Smart Shelf endpoints
+  smartShelf = {
+    // Shelf Location CRUD
+    getAllShelves: (params?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      zone?: string;
+      search?: string;
+    }) => this.getPaginated<unknown>('/smart-shelf', params),
+    getShelfById: (id: string) => this.get<ApiResponse<unknown>>(`/smart-shelf/${id}`),
+    createShelf: (data: unknown) => this.post<unknown>('/smart-shelf', data),
+    updateShelf: (id: string, data: unknown) => this.put<unknown>(`/smart-shelf/${id}`, data),
+    deleteShelf: (id: string) => this.delete<unknown>(`/smart-shelf/${id}`),
+
+    // Analytics
+    getAnalytics: () => this.get<ApiResponse<unknown>>('/smart-shelf/analytics'),
+
+    // Virtual Queue
+    getShelfQueue: (shelfId: string) =>
+      this.get<ApiResponse<unknown>>(`/smart-shelf/${shelfId}/queue`),
+    addBatchToShelf: (shelfId: string, batchId: string) =>
+      this.post<unknown>(`/smart-shelf/${shelfId}/batch/${batchId}`),
+    removeBatchFromFront: (shelfId: string) =>
+      this.delete<unknown>(`/smart-shelf/${shelfId}/batch/front`),
+
+    // FEFO Validation
+    validatePick: (shelfId: string, batchId: string) =>
+      this.post<ApiResponse<unknown>>(`/smart-shelf/${shelfId}/validate-pick`, { batchId }),
+    getUnacknowledgedAlerts: (limit?: number) =>
+      this.get<ApiResponse<unknown>>('/smart-shelf/alerts/unacknowledged', { limit }),
+    acknowledgeAlert: (alertId: string) =>
+      this.request<ApiResponse<unknown>>(`/smart-shelf/alerts/${alertId}/acknowledge`, {
+        method: 'PATCH',
+      }),
+
+    // Expiry Management
+    getExpiringBatches: (params?: { days?: number; page?: number; limit?: number }) =>
+      this.getPaginated<unknown>('/smart-shelf/expiring', params),
+    recordExpiryAction: (data: unknown) => this.post<unknown>('/smart-shelf/expiry-action', data),
+    getExpiryActionHistory: (params?: { batchId?: string; page?: number; limit?: number }) =>
+      this.getPaginated<unknown>('/smart-shelf/expiry-actions', params),
+  };
+
+  // PATCH request helper
+  async patch<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
+    return this.request<ApiResponse<T>>(endpoint, {
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

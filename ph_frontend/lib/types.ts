@@ -64,12 +64,18 @@ export interface InventoryBatch {
   expiryDate: string;
   supplierId: string;
   location?: string;
+  shelfLocationId?: string;
+  queuePosition?: number;
   dateAdded: string;
   manufacturingDate?: string;
   createdAt?: string;
   updatedAt?: string;
   drug?: Drug;
   supplier?: Supplier;
+  shelfLocation?: ShelfLocation;
+  daysUntilExpiry?: number;
+  isExpired?: boolean;
+  isExpiringSoon?: boolean;
 }
 
 export interface CreateBatchRequest {
@@ -311,4 +317,115 @@ export interface StockSummary {
   isLowStock: boolean;
   expiringCount: number;
   expiredCount: number;
+}
+
+// ==================== SMART SHELF TYPES ====================
+
+export type ShelfStatus = 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+export type ExpiryActionType = 'RETURN_TO_VENDOR' | 'DISCOUNT' | 'DISPOSE';
+
+export interface ShelfLocation {
+  id: string;
+  shelfCode: string;
+  shelfName: string;
+  row?: string;
+  column?: string;
+  zone?: string;
+  capacity: number;
+  status: ShelfStatus;
+  qrCode?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  batches?: InventoryBatch[];
+  currentStock?: number;
+  utilizationPercentage?: number;
+}
+
+export interface CreateShelfLocationRequest {
+  shelfCode: string;
+  shelfName: string;
+  row?: string;
+  column?: string;
+  zone?: string;
+  capacity?: number;
+  status?: ShelfStatus;
+  qrCode?: string;
+  notes?: string;
+}
+
+export interface UpdateShelfLocationRequest {
+  shelfName?: string;
+  row?: string;
+  column?: string;
+  zone?: string;
+  capacity?: number;
+  status?: ShelfStatus;
+  qrCode?: string;
+  notes?: string;
+}
+
+export interface IncorrectPickAlert {
+  id: string;
+  shelfLocationId: string;
+  batchIdPicked: string;
+  batchIdExpected: string;
+  pickedBy?: string;
+  acknowledged: boolean;
+  acknowledgedAt?: string;
+  createdAt: string;
+  shelfLocation?: ShelfLocation;
+}
+
+export interface ExpiryActionRecord {
+  id: string;
+  batchId: string;
+  action: ExpiryActionType;
+  performedBy?: string;
+  quantity: number;
+  reason?: string;
+  vendorReturn: boolean;
+  discountAmount?: number;
+  notes?: string;
+  createdAt: string;
+  batch?: InventoryBatch;
+}
+
+export interface CreateExpiryActionRequest {
+  batchId: string;
+  action: ExpiryActionType;
+  quantity: number;
+  reason?: string;
+  vendorReturn?: boolean;
+  discountAmount?: number;
+  notes?: string;
+}
+
+export interface QueuedBatch {
+  batch: InventoryBatch;
+  position: number;
+  isAtFront: boolean;
+}
+
+export interface PickValidationResult {
+  isValid: boolean;
+  expectedBatch?: InventoryBatch;
+  pickedBatch?: InventoryBatch;
+  message: string;
+  alert?: IncorrectPickAlert;
+}
+
+export interface ShelfAnalytics {
+  totalShelves: number;
+  activeShelves: number;
+  totalBatchesOnShelf: number;
+  expiringCount: number;
+  incorrectPickCount: number;
+  topUtilizedShelves: Array<{
+    shelfCode: string;
+    shelfName: string;
+    currentStock: number;
+    capacity: number;
+    utilizationPercentage: number;
+  }>;
 }

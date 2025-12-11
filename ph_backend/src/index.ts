@@ -5,6 +5,7 @@ import env from './config/env';
 import { specs } from './config/swagger';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { connectDatabase } from './config/database';
 
 const app: Application = express();
 
@@ -45,13 +46,16 @@ app.use(errorHandler);
 // Start server
 const startServer = async () => {
   try {
-    app.listen(env.PORT, () => {
+    // Connect to database first
+    await connectDatabase();
+
+    const server = app.listen(env.PORT, () => {
       console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
 ║   ${env.APP_NAME} API Server                                   ║
 ║                                                           ║
-║   Version: ${env.APP_VERSION}                                          ║ 
+║   Version: ${env.APP_VERSION}                                          ║
 ║   Environment: ${env.NODE_ENV}                                ║
 ║   Port: ${env.PORT}                                              ║
 ║   URL: http://localhost:${env.PORT}                              ║
@@ -59,6 +63,8 @@ const startServer = async () => {
 ╚═══════════════════════════════════════════════════════════╝
       `);
     });
+
+    return server;
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
