@@ -10,8 +10,7 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx}\"",
-    "type-check": "tsc --noEmit",
-    "prepare": "[ \"$(git rev-parse --show-toplevel 2>/dev/null)\" = \"$(pwd)\" ] && husky install .husky || true"
+    "type-check": "tsc --noEmit"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "description": "PharmaCare - Professional Pharmacy Management System",
+  "packages": [
+    "ph_backend",
+    "ph_frontend"
+  ],
   "scripts": {
+    "prepare": "[[ ! -d '.git' ]] || husky install || true",
     "validate": "node scripts/validate.js",
     "backend:dev": "cd ph_backend && pnpm dev",
     "backend:build": "cd ph_backend && pnpm build",
@@ -38,6 +43,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "husky": "^9.1.7"
   }
 }
