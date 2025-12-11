@@ -54,27 +54,20 @@ import {
   Clock,
   Archive,
   Plus,
-  X,
   ChevronLeft,
   ChevronRight,
-  ArrowLeft,
   ArrowRight,
-  RotateCcw,
   Trash2,
   Percent,
   CheckCircle2,
-  XCircle,
   Grid3x3,
-  Edit2,
   Eye,
-  BarChart3,
   Zap,
 } from 'lucide-react';
 
 export default function SmartShelfPage() {
   // State
   const [shelves, setShelves] = useState<ShelfLocation[]>([]);
-  const [selectedShelf, setSelectedShelf] = useState<ShelfLocation | null>(null);
   const [analytics, setAnalytics] = useState<ShelfAnalytics | null>(null);
   const [expiringBatches, setExpiringBatches] = useState<InventoryBatch[]>([]);
   const [currentSwipeBatchIndex, setCurrentSwipeBatchIndex] = useState(0);
@@ -144,9 +137,9 @@ export default function SmartShelfPage() {
 
   const openShelfDetails = async (shelfIdOrObj: string | ShelfLocation) => {
     try {
-      let id = typeof shelfIdOrObj === 'string' ? shelfIdOrObj : shelfIdOrObj.id;
+      const id = typeof shelfIdOrObj === 'string' ? shelfIdOrObj : shelfIdOrObj.id;
       const res = await apiClient.smartShelf.getShelfById(id);
-      const shelfData = (res.data as unknown) as ShelfLocation;
+      const shelfData = res.data as unknown as ShelfLocation;
       setViewingShelf(shelfData);
       setShowViewShelfDialog(true);
     } catch (err) {
@@ -216,11 +209,7 @@ export default function SmartShelfPage() {
     if (!daysUntilExpiry) return null;
 
     if (daysUntilExpiry < 0) {
-      return (
-        <Badge className="border-red-200 bg-red-50 text-red-700">
-          Expired
-        </Badge>
-      );
+      return <Badge className="border-red-200 bg-red-50 text-red-700">Expired</Badge>;
     } else if (daysUntilExpiry <= 7) {
       return (
         <Badge className="border-red-200 bg-red-50 text-red-700">
@@ -263,10 +252,11 @@ export default function SmartShelfPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Shelf Management</h1>
           <p className="text-sm text-slate-500">
-            Visual shelf organization with First-Expiry-First-Out enforcement & intelligent inventory tracking
+            Visual shelf organization with First-Expiry-First-Out enforcement & intelligent
+            inventory tracking
           </p>
         </div>
-        <Button 
+        <Button
           onClick={() => {
             setEditingShelf(null);
             setSelectedZone('General');
@@ -357,21 +347,21 @@ export default function SmartShelfPage() {
                 <TabsList className="flex flex-col w-full gap-2 bg-transparent h-auto">
                   <TabsTrigger
                     value="swipe"
-                    className="w-full justify-start gap-3 px-4 py-3 text-sm font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-slate-50 data-[state=inactive]:text-slate-700 data-[state=inactive]:hover:bg-slate-100 transition-all duration-200"
+                    className="w-full justify-start gap-3 px-4 py-3 text-sm font-semibold rounded-lg data-[state=active]:bg-linear-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-slate-50 data-[state=inactive]:text-slate-700 data-[state=inactive]:hover:bg-slate-100 transition-all duration-200"
                   >
                     <Zap className="h-4 w-4" />
                     <span>Medicine Alert</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="shelves"
-                    className="w-full justify-start gap-3 px-4 py-3 text-sm font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-emerald-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-slate-50 data-[state=inactive]:text-slate-700 data-[state=inactive]:hover:bg-slate-100 transition-all duration-200"
+                    className="w-full justify-start gap-3 px-4 py-3 text-sm font-semibold rounded-lg data-[state=active]:bg-linear-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-emerald-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-slate-50 data-[state=inactive]:text-slate-700 data-[state=inactive]:hover:bg-slate-100 transition-all duration-200"
                   >
                     <Grid3x3 className="h-4 w-4" />
                     <span>Shelf Map</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="alerts"
-                    className="w-full justify-start gap-3 px-4 py-3 text-sm font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-600 data-[state=active]:to-red-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-slate-50 data-[state=inactive]:text-slate-700 data-[state=inactive]:hover:bg-slate-100 transition-all duration-200"
+                    className="w-full justify-start gap-3 px-4 py-3 text-sm font-semibold rounded-lg data-[state=active]:bg-linear-to-r data-[state=active]:from-red-600 data-[state=active]:to-red-700 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:bg-slate-50 data-[state=inactive]:text-slate-700 data-[state=inactive]:hover:bg-slate-100 transition-all duration-200"
                   >
                     <AlertTriangle className="h-4 w-4" />
                     <span className="flex-1 text-left">Pick Alerts</span>
@@ -388,461 +378,579 @@ export default function SmartShelfPage() {
 
           {/* TabsContent on Right */}
           <div className="flex-1 min-w-0">
-
-        {/* FEFO Tinder-Style Swipe Tab */}
-        <TabsContent value="swipe" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Expiring Items - Quick Action</CardTitle>
-              <CardDescription>
-                Swipe right to return to vendor, swipe left to discount, or swipe down to dispose
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {expiringBatches.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <CheckCircle2 className="mb-4 h-16 w-16 text-emerald-500" />
-                  <h3 className="text-lg font-semibold">No Expiring Items</h3>
-                  <p className="text-sm text-slate-500">All batches are within safe expiry range</p>
-                </div>
-              ) : currentBatch ? (
-                <div className="space-y-6">
-                  {/* Progress Indicator */}
-                  <div className="flex items-center justify-between text-sm text-slate-500">
-                    <span>
-                      Item {currentSwipeBatchIndex + 1} of {expiringBatches.length}
-                    </span>
-                    <span>{Math.round(((currentSwipeBatchIndex + 1) / expiringBatches.length) * 100)}% Complete</span>
-                  </div>
-
-                  {/* Batch Card */}
-                  <div className="relative rounded-lg border-2 border-slate-200 bg-white p-6 shadow-lg">
-                    <div className="mb-4 flex items-start justify-between">
-                      <div>
-                        <h3 className="text-xl font-bold text-slate-900">
-                          {currentBatch.drug?.brandName || 'Unknown Drug'}
-                        </h3>
-                        <p className="text-sm text-slate-500">{currentBatch.drug?.genericName}</p>
-                        <p className="mt-1 text-xs text-slate-400">Batch: {currentBatch.batchNumber}</p>
-                      </div>
-                      {getExpiryStatusBadge(currentBatch.daysUntilExpiry)}
+            {/* FEFO Tinder-Style Swipe Tab */}
+            <TabsContent value="swipe" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Expiring Items - Quick Action</CardTitle>
+                  <CardDescription>
+                    Swipe right to return to vendor, swipe left to discount, or swipe down to
+                    dispose
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {expiringBatches.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <CheckCircle2 className="mb-4 h-16 w-16 text-emerald-500" />
+                      <h3 className="text-lg font-semibold">No Expiring Items</h3>
+                      <p className="text-sm text-slate-500">
+                        All batches are within safe expiry range
+                      </p>
                     </div>
+                  ) : currentBatch ? (
+                    <div className="space-y-6">
+                      {/* Progress Indicator */}
+                      <div className="flex items-center justify-between text-sm text-slate-500">
+                        <span>
+                          Item {currentSwipeBatchIndex + 1} of {expiringBatches.length}
+                        </span>
+                        <span>
+                          {Math.round(
+                            ((currentSwipeBatchIndex + 1) / expiringBatches.length) * 100
+                          )}
+                          % Complete
+                        </span>
+                      </div>
 
-                    <div className="grid grid-cols-2 gap-4 rounded-lg bg-slate-50 p-4">
-                      <div>
-                        <p className="text-xs text-slate-500">Quantity</p>
-                        <p className="text-lg font-semibold">{currentBatch.quantity} units</p>
+                      {/* Batch Card */}
+                      <div className="relative rounded-lg border-2 border-slate-200 bg-white p-6 shadow-lg">
+                        <div className="mb-4 flex items-start justify-between">
+                          <div>
+                            <h3 className="text-xl font-bold text-slate-900">
+                              {currentBatch.drug?.brandName || 'Unknown Drug'}
+                            </h3>
+                            <p className="text-sm text-slate-500">
+                              {currentBatch.drug?.genericName}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-400">
+                              Batch: {currentBatch.batchNumber}
+                            </p>
+                          </div>
+                          {getExpiryStatusBadge(currentBatch.daysUntilExpiry)}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 rounded-lg bg-slate-50 p-4">
+                          <div>
+                            <p className="text-xs text-slate-500">Quantity</p>
+                            <p className="text-lg font-semibold">{currentBatch.quantity} units</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">Expiry Date</p>
+                            <p className="text-lg font-semibold">
+                              {formatDate(new Date(currentBatch.expiryDate))}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">Location</p>
+                            <p className="text-lg font-semibold">
+                              {currentBatch.location || 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">Value</p>
+                            <p className="text-lg font-semibold">
+                              {formatCurrency(currentBatch.sellPrice * currentBatch.quantity)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Navigation Arrows */}
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handlePreviousBatch}
+                            disabled={currentSwipeBatchIndex === 0}
+                            className="h-12 w-12"
+                          >
+                            <ChevronLeft className="h-6 w-6" />
+                          </Button>
+                        </div>
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleNextBatch}
+                            disabled={currentSwipeBatchIndex === expiringBatches.length - 1}
+                            className="h-12 w-12"
+                          >
+                            <ChevronRight className="h-6 w-6" />
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-slate-500">Expiry Date</p>
-                        <p className="text-lg font-semibold">{formatDate(new Date(currentBatch.expiryDate))}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500">Location</p>
-                        <p className="text-lg font-semibold">{currentBatch.location || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500">Value</p>
-                        <p className="text-lg font-semibold">{formatCurrency(currentBatch.sellPrice * currentBatch.quantity)}</p>
+
+                      {/* Action Buttons */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <Button
+                          onClick={() => handleSwipe('RETURN_TO_VENDOR')}
+                          className="h-20 flex-col gap-2 bg-emerald-600 hover:bg-emerald-700"
+                        >
+                          <ArrowRight className="h-6 w-6" />
+                          <span className="text-xs">Return to Vendor</span>
+                        </Button>
+
+                        <Button
+                          onClick={() => handleSwipe('DISCOUNT')}
+                          className="h-20 flex-col gap-2 bg-amber-600 hover:bg-amber-700"
+                        >
+                          <Percent className="h-6 w-6" />
+                          <span className="text-xs">Discount & Push</span>
+                        </Button>
+
+                        <Button
+                          onClick={() => handleSwipe('DISPOSE')}
+                          className="h-20 flex-col gap-2 bg-red-600 hover:bg-red-700"
+                        >
+                          <Trash2 className="h-6 w-6" />
+                          <span className="text-xs">Dispose</span>
+                        </Button>
                       </div>
                     </div>
+                  ) : (
+                    <div className="py-12 text-center text-slate-500">No batches to review</div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                    {/* Navigation Arrows */}
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handlePreviousBatch}
-                        disabled={currentSwipeBatchIndex === 0}
-                        className="h-12 w-12"
-                      >
-                        <ChevronLeft className="h-6 w-6" />
-                      </Button>
-                    </div>
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleNextBatch}
-                        disabled={currentSwipeBatchIndex === expiringBatches.length - 1}
-                        className="h-12 w-12"
-                      >
-                        <ChevronRight className="h-6 w-6" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <Button
-                      onClick={() => handleSwipe('RETURN_TO_VENDOR')}
-                      className="h-20 flex-col gap-2 bg-emerald-600 hover:bg-emerald-700"
-                    >
-                      <ArrowRight className="h-6 w-6" />
-                      <span className="text-xs">Return to Vendor</span>
-                    </Button>
-
-                    <Button
-                      onClick={() => handleSwipe('DISCOUNT')}
-                      className="h-20 flex-col gap-2 bg-amber-600 hover:bg-amber-700"
-                    >
-                      <Percent className="h-6 w-6" />
-                      <span className="text-xs">Discount & Push</span>
-                    </Button>
-
-                    <Button
-                      onClick={() => handleSwipe('DISPOSE')}
-                      className="h-20 flex-col gap-2 bg-red-600 hover:bg-red-700"
-                    >
-                      <Trash2 className="h-6 w-6" />
-                      <span className="text-xs">Dispose</span>
-                    </Button>
-                  </div>
-                </div>
+            {/* Visual Shelf Map Tab - Enhanced Layout */}
+            <TabsContent value="shelves" className="space-y-6">
+              {shelves.length === 0 ? (
+                <Card className="border-dashed border-2 border-slate-300">
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <Grid3x3 className="mb-4 h-16 w-16 text-slate-300" />
+                    <h3 className="text-lg font-semibold text-slate-900">No Shelves Created</h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                      Create your first shelf location to get started
+                    </p>
+                  </CardContent>
+                </Card>
               ) : (
-                <div className="py-12 text-center text-slate-500">No batches to review</div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Visual Shelf Map Tab - Enhanced Layout */}
-        <TabsContent value="shelves" className="space-y-6">
-
-          {shelves.length === 0 ? (
-            <Card className="border-dashed border-2 border-slate-300">
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Grid3x3 className="mb-4 h-16 w-16 text-slate-300" />
-                <h3 className="text-lg font-semibold text-slate-900">No Shelves Created</h3>
-                <p className="text-sm text-slate-500 mt-1">Create your first shelf location to get started</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-8">
-              {shelvesByRow.map(({ row, shelves: rowShelves }) => (
-                <div key={row} className="space-y-4">
-                  {/* Row Header */}
-                  <div className="flex items-center gap-4 px-1">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white font-bold shadow-md">
-                        {row}
+                <div className="space-y-8">
+                  {shelvesByRow.map(({ row, shelves: rowShelves }) => (
+                    <div key={row} className="space-y-4">
+                      {/* Row Header */}
+                      <div className="flex items-center gap-4 px-1">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-linear-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white font-bold shadow-md">
+                            {row}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-slate-900">Row {row}</h3>
+                            <p className="text-xs text-slate-500">
+                              {rowShelves.length} shelf location{rowShelves.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-900">Row {row}</h3>
-                        <p className="text-xs text-slate-500">{rowShelves.length} shelf location{rowShelves.length !== 1 ? 's' : ''}</p>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Shelves Grid */}
-                  <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-                    {rowShelves.map((shelf) => {
-                      const util = Math.round(shelf.utilizationPercentage || 0);
-                      const slots = Math.min(15, shelf.capacity || 15);
-                      const levels = 3;
-                      const perLevel = Math.ceil(slots / levels);
+                      {/* Shelves Grid */}
+                      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                        {rowShelves.map((shelf) => {
+                          const util = Math.round(shelf.utilizationPercentage || 0);
+                          const slots = Math.min(15, shelf.capacity || 15);
+                          const levels = 3;
+                          const perLevel = Math.ceil(slots / levels);
 
-                      // populate slots by queuePosition
-                      const slotBatches: (InventoryBatch | null)[] = Array.from({ length: slots }).map(() => null);
-                      if (shelf.batches && shelf.batches.length > 0) {
-                        shelf.batches.forEach((b) => {
-                          const pos = typeof b.queuePosition === 'number' && b.queuePosition >= 0 && b.queuePosition < slots ? b.queuePosition : null;
-                          if (pos !== null) {
-                            slotBatches[pos] = b;
+                          // populate slots by queuePosition
+                          const slotBatches: (InventoryBatch | null)[] = Array.from({
+                            length: slots,
+                          }).map(() => null);
+                          if (shelf.batches && shelf.batches.length > 0) {
+                            shelf.batches.forEach((b) => {
+                              const pos =
+                                typeof b.queuePosition === 'number' &&
+                                b.queuePosition >= 0 &&
+                                b.queuePosition < slots
+                                  ? b.queuePosition
+                                  : null;
+                              if (pos !== null) {
+                                slotBatches[pos] = b;
+                              }
+                            });
+
+                            // Fill remaining with leftover batches
+                            let fillIdx = 0;
+                            shelf.batches.forEach((b) => {
+                              if (
+                                typeof b.queuePosition !== 'number' ||
+                                b.queuePosition === null ||
+                                b.queuePosition < 0 ||
+                                b.queuePosition >= slots
+                              ) {
+                                while (fillIdx < slots && slotBatches[fillIdx]) fillIdx++;
+                                if (fillIdx < slots) {
+                                  slotBatches[fillIdx] = b;
+                                  fillIdx++;
+                                }
+                              }
+                            });
                           }
-                        });
 
-                        // Fill remaining with leftover batches
-                        let fillIdx = 0;
-                        shelf.batches.forEach((b) => {
-                          if (typeof b.queuePosition !== 'number' || b.queuePosition === null || b.queuePosition < 0 || b.queuePosition >= slots) {
-                            while (fillIdx < slots && slotBatches[fillIdx]) fillIdx++;
-                            if (fillIdx < slots) {
-                              slotBatches[fillIdx] = b;
-                              fillIdx++;
-                            }
-                          }
-                        });
-                      }
+                          // Determine shelf styling based on utilization
+                          const shelfBgColor =
+                            util > 90
+                              ? 'bg-linear-to-br from-red-50 to-red-100'
+                              : util > 70
+                                ? 'bg-linear-to-br from-amber-50 to-amber-100'
+                                : 'bg-linear-to-br from-slate-50 to-slate-100';
 
-                      // Determine shelf styling based on utilization
-                      const shelfBgColor =
-                        util > 90 ? 'bg-gradient-to-br from-red-50 to-red-100' :
-                        util > 70 ? 'bg-gradient-to-br from-amber-50 to-amber-100' :
-                        'bg-gradient-to-br from-slate-50 to-slate-100';
+                          const shelfBorderColor =
+                            util > 90
+                              ? 'border-red-300'
+                              : util > 70
+                                ? 'border-amber-300'
+                                : 'border-slate-300';
 
-                      const shelfBorderColor =
-                        util > 90 ? 'border-red-300' :
-                        util > 70 ? 'border-amber-300' :
-                        'border-slate-300';
-
-                      return (
-                        <Card key={shelf.id} className={cn('shadow-md hover:shadow-xl transition-all border-2', shelfBorderColor, shelfBgColor)}>
-                          <CardContent className="p-5">
-                            {/* Shelf Header */}
-                            <div className="mb-5 flex items-start justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="h-14 w-14 flex items-center justify-center rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 text-white font-bold text-lg shadow-lg border-2 border-slate-600">
-                                  {shelf.shelfCode}
-                                </div>
-                                <div>
-                                  <h4 className="text-base font-bold text-slate-900">{shelf.shelfName}</h4>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs font-medium text-slate-600 bg-white/60 px-2 py-0.5 rounded">
-                                      Row {shelf.row || '—'}
-                                    </span>
-                                    <span className="text-xs font-medium text-slate-600 bg-white/60 px-2 py-0.5 rounded">
-                                      Col {shelf.column || '—'}
-                                    </span>
-                                    {shelf.zone && shelf.zone !== 'General' && (
-                                      <Badge variant="outline" className="text-xs font-semibold bg-white">
-                                        {shelf.zone}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <Button size="sm" variant="outline" onClick={() => openShelfDetails(shelf)} className="text-xs font-semibold bg-white hover:bg-slate-50">
-                                <Eye className="h-3 w-3 mr-1" />
-                                View
-                              </Button>
-                            </div>
-
-                            {/* Utilization Section */}
-                            <div className="mb-5 rounded-lg bg-white/70 p-3 border border-slate-200">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Capacity</span>
-                                <span className={cn(
-                                  'text-sm font-bold px-2.5 py-1 rounded-md',
-                                  util > 90 ? 'text-red-700 bg-red-100 border border-red-300' :
-                                  util > 70 ? 'text-amber-700 bg-amber-100 border border-amber-300' :
-                                  'text-emerald-700 bg-emerald-100 border border-emerald-300'
-                                )}>
-                                  {util}%
-                                </span>
-                              </div>
-                              <div className="h-2.5 w-full rounded-full bg-slate-200 border border-slate-300 overflow-hidden shadow-inner">
-                                <div
-                                  className={cn(
-                                    'h-full transition-all duration-500',
-                                    util > 90 ? 'bg-gradient-to-r from-red-500 to-red-600' :
-                                    util > 70 ? 'bg-gradient-to-r from-amber-500 to-amber-600' :
-                                    'bg-gradient-to-r from-emerald-500 to-emerald-600'
-                                  )}
-                                  style={{ width: `${util}%` }}
-                                />
-                              </div>
-                              <div className="mt-2 flex items-center justify-between text-xs text-slate-600 font-semibold">
-                                <span className="flex items-center gap-1">
-                                  <Package className="h-3 w-3" />
-                                  {shelf.currentStock || 0} items
-                                </span>
-                                <span>Max: {shelf.capacity || 0}</span>
-                              </div>
-                            </div>
-
-                            {/* Physical Shelf Representation - 3D-like effect */}
-                            <div className="rounded-xl bg-gradient-to-b from-slate-200 to-slate-300 p-4 border-2 border-slate-400 shadow-lg">
-                              <div className="space-y-2">
-                                {Array.from({ length: levels }).map((_, levelIdx) => (
-                                  <div key={levelIdx} className="relative">
-                                    {/* Level Label */}
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider bg-slate-100 px-2 py-1 rounded shadow-sm">
-                                        Level {levels - levelIdx}
-                                      </span>
-                                      <span className="text-xs text-slate-600 font-medium">
-                                        {Array.from({ length: perLevel }).filter((__, posIdx) => {
-                                          const slotIndex = levelIdx * perLevel + posIdx;
-                                          return slotIndex < slots && slotBatches[slotIndex];
-                                        }).length} / {Math.min(perLevel, slots - levelIdx * perLevel)} slots
-                                      </span>
+                          return (
+                            <Card
+                              key={shelf.id}
+                              className={cn(
+                                'shadow-md hover:shadow-xl transition-all border-2',
+                                shelfBorderColor,
+                                shelfBgColor
+                              )}
+                            >
+                              <CardContent className="p-5">
+                                {/* Shelf Header */}
+                                <div className="mb-5 flex items-start justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-14 w-14 flex items-center justify-center rounded-xl bg-linear-to-br from-slate-700 to-slate-900 text-white font-bold text-lg shadow-lg border-2 border-slate-600">
+                                      {shelf.shelfCode}
                                     </div>
-
-                                    {/* Shelf Platform */}
-                                    <div className="relative">
-                                      {/* Background shelf bar */}
-                                      <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-slate-400 to-slate-500 rounded-sm shadow-md" />
-
-                                      {/* Slots */}
-                                      <div className="flex gap-2 pb-2">
-                                        {Array.from({ length: perLevel }).map((__, posIdx) => {
-                                          const slotIndex = levelIdx * perLevel + posIdx;
-                                          if (slotIndex >= slots) return <div key={posIdx} className="flex-1" />;
-                                          const batch = slotBatches[slotIndex];
-                                          const isFrontSlot = slotIndex === 0 && batch;
-                                          const isExpiring = batch && batch.daysUntilExpiry !== undefined && batch.daysUntilExpiry <= 7;
-                                          const isExpired = batch && batch.daysUntilExpiry !== undefined && batch.daysUntilExpiry < 0;
-
-                                          let slotBg = 'bg-white/50 border-slate-300 border-dashed';
-                                          let slotTextColor = 'text-slate-400';
-                                          let slotShadow = '';
-
-                                          if (batch) {
-                                            if (isExpired) {
-                                              slotBg = 'bg-gradient-to-br from-red-100 to-red-200 border-red-400';
-                                              slotTextColor = 'text-red-800';
-                                              slotShadow = 'shadow-md shadow-red-200';
-                                            } else if (isExpiring) {
-                                              slotBg = 'bg-gradient-to-br from-amber-100 to-amber-200 border-amber-400';
-                                              slotTextColor = 'text-amber-800';
-                                              slotShadow = 'shadow-md shadow-amber-200';
-                                            } else {
-                                              slotBg = 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-400';
-                                              slotTextColor = 'text-emerald-800';
-                                              slotShadow = 'shadow-md shadow-emerald-200';
-                                            }
-                                            if (isFrontSlot) {
-                                              slotShadow = 'shadow-lg shadow-blue-300 ring-2 ring-blue-500 ring-offset-1';
-                                            }
-                                          }
-
-                                          return (
-                                            <button
-                                              key={posIdx}
-                                              type="button"
-                                              onClick={() => {
-                                                if (batch) {
-                                                  setSelectedBatch(batch);
-                                                  setShowBatchDialog(true);
-                                                } else {
-                                                  openShelfDetails(shelf.id);
-                                                }
-                                              }}
-                                              className={cn(
-                                                'flex-1 min-h-20 rounded-md border-2 p-2.5 text-left flex flex-col justify-between hover:scale-105 transition-all relative font-medium cursor-pointer',
-                                                slotBg,
-                                                slotShadow
-                                              )}
-                                              title={batch ? `${batch.drug?.brandName} (Qty: ${batch.quantity}, Expires: ${formatDate(new Date(batch.expiryDate))})` : 'Empty slot - Click to view shelf'}
-                                            >
-                                              {isFrontSlot && (
-                                                <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-lg border-2 border-white z-10" title="FEFO Front - Pick First">
-                                                  ★
-                                                </div>
-                                              )}
-                                              <div className={cn('text-xs font-bold truncate leading-tight', batch ? 'text-slate-900' : slotTextColor)}>
-                                                {batch?.drug?.brandName ? batch.drug.brandName.substring(0, 10) : (batch ? 'Item' : '—')}
-                                              </div>
-                                              {batch && (
-                                                <div className="mt-auto space-y-1">
-                                                  <div className="flex items-center justify-between">
-                                                    <span className={cn('text-xs font-bold', slotTextColor)}>
-                                                      Qty: {batch.quantity}
-                                                    </span>
-                                                  </div>
-                                                  {batch.daysUntilExpiry !== undefined && (
-                                                    <div className={cn(
-                                                      'text-xs font-bold px-1.5 py-0.5 rounded text-center',
-                                                      batch.daysUntilExpiry < 0 ? 'bg-red-600 text-white' :
-                                                      batch.daysUntilExpiry <= 7 ? 'bg-amber-600 text-white' :
-                                                      'bg-emerald-600 text-white'
-                                                    )}>
-                                                      {batch.daysUntilExpiry < 0 ? 'EXP' : `${batch.daysUntilExpiry}d`}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              )}
-                                            </button>
-                                          );
-                                        })}
+                                    <div>
+                                      <h4 className="text-base font-bold text-slate-900">
+                                        {shelf.shelfName}
+                                      </h4>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs font-medium text-slate-600 bg-white/60 px-2 py-0.5 rounded">
+                                          Row {shelf.row || '—'}
+                                        </span>
+                                        <span className="text-xs font-medium text-slate-600 bg-white/60 px-2 py-0.5 rounded">
+                                          Col {shelf.column || '—'}
+                                        </span>
+                                        {shelf.zone && shelf.zone !== 'General' && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-xs font-semibold bg-white"
+                                          >
+                                            {shelf.zone}
+                                          </Badge>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
-                                ))}
-                              </div>
-                            </div>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => openShelfDetails(shelf)}
+                                    className="text-xs font-semibold bg-white hover:bg-slate-50"
+                                  >
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    View
+                                  </Button>
+                                </div>
 
-                            {/* Status Footer */}
-                            <div className="mt-4 flex items-center gap-2 flex-wrap">
-                              <Badge className={cn(
-                                'text-xs font-semibold',
-                                shelf.status === 'ACTIVE' ? 'bg-emerald-600' : 'bg-slate-500'
-                              )}>
-                                {shelf.status}
-                              </Badge>
-                              {util > 90 && (
-                                <Badge className="text-xs bg-red-600 text-white font-semibold">
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                  Critical Level
-                                </Badge>
-                              )}
-                              {util > 70 && util <= 90 && (
-                                <Badge className="text-xs bg-amber-600 text-white font-semibold">
-                                  High Utilization
-                                </Badge>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
+                                {/* Utilization Section */}
+                                <div className="mb-5 rounded-lg bg-white/70 p-3 border border-slate-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                      Capacity
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        'text-sm font-bold px-2.5 py-1 rounded-md',
+                                        util > 90
+                                          ? 'text-red-700 bg-red-100 border border-red-300'
+                                          : util > 70
+                                            ? 'text-amber-700 bg-amber-100 border border-amber-300'
+                                            : 'text-emerald-700 bg-emerald-100 border border-emerald-300'
+                                      )}
+                                    >
+                                      {util}%
+                                    </span>
+                                  </div>
+                                  <div className="h-2.5 w-full rounded-full bg-slate-200 border border-slate-300 overflow-hidden shadow-inner">
+                                    <div
+                                      className={cn(
+                                        'h-full transition-all duration-500',
+                                        util > 90
+                                          ? 'bg-linear-to-r from-red-500 to-red-600'
+                                          : util > 70
+                                            ? 'bg-linear-to-r from-amber-500 to-amber-600'
+                                            : 'bg-linear-to-r from-emerald-500 to-emerald-600'
+                                      )}
+                                      style={{ width: `${util}%` }}
+                                    />
+                                  </div>
+                                  <div className="mt-2 flex items-center justify-between text-xs text-slate-600 font-semibold">
+                                    <span className="flex items-center gap-1">
+                                      <Package className="h-3 w-3" />
+                                      {shelf.currentStock || 0} items
+                                    </span>
+                                    <span>Max: {shelf.capacity || 0}</span>
+                                  </div>
+                                </div>
 
-        {/* Alerts Tab */}
-        <TabsContent value="alerts" className="space-y-4">
-          {alerts.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <CheckCircle2 className="mb-4 h-16 w-16 text-emerald-500" />
-                <h3 className="text-lg font-semibold">No Incorrect Pick Alerts</h3>
-                <p className="text-sm text-slate-500">All picks are correct</p>
-              </CardContent>
-            </Card>
-          ) : (
-            alerts.map((alert) => (
-              <Card key={alert.id} className="border-l-4 border-l-red-500">
-                <CardContent className="flex items-start justify-between p-6">
-                  <div className="flex items-start gap-4">
-                    <AlertTriangle className="mt-1 h-5 w-5 text-red-500" />
-                    <div>
-                      <h4 className="font-semibold">Incorrect Pick Detected</h4>
-                      <p className="mt-1 text-sm text-slate-600">
-                        Shelf: <span className="font-medium">{alert.shelfLocation?.shelfCode}</span>
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {formatDate(new Date(alert.createdAt))}
-                      </p>
+                                {/* Physical Shelf Representation - 3D-like effect */}
+                                <div className="rounded-xl bg-linear-to-b from-slate-200 to-slate-300 p-4 border-2 border-slate-400 shadow-lg">
+                                  <div className="space-y-2">
+                                    {Array.from({ length: levels }).map((_, levelIdx) => (
+                                      <div key={levelIdx} className="relative">
+                                        {/* Level Label */}
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider bg-slate-100 px-2 py-1 rounded shadow-sm">
+                                            Level {levels - levelIdx}
+                                          </span>
+                                          <span className="text-xs text-slate-600 font-medium">
+                                            {
+                                              Array.from({ length: perLevel }).filter(
+                                                (__, posIdx) => {
+                                                  const slotIndex = levelIdx * perLevel + posIdx;
+                                                  return (
+                                                    slotIndex < slots && slotBatches[slotIndex]
+                                                  );
+                                                }
+                                              ).length
+                                            }{' '}
+                                            / {Math.min(perLevel, slots - levelIdx * perLevel)}{' '}
+                                            slots
+                                          </span>
+                                        </div>
+
+                                        {/* Shelf Platform */}
+                                        <div className="relative">
+                                          {/* Background shelf bar */}
+                                          <div className="absolute inset-x-0 bottom-0 h-10 bg-linear-to-b from-slate-400 to-slate-500 rounded-sm shadow-md" />
+
+                                          {/* Slots */}
+                                          <div className="flex gap-2 pb-2">
+                                            {Array.from({ length: perLevel }).map((__, posIdx) => {
+                                              const slotIndex = levelIdx * perLevel + posIdx;
+                                              if (slotIndex >= slots)
+                                                return <div key={posIdx} className="flex-1" />;
+                                              const batch = slotBatches[slotIndex];
+                                              const isFrontSlot = slotIndex === 0 && batch;
+                                              const isExpiring =
+                                                batch &&
+                                                batch.daysUntilExpiry !== undefined &&
+                                                batch.daysUntilExpiry <= 7;
+                                              const isExpired =
+                                                batch &&
+                                                batch.daysUntilExpiry !== undefined &&
+                                                batch.daysUntilExpiry < 0;
+
+                                              let slotBg =
+                                                'bg-white/50 border-slate-300 border-dashed';
+                                              let slotTextColor = 'text-slate-400';
+                                              let slotShadow = '';
+
+                                              if (batch) {
+                                                if (isExpired) {
+                                                  slotBg =
+                                                    'bg-linear-to-br from-red-100 to-red-200 border-red-400';
+                                                  slotTextColor = 'text-red-800';
+                                                  slotShadow = 'shadow-md shadow-red-200';
+                                                } else if (isExpiring) {
+                                                  slotBg =
+                                                    'bg-linear-to-br from-amber-100 to-amber-200 border-amber-400';
+                                                  slotTextColor = 'text-amber-800';
+                                                  slotShadow = 'shadow-md shadow-amber-200';
+                                                } else {
+                                                  slotBg =
+                                                    'bg-linear-to-br from-emerald-50 to-emerald-100 border-emerald-400';
+                                                  slotTextColor = 'text-emerald-800';
+                                                  slotShadow = 'shadow-md shadow-emerald-200';
+                                                }
+                                                if (isFrontSlot) {
+                                                  slotShadow =
+                                                    'shadow-lg shadow-blue-300 ring-2 ring-blue-500 ring-offset-1';
+                                                }
+                                              }
+
+                                              return (
+                                                <button
+                                                  key={posIdx}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    if (batch) {
+                                                      setSelectedBatch(batch);
+                                                      setShowBatchDialog(true);
+                                                    } else {
+                                                      openShelfDetails(shelf.id);
+                                                    }
+                                                  }}
+                                                  className={cn(
+                                                    'flex-1 min-h-20 rounded-md border-2 p-2.5 text-left flex flex-col justify-between hover:scale-105 transition-all relative font-medium cursor-pointer',
+                                                    slotBg,
+                                                    slotShadow
+                                                  )}
+                                                  title={
+                                                    batch
+                                                      ? `${batch.drug?.brandName} (Qty: ${batch.quantity}, Expires: ${formatDate(new Date(batch.expiryDate))})`
+                                                      : 'Empty slot - Click to view shelf'
+                                                  }
+                                                >
+                                                  {isFrontSlot && (
+                                                    <div
+                                                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-lg border-2 border-white z-10"
+                                                      title="FEFO Front - Pick First"
+                                                    >
+                                                      ★
+                                                    </div>
+                                                  )}
+                                                  <div
+                                                    className={cn(
+                                                      'text-xs font-bold truncate leading-tight',
+                                                      batch ? 'text-slate-900' : slotTextColor
+                                                    )}
+                                                  >
+                                                    {batch?.drug?.brandName
+                                                      ? batch.drug.brandName.substring(0, 10)
+                                                      : batch
+                                                        ? 'Item'
+                                                        : '—'}
+                                                  </div>
+                                                  {batch && (
+                                                    <div className="mt-auto space-y-1">
+                                                      <div className="flex items-center justify-between">
+                                                        <span
+                                                          className={cn(
+                                                            'text-xs font-bold',
+                                                            slotTextColor
+                                                          )}
+                                                        >
+                                                          Qty: {batch.quantity}
+                                                        </span>
+                                                      </div>
+                                                      {batch.daysUntilExpiry !== undefined && (
+                                                        <div
+                                                          className={cn(
+                                                            'text-xs font-bold px-1.5 py-0.5 rounded text-center',
+                                                            batch.daysUntilExpiry < 0
+                                                              ? 'bg-red-600 text-white'
+                                                              : batch.daysUntilExpiry <= 7
+                                                                ? 'bg-amber-600 text-white'
+                                                                : 'bg-emerald-600 text-white'
+                                                          )}
+                                                        >
+                                                          {batch.daysUntilExpiry < 0
+                                                            ? 'EXP'
+                                                            : `${batch.daysUntilExpiry}d`}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  )}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Status Footer */}
+                                <div className="mt-4 flex items-center gap-2 flex-wrap">
+                                  <Badge
+                                    className={cn(
+                                      'text-xs font-semibold',
+                                      shelf.status === 'ACTIVE' ? 'bg-emerald-600' : 'bg-slate-500'
+                                    )}
+                                  >
+                                    {shelf.status}
+                                  </Badge>
+                                  {util > 90 && (
+                                    <Badge className="text-xs bg-red-600 text-white font-semibold">
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      Critical Level
+                                    </Badge>
+                                  )}
+                                  {util > 70 && util <= 90 && (
+                                    <Badge className="text-xs bg-amber-600 text-white font-semibold">
+                                      High Utilization
+                                    </Badge>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                  <Button
-                    onClick={() => {
-                      setCurrentAlert(alert);
-                      setShowAlertModal(true);
-                    }}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Review
-                  </Button>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Alerts Tab */}
+            <TabsContent value="alerts" className="space-y-4">
+              {alerts.length === 0 ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <CheckCircle2 className="mb-4 h-16 w-16 text-emerald-500" />
+                    <h3 className="text-lg font-semibold">No Incorrect Pick Alerts</h3>
+                    <p className="text-sm text-slate-500">All picks are correct</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                alerts.map((alert) => (
+                  <Card key={alert.id} className="border-l-4 border-l-red-500">
+                    <CardContent className="flex items-start justify-between p-6">
+                      <div className="flex items-start gap-4">
+                        <AlertTriangle className="mt-1 h-5 w-5 text-red-500" />
+                        <div>
+                          <h4 className="font-semibold">Incorrect Pick Detected</h4>
+                          <p className="mt-1 text-sm text-slate-600">
+                            Shelf:{' '}
+                            <span className="font-medium">{alert.shelfLocation?.shelfCode}</span>
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatDate(new Date(alert.createdAt))}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          setCurrentAlert(alert);
+                          setShowAlertModal(true);
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Review
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </TabsContent>
           </div>
         </div>
       </Tabs>
 
       {/* Add/Edit Shelf Dialog */}
-      <Dialog open={showAddShelfDialog || showEditShelfDialog} onOpenChange={(open) => {
-        if (!open) {
-          setShowAddShelfDialog(false);
-          setShowEditShelfDialog(false);
-          setEditingShelf(null);
-          setSelectedZone('General');
-        }
-      }}>
+      <Dialog
+        open={showAddShelfDialog || showEditShelfDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowAddShelfDialog(false);
+            setShowEditShelfDialog(false);
+            setEditingShelf(null);
+            setSelectedZone('General');
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{editingShelf ? 'Edit Shelf Location' : 'Add New Shelf Location'}</DialogTitle>
+            <DialogTitle>
+              {editingShelf ? 'Edit Shelf Location' : 'Add New Shelf Location'}
+            </DialogTitle>
             <DialogDescription>
-              {editingShelf ? 'Update shelf location details.' : 'Create a new shelf location for organizing inventory batches.'}
+              {editingShelf
+                ? 'Update shelf location details.'
+                : 'Create a new shelf location for organizing inventory batches.'}
             </DialogDescription>
           </DialogHeader>
           <form
@@ -892,11 +1000,14 @@ export default function SmartShelfPage() {
 
                 // Refresh data
                 fetchData();
-              } catch (err: any) {
+              } catch (err: unknown) {
                 console.error('Error saving shelf:', err);
-                let errorMessage = err.message || 'Failed to save shelf';
+                let errorMessage = err instanceof Error ? err.message : 'Failed to save shelf';
 
-                if (errorMessage.includes('Unique constraint') || errorMessage.includes('shelf_code')) {
+                if (
+                  errorMessage.includes('Unique constraint') ||
+                  errorMessage.includes('shelf_code')
+                ) {
                   errorMessage = `A shelf with code "${shelfCode}" already exists. Please use a different shelf code.`;
                 }
 
@@ -931,18 +1042,18 @@ export default function SmartShelfPage() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="row">Row</Label>
-                  <Input 
-                    id="row" 
-                    name="row" 
+                  <Input
+                    id="row"
+                    name="row"
                     placeholder="1"
                     defaultValue={editingShelf?.row || ''}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="column">Column</Label>
-                  <Input 
-                    id="column" 
-                    name="column" 
+                  <Input
+                    id="column"
+                    name="column"
                     placeholder="A"
                     defaultValue={editingShelf?.column || ''}
                   />
@@ -976,9 +1087,9 @@ export default function SmartShelfPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="qrCode">QR Code (optional)</Label>
-                <Input 
-                  id="qrCode" 
-                  name="qrCode" 
+                <Input
+                  id="qrCode"
+                  name="qrCode"
                   placeholder="QR-SHELF-A1"
                   defaultValue={editingShelf?.qrCode || ''}
                 />
@@ -986,9 +1097,9 @@ export default function SmartShelfPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
-                <Input 
-                  id="notes" 
-                  name="notes" 
+                <Input
+                  id="notes"
+                  name="notes"
                   placeholder="Additional notes..."
                   defaultValue={editingShelf?.notes || ''}
                 />
@@ -1020,7 +1131,9 @@ export default function SmartShelfPage() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Shelf Details</DialogTitle>
-            <DialogDescription>{viewingShelf?.shelfCode} - {viewingShelf?.shelfName}</DialogDescription>
+            <DialogDescription>
+              {viewingShelf?.shelfCode} - {viewingShelf?.shelfName}
+            </DialogDescription>
           </DialogHeader>
           {viewingShelf && (
             <div className="space-y-4 py-4">
@@ -1047,7 +1160,9 @@ export default function SmartShelfPage() {
                 </div>
                 <div className="rounded-lg border p-4">
                   <p className="text-sm text-slate-600">Current Stock</p>
-                  <p className="text-lg font-bold text-slate-900">{viewingShelf.currentStock || 0}</p>
+                  <p className="text-lg font-bold text-slate-900">
+                    {viewingShelf.currentStock || 0}
+                  </p>
                 </div>
               </div>
 
@@ -1087,7 +1202,9 @@ export default function SmartShelfPage() {
               {viewingShelf.qrCode && (
                 <div className="rounded-lg border p-4">
                   <p className="text-sm text-slate-600">QR Code</p>
-                  <p className="text-lg font-mono font-bold text-slate-900">{viewingShelf.qrCode}</p>
+                  <p className="text-lg font-mono font-bold text-slate-900">
+                    {viewingShelf.qrCode}
+                  </p>
                 </div>
               )}
 
@@ -1101,7 +1218,9 @@ export default function SmartShelfPage() {
               {/* Shelf Replica Visualization */}
               <div className="mt-4">
                 <h3 className="text-sm font-semibold">Shelf Replica</h3>
-                <p className="text-xs text-slate-500">Visual layout representing levels and slots. Click a slot to view batch details.</p>
+                <p className="text-xs text-slate-500">
+                  Visual layout representing levels and slots. Click a slot to view batch details.
+                </p>
 
                 <div className="mt-3 rounded-lg border bg-white p-3 shadow-sm">
                   {/* 3 levels x 5 positions (editable) */}
@@ -1133,13 +1252,19 @@ export default function SmartShelfPage() {
                               )}
                             >
                               <div className="flex items-start justify-between">
-                                <div className="text-xs font-semibold text-slate-900 truncate">{batch?.drug?.brandName || (batch ? 'Unnamed Drug' : 'Empty')}</div>
+                                <div className="text-xs font-semibold text-slate-900 truncate">
+                                  {batch?.drug?.brandName || (batch ? 'Unnamed Drug' : 'Empty')}
+                                </div>
                                 {batch && (
-                                  <div className="text-[10px] text-slate-500">B: {batch.batchNumber}</div>
+                                  <div className="text-[10px] text-slate-500">
+                                    B: {batch.batchNumber}
+                                  </div>
                                 )}
                               </div>
                               <div className="mt-2 flex items-center justify-between">
-                                <div className="text-xs text-slate-500">{batch ? `${batch.quantity} units` : '—'}</div>
+                                <div className="text-xs text-slate-500">
+                                  {batch ? `${batch.quantity} units` : '—'}
+                                </div>
                                 <div className="text-xs">
                                   {batch ? getExpiryStatusBadge(batch.daysUntilExpiry) : null}
                                 </div>
@@ -1167,15 +1292,15 @@ export default function SmartShelfPage() {
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
             <DialogTitle>Batch Details</DialogTitle>
-            <DialogDescription>
-              Details for the selected batch or empty slot.
-            </DialogDescription>
+            <DialogDescription>Details for the selected batch or empty slot.</DialogDescription>
           </DialogHeader>
           {selectedBatch ? (
             <div className="space-y-4 py-2">
               <div className="rounded-lg border p-3">
                 <p className="text-xs text-slate-500">Drug</p>
-                <p className="text-lg font-bold text-slate-900">{selectedBatch.drug?.brandName || 'Unknown'}</p>
+                <p className="text-lg font-bold text-slate-900">
+                  {selectedBatch.drug?.brandName || 'Unknown'}
+                </p>
                 <p className="text-xs text-slate-500">{selectedBatch.drug?.genericName}</p>
               </div>
 
@@ -1192,14 +1317,18 @@ export default function SmartShelfPage() {
 
               <div className="rounded-lg border p-3">
                 <p className="text-xs text-slate-500">Expiry</p>
-                <p className="text-lg font-bold text-slate-900">{formatDate(new Date(selectedBatch.expiryDate))}</p>
+                <p className="text-lg font-bold text-slate-900">
+                  {formatDate(new Date(selectedBatch.expiryDate))}
+                </p>
               </div>
             </div>
           ) : (
             <div className="py-8 text-center text-slate-500">Empty slot — no batch assigned</div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowBatchDialog(false)}>Close</Button>
+            <Button variant="outline" onClick={() => setShowBatchDialog(false)}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1210,7 +1339,8 @@ export default function SmartShelfPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Shelf?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete shelf <strong>{shelfToDelete?.shelfCode}</strong>? This action cannot be undone.
+              Are you sure you want to delete shelf <strong>{shelfToDelete?.shelfCode}</strong>?
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1226,9 +1356,10 @@ export default function SmartShelfPage() {
                   setDeletingShelfId(null);
                   setShelfToDelete(null);
                   fetchData();
-                } catch (err: any) {
+                } catch (err: unknown) {
                   console.error('Error deleting shelf:', err);
-                  alert(`Error: ${err.message || 'Failed to delete shelf'}`);
+                  const errorMsg = err instanceof Error ? err.message : 'Failed to delete shelf';
+                  alert(`Error: ${errorMsg}`);
                 }
               }}
               className="bg-red-600 hover:bg-red-700"
@@ -1253,15 +1384,18 @@ export default function SmartShelfPage() {
               <div className="rounded-lg border bg-red-50 p-4">
                 <p className="text-sm font-semibold text-red-900">FEFO Violation Detected</p>
                 <p className="mt-2 text-xs text-red-700">
-                  The pharmacist should have picked the batch at the front of the queue (oldest expiry) but picked a different one instead.
+                  The pharmacist should have picked the batch at the front of the queue (oldest
+                  expiry) but picked a different one instead.
                 </p>
               </div>
               <div className="space-y-2 text-sm">
                 <p>
-                  <span className="font-medium">Shelf:</span> {currentAlert.shelfLocation?.shelfCode}
+                  <span className="font-medium">Shelf:</span>{' '}
+                  {currentAlert.shelfLocation?.shelfCode}
                 </p>
                 <p>
-                  <span className="font-medium">Time:</span> {formatDate(new Date(currentAlert.createdAt))}
+                  <span className="font-medium">Time:</span>{' '}
+                  {formatDate(new Date(currentAlert.createdAt))}
                 </p>
               </div>
             </div>

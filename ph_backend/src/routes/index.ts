@@ -14,6 +14,7 @@ import prescriptionRoutes from './prescription.routes';
 import prescriptionHistoryRoutes from './prescription-history.routes';
 import alertRoutes from './alert.routes';
 import reorderRoutes from './reorder.routes';
+import smartShelfRoutes from './smart-shelf.routes';
 
 const router: ExpressRouter = Router();
 
@@ -33,6 +34,7 @@ router.use('/prescriptions', prescriptionRoutes);
 router.use('/prescription-histories', prescriptionHistoryRoutes);
 router.use('/alerts', alertRoutes);
 router.use('/reorders', reorderRoutes);
+router.use('/smart-shelf', smartShelfRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {

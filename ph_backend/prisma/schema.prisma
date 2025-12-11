@@ -39,6 +39,18 @@ enum ReorderStatus {
   REJECTED
 }
 
+enum ShelfStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum ExpiryAction {
+  RETURN_TO_VENDOR
+  DISCOUNT
+  DISPOSE
+}
+
 // ==================== MODELS ====================
 
 model User {
@@ -107,14 +119,18 @@ model InventoryBatch {
   expiryDate    DateTime @map("expiry_date")
   supplierId    String?  @map("supplier_id")
   location      String?
+  shelfLocationId String? @map("shelf_location_id") // Link to smart shelf
+  queuePosition Int?     @map("queue_position") // Position in virtual queue (0 = front)
   dateAdded     DateTime @default(now()) @map("date_added")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  drug      Drug       @relation(fields: [drugId], references: [id], onDelete: Cascade)
-  supplier  Supplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  saleItems SaleItem[]
+  drug          Drug           @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  supplier      Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  shelfLocation ShelfLocation? @relation(fields: [shelfLocationId], references: [id], onDelete: SetNull)
+  saleItems     SaleItem[]
+  expiryActions ExpiryAction_Record[]
 
   @@map("inventory_batches")
 }
@@ -248,5 +264,62 @@ model PrescriptionHistory {
   sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@map("prescription_histories")
+}
+
+// ==================== SMART SHELF MODELS ====================
+
+model ShelfLocation {
+  id            String       @id @default(cuid())
+  shelfCode     String       @unique @map("shelf_code") // e.g., "A1", "B2", "C3"
+  shelfName     String       @map("shelf_name")
+  row           String?      // Physical row identifier
+  column        String?      // Physical column identifier
+  zone          String?      // Storage zone (e.g., "Refrigerated", "Controlled", "General")
+  capacity      Int          @default(50) // Max items this shelf can hold
+  status        ShelfStatus  @default(ACTIVE)
+  qrCode        String?      @unique @map("qr_code") // QR code for scanning
+  notes         String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  batches       InventoryBatch[]
+  pickAlerts    IncorrectPickAlert[]
+
+  @@map("shelf_locations")
+}
+
+model IncorrectPickAlert {
+  id                String         @id @default(cuid())
+  shelfLocationId   String         @map("shelf_location_id")
+  batchIdPicked     String         @map("batch_id_picked") // The batch they tried to pick
+  batchIdExpected   String         @map("batch_id_expected") // The batch at front of queue
+  pickedBy          String?        @map("picked_by") // User ID
+  acknowledged      Boolean        @default(false)
+  acknowledgedAt    DateTime?      @map("acknowledged_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  // Relations
+  shelfLocation     ShelfLocation  @relation(fields: [shelfLocationId], references: [id], onDelete: Cascade)
+
+  @@map("incorrect_pick_alerts")
+}
+
+model ExpiryAction_Record {
+  id             String        @id @default(cuid())
+  batchId        String        @map("batch_id")
+  action         ExpiryAction
+  performedBy    String?       @map("performed_by") // User ID
+  quantity       Int           // Quantity affected
+  reason         String?
+  vendorReturn   Boolean       @default(false) @map("vendor_return") // If returned to vendor
+  discountAmount Decimal?      @map("discount_amount") @db.Decimal(10, 2) // If discounted
+  notes          String?
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  batch          InventoryBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@map("expiry_action_records")
 }
 

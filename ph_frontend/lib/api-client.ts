@@ -289,20 +289,20 @@ class ApiClient {
   // Smart Shelf endpoints
   smartShelf = {
     // Shelf Location CRUD
-    getAllShelves: (params?: { page?: number; limit?: number; status?: string; zone?: string; search?: string }) =>
-      this.getPaginated<unknown>('/smart-shelf', params),
-    getShelfById: (id: string) =>
-      this.get<ApiResponse<unknown>>(`/smart-shelf/${id}`),
-    createShelf: (data: unknown) =>
-      this.post<unknown>('/smart-shelf', data),
-    updateShelf: (id: string, data: unknown) =>
-      this.put<unknown>(`/smart-shelf/${id}`, data),
-    deleteShelf: (id: string) =>
-      this.delete<unknown>(`/smart-shelf/${id}`),
+    getAllShelves: (params?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      zone?: string;
+      search?: string;
+    }) => this.getPaginated<unknown>('/smart-shelf', params),
+    getShelfById: (id: string) => this.get<ApiResponse<unknown>>(`/smart-shelf/${id}`),
+    createShelf: (data: unknown) => this.post<unknown>('/smart-shelf', data),
+    updateShelf: (id: string, data: unknown) => this.put<unknown>(`/smart-shelf/${id}`, data),
+    deleteShelf: (id: string) => this.delete<unknown>(`/smart-shelf/${id}`),
 
     // Analytics
-    getAnalytics: () =>
-      this.get<ApiResponse<unknown>>('/smart-shelf/analytics'),
+    getAnalytics: () => this.get<ApiResponse<unknown>>('/smart-shelf/analytics'),
 
     // Virtual Queue
     getShelfQueue: (shelfId: string) =>
@@ -318,13 +318,14 @@ class ApiClient {
     getUnacknowledgedAlerts: (limit?: number) =>
       this.get<ApiResponse<unknown>>('/smart-shelf/alerts/unacknowledged', { limit }),
     acknowledgeAlert: (alertId: string) =>
-      this.request<ApiResponse<unknown>>(`/smart-shelf/alerts/${alertId}/acknowledge`, { method: 'PATCH' }),
+      this.request<ApiResponse<unknown>>(`/smart-shelf/alerts/${alertId}/acknowledge`, {
+        method: 'PATCH',
+      }),
 
     // Expiry Management
     getExpiringBatches: (params?: { days?: number; page?: number; limit?: number }) =>
       this.getPaginated<unknown>('/smart-shelf/expiring', params),
-    recordExpiryAction: (data: unknown) =>
-      this.post<unknown>('/smart-shelf/expiry-action', data),
+    recordExpiryAction: (data: unknown) => this.post<unknown>('/smart-shelf/expiry-action', data),
     getExpiryActionHistory: (params?: { batchId?: string; page?: number; limit?: number }) =>
       this.getPaginated<unknown>('/smart-shelf/expiry-actions', params),
   };

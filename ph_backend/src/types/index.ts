@@ -88,6 +88,8 @@ export interface InventoryBatch {
   expiryDate: Date;
   supplierId: string;
   location?: string;
+  shelfLocationId?: string;
+  queuePosition?: number;
   dateAdded: Date;
 }
 
@@ -208,4 +210,112 @@ import { Request } from 'express';
 
 export interface AuthenticatedRequest extends Omit<Request, 'user'> {
   user?: UserResponse;
+}
+
+// ==================== SMART SHELF TYPES ====================
+
+export type ShelfStatus = 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+export type ExpiryAction = 'RETURN_TO_VENDOR' | 'DISCOUNT' | 'DISPOSE';
+
+export interface ShelfLocation {
+  id: string;
+  shelfCode: string;
+  shelfName: string;
+  row?: string;
+  column?: string;
+  zone?: string;
+  capacity: number;
+  status: ShelfStatus;
+  qrCode?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateShelfLocationRequest {
+  shelfCode: string;
+  shelfName: string;
+  row?: string;
+  column?: string;
+  zone?: string;
+  capacity?: number;
+  status?: ShelfStatus;
+  qrCode?: string;
+  notes?: string;
+}
+
+export interface UpdateShelfLocationRequest {
+  shelfName?: string;
+  row?: string;
+  column?: string;
+  zone?: string;
+  capacity?: number;
+  status?: ShelfStatus;
+  qrCode?: string;
+  notes?: string;
+}
+
+export interface IncorrectPickAlert {
+  id: string;
+  shelfLocationId: string;
+  batchIdPicked: string;
+  batchIdExpected: string;
+  pickedBy?: string;
+  acknowledged: boolean;
+  acknowledgedAt?: Date;
+  createdAt: Date;
+}
+
+export interface ExpiryActionRecord {
+  id: string;
+  batchId: string;
+  action: ExpiryAction;
+  performedBy?: string;
+  quantity: number;
+  reason?: string;
+  vendorReturn: boolean;
+  discountAmount?: number;
+  notes?: string;
+  createdAt: Date;
+}
+
+export interface CreateExpiryActionRequest {
+  batchId: string;
+  action: ExpiryAction;
+  quantity: number;
+  reason?: string;
+  vendorReturn?: boolean;
+  discountAmount?: number;
+  notes?: string;
+}
+
+// Smart Shelf with batches (enriched response)
+export interface ShelfLocationWithBatches extends ShelfLocation {
+  batches: Array<
+    InventoryBatch & {
+      drug: Drug;
+      supplier?: Supplier;
+      daysUntilExpiry: number;
+      isExpired: boolean;
+      isExpiringSoon: boolean;
+    }
+  >;
+  currentStock: number;
+  utilizationPercentage: number;
+}
+
+// Virtual Queue Item
+export interface QueuedBatch {
+  batch: InventoryBatch & { drug: Drug };
+  position: number;
+  isAtFront: boolean;
+}
+
+// Batch pick validation response
+export interface PickValidationResult {
+  isValid: boolean;
+  expectedBatch?: InventoryBatch & { drug: Drug };
+  pickedBatch?: InventoryBatch & { drug: Drug };
+  message: string;
+  alert?: IncorrectPickAlert;
 }

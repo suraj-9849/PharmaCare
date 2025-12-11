@@ -21,16 +21,16 @@ const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 });
 
-// Test connection on startup
-prisma
-  .$connect()
-  .then(() => {
+// Test connection function (call this from server startup)
+export const connectDatabase = async () => {
+  try {
+    await prisma.$connect();
     console.log('✓ Database connected successfully');
-  })
-  .catch((error) => {
+  } catch (error) {
     console.error('✗ Database connection failed:', error);
     process.exit(1);
-  });
+  }
+};
 
 // Graceful shutdown
 const gracefulShutdown = async () => {
@@ -40,7 +40,6 @@ const gracefulShutdown = async () => {
   console.log('Database connections closed');
 };
 
-process.on('beforeExit', gracefulShutdown);
 process.on('SIGINT', async () => {
   await gracefulShutdown();
   process.exit(0);
