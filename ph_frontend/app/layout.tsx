@@ -20,7 +20,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <head>
+        <style>
+          @import
+          url(&quot;https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap&quot;);
+        </style>
+      </head>
+      <body className={`inter font-sans antialiased`}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
