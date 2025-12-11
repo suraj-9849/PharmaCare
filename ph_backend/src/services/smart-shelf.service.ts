@@ -1,4 +1,5 @@
 import prisma from '../config/database';
+import { Prisma } from '@prisma/client';
 import {
   CreateShelfLocationRequest,
   UpdateShelfLocationRequest,
@@ -6,6 +7,9 @@ import {
   QueuedBatch,
   PickValidationResult,
   CreateExpiryActionRequest,
+  InventoryBatch,
+  Drug,
+  IncorrectPickAlert,
 } from '../types';
 
 export class SmartShelfService {
@@ -22,7 +26,7 @@ export class SmartShelfService {
     search?: string
   ) {
     const skip = (page - 1) * limit;
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (status) where.status = status;
     if (zone) where.zone = zone;
@@ -92,12 +96,14 @@ export class SmartShelfService {
     const currentStock = shelf.batches.reduce((sum, b) => sum + b.quantity, 0);
     const utilizationPercentage = (currentStock / shelf.capacity) * 100;
 
-    return {
-      ...shelf,
-      batches: enrichedBatches,
+    const result: ShelfLocationWithBatches = {
+      ...(shelf as unknown as ShelfLocationWithBatches),
+      batches: enrichedBatches as unknown as ShelfLocationWithBatches['batches'],
       currentStock,
       utilizationPercentage,
-    } as any as ShelfLocationWithBatches;
+    };
+
+    return result;
   }
 
   /**
@@ -118,10 +124,10 @@ export class SmartShelfService {
           notes: data.notes,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle unique constraint violations with user-friendly messages
-      if (error.code === 'P2002') {
-        const field = error.meta?.target?.[0];
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        const field = (error.meta as { target?: string[] } | undefined)?.target?.[0];
         if (field === 'shelf_code') {
           throw new Error(
             `Shelf code "${data.shelfCode}" already exists. Please use a different code.`
@@ -224,7 +230,7 @@ export class SmartShelfService {
     });
 
     return batches.map((batch, index) => ({
-      batch: batch as any,
+      batch: batch as unknown as QueuedBatch['batch'],
       position: batch.queuePosition ?? index,
       isAtFront: batch.queuePosition === 0,
     }));
@@ -282,8 +288,8 @@ export class SmartShelfService {
     if (pickedBatch.id === expectedBatch.id) {
       return {
         isValid: true,
-        expectedBatch: expectedBatch as any,
-        pickedBatch: pickedBatch as any,
+        expectedBatch: expectedBatch as unknown as InventoryBatch & { drug: Drug },
+        pickedBatch: pickedBatch as unknown as InventoryBatch & { drug: Drug },
         message: 'Correct batch picked (FEFO compliant)',
       };
     }
@@ -300,10 +306,10 @@ export class SmartShelfService {
 
     return {
       isValid: false,
-      expectedBatch: expectedBatch as any,
-      pickedBatch: pickedBatch as any,
+      expectedBatch: expectedBatch as unknown as InventoryBatch & { drug: Drug },
+      pickedBatch: pickedBatch as unknown as InventoryBatch & { drug: Drug },
       message: `Incorrect pick! Expected batch "${expectedBatch.batchNumber}" (expires ${this.formatDate(expectedBatch.expiryDate)}), but you picked "${pickedBatch.batchNumber}" (expires ${this.formatDate(pickedBatch.expiryDate)})`,
-      alert: alert as any,
+      alert: alert as unknown as IncorrectPickAlert,
     };
   }
 

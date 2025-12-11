@@ -31,10 +31,11 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       pagination: result.pagination,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error fetching shelves:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch shelves',
+      message: message || 'Failed to fetch shelves',
     });
   }
 });
@@ -52,11 +53,12 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
       message: 'Shelf created successfully',
       data: shelf,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error creating shelf:', error);
     return res.status(400).json({
       success: false,
-      message: error.message || 'Failed to create shelf',
+      message: message || 'Failed to create shelf',
     });
   }
 });
@@ -75,10 +77,11 @@ router.get('/analytics', async (req: AuthenticatedRequest, res) => {
       data: analytics,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error fetching analytics:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch analytics',
+      message: message || 'Failed to fetch analytics',
     });
   }
 });
@@ -102,10 +105,11 @@ router.get('/expiring', async (req: AuthenticatedRequest, res) => {
       pagination: result.pagination,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error fetching expiring batches:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch expiring batches',
+      message: message || 'Failed to fetch expiring batches',
     });
   }
 });
@@ -129,10 +133,11 @@ router.get('/expiry-actions', async (req: AuthenticatedRequest, res) => {
       pagination: result.pagination,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error fetching expiry actions:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch expiry actions',
+      message: message || 'Failed to fetch expiry actions',
     });
   }
 });
@@ -151,11 +156,12 @@ router.post('/expiry-action', async (req: AuthenticatedRequest, res) => {
       message: 'Expiry action recorded successfully',
       data: actionRecord,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error recording expiry action:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Failed to record expiry action',
+      message: message || 'Failed to record expiry action',
     });
   }
 });
@@ -175,10 +181,11 @@ router.get('/alerts/unacknowledged', async (req: AuthenticatedRequest, res) => {
       data: alerts,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error fetching alerts:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch alerts',
+      message: message || 'Failed to fetch alerts',
     });
   }
 });
@@ -197,11 +204,12 @@ router.patch('/alerts/:alertId/acknowledge', async (req: AuthenticatedRequest, r
       message: 'Alert acknowledged successfully',
       data: alert,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error acknowledging alert:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Failed to acknowledge alert',
+      message: message || 'Failed to acknowledge alert',
     });
   }
 });
@@ -230,10 +238,11 @@ router.get('/:id', async (req: AuthenticatedRequest, res) => {
       data: shelf,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error fetching shelf:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch shelf',
+      message: message || 'Failed to fetch shelf',
     });
   }
 });
@@ -252,11 +261,12 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
       message: 'Shelf updated successfully',
       data: shelf,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error updating shelf:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Failed to update shelf',
+      message: message || 'Failed to update shelf',
     });
   }
 });
@@ -274,11 +284,12 @@ router.delete('/:id', async (req: AuthenticatedRequest, res) => {
       success: true,
       message: 'Shelf deleted successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error deleting shelf:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Failed to delete shelf',
+      message: message || 'Failed to delete shelf',
     });
   }
 });
@@ -298,10 +309,11 @@ router.get('/:id/queue', async (req: AuthenticatedRequest, res) => {
       data: queue,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error fetching queue:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch queue',
+      message: message || 'Failed to fetch queue',
     });
   }
 });
@@ -320,11 +332,12 @@ router.post('/:shelfId/batch/:batchId', async (req: AuthenticatedRequest, res) =
       message: 'Batch added to shelf successfully',
       data: batch,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error adding batch to shelf:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Failed to add batch to shelf',
+      message: message || 'Failed to add batch to shelf',
     });
   }
 });
@@ -343,11 +356,12 @@ router.delete('/:id/batch/front', async (req: AuthenticatedRequest, res) => {
       message: 'Batch removed from front successfully',
       data: batch,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error removing batch:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Failed to remove batch',
+      message: message || 'Failed to remove batch',
     });
   }
 });
@@ -377,11 +391,12 @@ router.post('/:shelfId/validate-pick', async (req: AuthenticatedRequest, res) =>
       message: result.message,
       data: result,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('Error validating pick:', error);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Failed to validate pick',
+      message: message || 'Failed to validate pick',
     });
   }
 });
