@@ -37,12 +37,11 @@ RUN pnpm add -D prisma@7.1.0
 
 # Copy built application and generated files from builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-# Copy node_modules/.pnpm to get Prisma client
-COPY --from=builder /app/node_modules/.pnpm /app/node_modules/.pnpm
+# Copy node_modules with Prisma client
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy environment file template
 COPY .env.example .env.example
