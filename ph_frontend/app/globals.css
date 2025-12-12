@@ -3,6 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
+
 .inter {
   font-family: "Inter", sans-serif;
   font-optical-sizing: auto;
@@ -122,7 +123,6 @@
   * {
     @apply border-border outline-ring/50;
   }
-
   body {
     @apply bg-background text-foreground;
   }
