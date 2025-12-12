@@ -92,7 +92,7 @@ export default function PrescriptionHistoryPage() {
   const handleReorder = async (prescription: PrescriptionHistory) => {
     try {
       let successCount = 0;
-      let failedMeds: string[] = [];
+      const failedMeds: string[] = [];
 
       // Create reorder requests for all medications in the prescription
       for (const med of prescription.medications) {

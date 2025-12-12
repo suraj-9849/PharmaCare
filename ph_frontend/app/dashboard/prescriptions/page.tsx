@@ -124,16 +124,6 @@ interface MedicationDialogState {
   quantity: number;
 }
 
-interface Drug {
-  id: string;
-  brandName: string;
-  genericName: string;
-  category: string;
-  manufacturer: string;
-  requiresPrescription: boolean;
-  sku: string;
-}
-
 interface ReorderDialogState {
   isOpen: boolean;
   medication: AvailabilityResult | null;
@@ -197,6 +187,7 @@ export default function PrescriptionVerificationPage() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [isViewHistorySheetOpen, setIsViewHistorySheetOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('verification');
   const [selectedHistoryPrescription, setSelectedHistoryPrescription] =
     useState<PrescriptionHistory | null>(null);
 
@@ -540,57 +531,48 @@ export default function PrescriptionVerificationPage() {
       setError(null);
       setSuccess(null);
 
-      let successCount = 0;
-      let failedMeds: string[] = [];
+      console.log('Loading prescription from history for new purchase:', prescription.id);
 
-      for (const med of prescription.medications) {
-        try {
-          // Search for the drug by name
-          const searchResponse = await apiClient.get<PaginatedResponse<Drug>>('/drugs', {
-            search: med.medicationName,
-            limit: 1,
-          });
+      // Recreate prescription data from history
+      const historicalPrescriptionData = {
+        patientName: prescription.patientName,
+        doctorName: prescription.doctorName || null,
+        prescriptionDate: prescription.prescriptionDate
+          ? new Date(prescription.prescriptionDate).toISOString().split('T')[0]
+          : null,
+        medications: prescription.medications,
+        confidence: prescription.confidence || 85,
+      };
 
-          const drugs = searchResponse.data || [];
+      // Set the prescription data to trigger availability check
+      setPrescriptionData(historicalPrescriptionData);
 
-          if (drugs.length === 0) {
-            failedMeds.push(med.medicationName);
-            continue;
-          }
+      // Switch to the verification tab
+      setActiveTab('verification');
 
-          const drug = drugs[0];
+      // Check availability for these medications
+      await checkAvailability(prescription.medications);
 
-          // Create reorder request
-          await apiClient.post('/reorders', {
-            drugId: drug.id,
-            requestedQty: med.quantity,
-            priority: 'MEDIUM',
-            notes: `Reorder from previous prescription: ${prescription.patientName}`,
-          });
-
-          successCount++;
-        } catch (medError) {
-          console.error(`Failed to create reorder for ${med.medicationName}:`, medError);
-          failedMeds.push(med.medicationName);
-        }
+      // Pre-fill customer details if available
+      if (prescription.customerName) {
+        setCustomerDetails({
+          id: undefined,
+          name: prescription.customerName,
+          phone: prescription.customerPhone || '',
+          email: prescription.customerEmail || '',
+          address: prescription.customerAddress || '',
+        });
       }
 
-      if (successCount > 0) {
-        let message = `✓ Successfully created ${successCount} reorder request(s) from prescription`;
-        if (failedMeds.length > 0) {
-          message += `\n⚠ Failed for: ${failedMeds.join(', ')}`;
-        }
-        setSuccess(message);
+      setSuccess(
+        `✓ Prescription loaded from history!\nPatient: ${prescription.patientName}\nChecking availability for ${prescription.medications.length} medication(s)...`
+      );
 
-        // Scroll to top to show the message
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        setError('Failed to create any reorder requests. Medications not found in inventory.');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      // Scroll to top to show the verification tab
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      console.error('Failed to create reorder requests:', err);
-      setError('Failed to create reorder requests');
+      console.error('Failed to load prescription from history:', err);
+      setError('Failed to load prescription from history');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -613,13 +595,14 @@ export default function PrescriptionVerificationPage() {
       </div>
 
       <Tabs
-        defaultValue="verification"
-        className="w-full"
+        value={activeTab}
         onValueChange={(value) => {
+          setActiveTab(value);
           if (value === 'history') {
             fetchPrescriptionHistory();
           }
         }}
+        className="w-full"
       >
         <TabsList className="grid w-full max-w-md grid-cols-2 mb-5">
           <TabsTrigger value="verification">
@@ -1227,11 +1210,7 @@ export default function PrescriptionVerificationPage() {
                   {reorderDialog.medication.prescribedMedication.quantity}
                 </p>
               </div>
-              <Button
-                onClick={handleRequestReorder}
-                disabled={!!success}
-                className="w-full"
-              >
+              <Button onClick={handleRequestReorder} disabled={!!success} className="w-full">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Create Reorder Request
               </Button>

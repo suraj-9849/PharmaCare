@@ -1,7 +1,9 @@
 import { Resend } from 'resend';
 import env from '../config/env';
 
-const resend: Resend | null = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const resend: Resend | null = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 interface LowStockEmailData {
   drugName: string;

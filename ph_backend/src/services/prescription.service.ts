@@ -321,193 +321,196 @@ Matching rules:
     customerEmail?: string,
     customerAddress?: string
   ) {
-    return await prisma.$transaction(async (tx) => {
-      // Note: Frontend already filters out OUT_OF_STOCK items before calling this method
-      // Only IN_STOCK and LOW_STOCK items should be passed to this method
+    return await prisma.$transaction(
+      async (tx) => {
+        // Note: Frontend already filters out OUT_OF_STOCK items before calling this method
+        // Only IN_STOCK and LOW_STOCK items should be passed to this method
 
-      // Handle customer - either use existing ID or create/update new one
-      let finalCustomerId = customerId;
-      if (customerName && !customerId) {
-        // Check if customer with this phone exists
-        if (customerPhone) {
-          const existingCustomer = await tx.customer.findFirst({
-            where: { phone: customerPhone },
-          });
-          if (existingCustomer) {
-            finalCustomerId = existingCustomer.id;
+        // Handle customer - either use existing ID or create/update new one
+        let finalCustomerId = customerId;
+        if (customerName && !customerId) {
+          // Check if customer with this phone exists
+          if (customerPhone) {
+            const existingCustomer = await tx.customer.findFirst({
+              where: { phone: customerPhone },
+            });
+            if (existingCustomer) {
+              finalCustomerId = existingCustomer.id;
+            } else {
+              // Create new customer
+              const newCustomer = await tx.customer.create({
+                data: {
+                  name: customerName,
+                  phone: customerPhone,
+                  email: customerEmail || '',
+                  address: customerAddress || '',
+                },
+              });
+              finalCustomerId = newCustomer.id;
+            }
           } else {
-            // Create new customer
+            // Create new customer with just name and email
             const newCustomer = await tx.customer.create({
               data: {
                 name: customerName,
-                phone: customerPhone,
+                phone: '',
                 email: customerEmail || '',
                 address: customerAddress || '',
               },
             });
             finalCustomerId = newCustomer.id;
           }
-        } else {
-          // Create new customer with just name and email
-          const newCustomer = await tx.customer.create({
-            data: {
-              name: customerName,
-              phone: '',
-              email: customerEmail || '',
-              address: customerAddress || '',
-            },
-          });
-          finalCustomerId = newCustomer.id;
         }
-      }
 
-      // Calculate total amount and prepare sale items
-      let totalAmount = 0;
-      const saleItems: Prisma.SaleItemCreateWithoutSaleInput[] = [];
+        // Calculate total amount and prepare sale items
+        let totalAmount = 0;
+        const saleItems: Prisma.SaleItemCreateWithoutSaleInput[] = [];
 
-      for (const result of availabilityResults) {
-        const requestedQty = result.prescribedMedication.quantity;
-        let remainingQty = requestedQty;
+        for (const result of availabilityResults) {
+          const requestedQty = result.prescribedMedication.quantity;
+          let remainingQty = requestedQty;
 
-        // Allocate from batches using FEFO (First Expired, First Out)
-        for (const batch of result.availableBatches) {
-          if (remainingQty <= 0) break;
+          // Allocate from batches using FEFO (First Expired, First Out)
+          for (const batch of result.availableBatches) {
+            if (remainingQty <= 0) break;
 
-          const qtyFromBatch = Math.min(remainingQty, batch.quantity);
-          const sellPrice = Number(batch.sellPrice);
+            const qtyFromBatch = Math.min(remainingQty, batch.quantity);
+            const sellPrice = Number(batch.sellPrice);
 
-          saleItems.push({
-            drug: { connect: { id: result.matchResult.matchedDrugId! } },
-            batch: { connect: { id: batch.id } },
-            quantity: qtyFromBatch,
-            unitPrice: sellPrice,
-            subtotal: qtyFromBatch * sellPrice,
-          });
-
-          totalAmount += qtyFromBatch * sellPrice;
-          remainingQty -= qtyFromBatch;
-
-          // Update batch quantity (reduce stock)
-          await tx.inventoryBatch.update({
-            where: { id: batch.id },
-            data: { quantity: { decrement: qtyFromBatch } },
-          });
-
-          // Check if stock is low after decrement and create alert
-          const updatedBatch = await tx.inventoryBatch.findUnique({
-            where: { id: batch.id },
-            include: { drug: true },
-          });
-
-          if (
-            updatedBatch &&
-            updatedBatch.quantity <= updatedBatch.drug.reorderLevel &&
-            updatedBatch.quantity > 0
-          ) {
-            // Check if alert already exists
-            const existingAlert = await tx.stockAlert.findFirst({
-              where: {
-                drugId: updatedBatch.drugId,
-                alertType: 'LOW_STOCK',
-                isRead: false,
-              },
+            saleItems.push({
+              drug: { connect: { id: result.matchResult.matchedDrugId! } },
+              batch: { connect: { id: batch.id } },
+              quantity: qtyFromBatch,
+              unitPrice: sellPrice,
+              subtotal: qtyFromBatch * sellPrice,
             });
 
-            if (!existingAlert) {
-              await tx.stockAlert.create({
-                data: {
+            totalAmount += qtyFromBatch * sellPrice;
+            remainingQty -= qtyFromBatch;
+
+            // Update batch quantity (reduce stock)
+            await tx.inventoryBatch.update({
+              where: { id: batch.id },
+              data: { quantity: { decrement: qtyFromBatch } },
+            });
+
+            // Check if stock is low after decrement and create alert
+            const updatedBatch = await tx.inventoryBatch.findUnique({
+              where: { id: batch.id },
+              include: { drug: true },
+            });
+
+            if (
+              updatedBatch &&
+              updatedBatch.quantity <= updatedBatch.drug.reorderLevel &&
+              updatedBatch.quantity > 0
+            ) {
+              // Check if alert already exists
+              const existingAlert = await tx.stockAlert.findFirst({
+                where: {
                   drugId: updatedBatch.drugId,
                   alertType: 'LOW_STOCK',
-                  message: `${updatedBatch.drug.brandName} stock is low (${updatedBatch.quantity} units remaining)`,
                   isRead: false,
                 },
               });
+
+              if (!existingAlert) {
+                await tx.stockAlert.create({
+                  data: {
+                    drugId: updatedBatch.drugId,
+                    alertType: 'LOW_STOCK',
+                    message: `${updatedBatch.drug.brandName} stock is low (${updatedBatch.quantity} units remaining)`,
+                    isRead: false,
+                  },
+                });
+              }
             }
+          }
+
+          // Check if we fulfilled the entire quantity
+          if (remainingQty > 0) {
+            throw new Error(
+              `Insufficient stock for ${result.prescribedMedication.medicationName}. Required: ${requestedQty}, Available: ${requestedQty - remainingQty}`
+            );
           }
         }
 
-        // Check if we fulfilled the entire quantity
-        if (remainingQty > 0) {
-          throw new Error(
-            `Insufficient stock for ${result.prescribedMedication.medicationName}. Required: ${requestedQty}, Available: ${requestedQty - remainingQty}`
-          );
-        }
-      }
-
-      // Create sale record
-      const saleCreateData: Prisma.SaleCreateInput = {
-        user: {
-          connect: { id: userId },
-        },
-        totalAmount,
-        paymentMethod,
-        status: 'COMPLETED',
-        saleItems: {
-          create: saleItems,
-        },
-      };
-
-      if (finalCustomerId) {
-        saleCreateData.customer = { connect: { id: finalCustomerId } };
-      }
-
-      const saleInclude: Prisma.SaleInclude = {
-        saleItems: {
-          include: {
-            drug: true,
-            batch: true,
+        // Create sale record
+        const saleCreateData: Prisma.SaleCreateInput = {
+          user: {
+            connect: { id: userId },
           },
-        },
-      };
-
-      if (finalCustomerId) {
-        saleInclude.customer = true;
-      }
-
-      const sale = await tx.sale.create({
-        data: saleCreateData,
-        include: saleInclude,
-      });
-
-      // Create prescription history record
-      const medicationsJson = JSON.stringify(
-        availabilityResults.map((result) => ({
-          medicationName: result.prescribedMedication.medicationName,
-          dosage: result.prescribedMedication.dosage,
-          frequency: result.prescribedMedication.frequency,
-          duration: result.prescribedMedication.duration,
-          quantity: result.prescribedMedication.quantity,
-          instructions: result.prescribedMedication.instructions,
-        }))
-      );
-
-      await tx.prescriptionHistory.create({
-        data: {
-          saleId: sale.id,
-          patientName: prescriptionData.patientName || 'N/A',
-          doctorName: prescriptionData.doctorName || null,
-          prescriptionDate: prescriptionData.prescriptionDate
-            ? new Date(prescriptionData.prescriptionDate)
-            : null,
-          medications: medicationsJson,
           totalAmount,
           paymentMethod,
-          customerName: customerName || 'N/A',
-          customerPhone: customerPhone || null,
-          customerEmail: customerEmail || null,
-          customerAddress: customerAddress || null,
-          confidence: prescriptionData.confidence,
-        },
-      });
+          status: 'COMPLETED',
+          saleItems: {
+            create: saleItems,
+          },
+        };
 
-      return {
-        sale,
-        prescriptionData,
-        itemsProcessed: availabilityResults.length,
-        totalAmount,
-      };
-    }, {
-      timeout: 15000, // Increase timeout to 15 seconds for complex prescription purchases
-    });
+        if (finalCustomerId) {
+          saleCreateData.customer = { connect: { id: finalCustomerId } };
+        }
+
+        const saleInclude: Prisma.SaleInclude = {
+          saleItems: {
+            include: {
+              drug: true,
+              batch: true,
+            },
+          },
+        };
+
+        if (finalCustomerId) {
+          saleInclude.customer = true;
+        }
+
+        const sale = await tx.sale.create({
+          data: saleCreateData,
+          include: saleInclude,
+        });
+
+        // Create prescription history record
+        const medicationsJson = JSON.stringify(
+          availabilityResults.map((result) => ({
+            medicationName: result.prescribedMedication.medicationName,
+            dosage: result.prescribedMedication.dosage,
+            frequency: result.prescribedMedication.frequency,
+            duration: result.prescribedMedication.duration,
+            quantity: result.prescribedMedication.quantity,
+            instructions: result.prescribedMedication.instructions,
+          }))
+        );
+
+        await tx.prescriptionHistory.create({
+          data: {
+            saleId: sale.id,
+            patientName: prescriptionData.patientName || 'N/A',
+            doctorName: prescriptionData.doctorName || null,
+            prescriptionDate: prescriptionData.prescriptionDate
+              ? new Date(prescriptionData.prescriptionDate)
+              : null,
+            medications: medicationsJson,
+            totalAmount,
+            paymentMethod,
+            customerName: customerName || 'N/A',
+            customerPhone: customerPhone || null,
+            customerEmail: customerEmail || null,
+            customerAddress: customerAddress || null,
+            confidence: prescriptionData.confidence,
+          },
+        });
+
+        return {
+          sale,
+          prescriptionData,
+          itemsProcessed: availabilityResults.length,
+          totalAmount,
+        };
+      },
+      {
+        timeout: 15000, // Increase timeout to 15 seconds for complex prescription purchases
+      }
+    );
   }
 }
