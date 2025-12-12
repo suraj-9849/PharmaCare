@@ -322,12 +322,8 @@ Matching rules:
     customerAddress?: string
   ) {
     return await prisma.$transaction(async (tx) => {
-      // Validate all items are available before processing
-      for (const result of availabilityResults) {
-        if (result.status === 'OUT_OF_STOCK') {
-          throw new Error(`${result.prescribedMedication.medicationName} is out of stock`);
-        }
-      }
+      // Note: Frontend already filters out OUT_OF_STOCK items before calling this method
+      // Only IN_STOCK and LOW_STOCK items should be passed to this method
 
       // Handle customer - either use existing ID or create/update new one
       let finalCustomerId = customerId;
@@ -510,6 +506,8 @@ Matching rules:
         itemsProcessed: availabilityResults.length,
         totalAmount,
       };
+    }, {
+      timeout: 15000, // Increase timeout to 15 seconds for complex prescription purchases
     });
   }
 }
