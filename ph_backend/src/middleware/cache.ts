@@ -94,7 +94,14 @@ export const cacheKeyGenerators = {
    * Generate key with query parameters
    */
   withQuery: (req: Request, prefix: string): string => {
-    const query = JSON.stringify(req.query);
+    const queryObj = req.query as Record<string, unknown>;
+    const sortedQuery = Object.keys(queryObj)
+      .sort()
+      .reduce<Record<string, unknown>>((acc, key) => {
+        acc[key] = queryObj[key];
+        return acc;
+      }, {});
+    const query = JSON.stringify(sortedQuery);
     return `${prefix}:${req.path}:${query}`;
   },
 
