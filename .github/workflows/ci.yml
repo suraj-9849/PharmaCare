@@ -447,8 +447,11 @@ jobs:
           python-version: '3.11'
 
       - name: Install uv
-        working-directory: ./ai_assistant
         run: pip install uv
+
+      - name: Install Python dev dependencies
+        working-directory: ./ai_assistant
+        run: uv pip install -e ".[dev]"
 
       - name: Run comprehensive validation
         run: pnpm validate
