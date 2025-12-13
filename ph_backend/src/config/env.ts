@@ -65,7 +65,7 @@ const env: Environment = {
 
   // Valkey/Redis Cache
   VALKEY_HOST: process.env.VALKEY_HOST || 'localhost',
-  VALKEY_PORT: parseInt(process.env.VALKEY_PORT || '6379', 10),
+  VALKEY_PORT: parseInt(process.env.VALKEY_PORT || '6379', 10) || 6379,
   VALKEY_PASSWORD: process.env.VALKEY_PASSWORD,
   CACHE_TTL: parseInt(process.env.CACHE_TTL || '300', 10), // 5 minutes default
 
