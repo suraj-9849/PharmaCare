@@ -25,9 +25,9 @@ jobs:
       - name: Install uv
         run: pip install uv
 
-      - name: Install dependencies with dev tools
+      - name: Sync dependencies with dev tools
         working-directory: ./ai_assistant
-        run: uv pip install -e ".[dev]"
+        run: uv sync --extra dev
 
       - name: Check formatting with black
         working-directory: ./ai_assistant
@@ -53,9 +53,9 @@ jobs:
       - name: Install uv
         run: pip install uv
 
-      - name: Install dependencies with dev tools
+      - name: Sync dependencies with dev tools
         working-directory: ./ai_assistant
-        run: uv pip install -e ".[dev]"
+        run: uv sync --extra dev
 
       - name: Type check with mypy
         working-directory: ./ai_assistant
@@ -78,9 +78,9 @@ jobs:
       - name: Install uv
         run: pip install uv
 
-      - name: Install dependencies with dev tools
+      - name: Sync dependencies with dev tools
         working-directory: ./ai_assistant
-        run: uv pip install -e ".[dev]"
+        run: uv sync --extra dev
 
       - name: Run tests
         working-directory: ./ai_assistant

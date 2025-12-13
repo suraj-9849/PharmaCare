@@ -25,7 +25,7 @@
     "frontend:format": "cd ph_frontend && pnpm format",
     "frontend:format:check": "cd ph_frontend && pnpm format:check",
     "ai:dev": "cd ai_assistant && uv run uvicorn main:app --reload --port 8000",
-    "ai:setup": "cd ai_assistant && uv pip install -e '.[dev]'",
+    "ai:setup": "cd ai_assistant && uv sync --extra dev",
     "ai:format": "cd ai_assistant && uv run black .",
     "ai:lint": "cd ai_assistant && uv run flake8 .",
     "ai:type-check": "cd ai_assistant && uv run mypy .",
