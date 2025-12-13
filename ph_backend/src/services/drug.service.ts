@@ -78,7 +78,7 @@ export class DrugService {
     }
 
     // Cache the result
-    await CacheService.drug.set(parseInt(id), drug);
+    await CacheService.drug.set(id, drug);
 
     return drug;
   }
