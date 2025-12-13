@@ -441,6 +441,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        working-directory: ./ph_backend
+        run: pnpm prisma generate
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
