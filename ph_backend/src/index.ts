@@ -42,11 +42,21 @@ app.get('/', (_req, res) => {
 
 app.get('/health', async (_req, res) => {
   const valkeyHealthy = await ValkeyClient.healthCheck();
+
+  let databaseHealthy = true;
+  try {
+    const { prisma } = await import('./config/database');
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (error) {
+    console.error('Database health check failed:', error);
+    databaseHealthy = false;
+  }
+
   const health = {
-    status: 'healthy',
+    status: databaseHealthy && valkeyHealthy ? 'healthy' : 'degraded',
     timestamp: new Date().toISOString(),
     services: {
-      database: 'connected',
+      database: databaseHealthy ? 'connected' : 'disconnected',
       cache: valkeyHealthy ? 'connected' : 'disconnected',
     },
   };
