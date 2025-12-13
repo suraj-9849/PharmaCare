@@ -84,10 +84,17 @@ class CacheUtil {
 
       const pipeline = valkeyClient.pipeline();
       keys.forEach((key) => pipeline.del(key));
-      await pipeline.exec();
+      const results = await pipeline.exec();
 
-      return keys.length;
-    } catch (error) {
+      const deletedCount =
+        results?.reduce((count, [err, deleted]) => {
+          if (!err && typeof deleted === 'number') {
+            return count + deleted;
+          }
+          return count;
+        }, 0) ?? 0;
+
+      return deletedCount;
       console.error(`Cache delete pattern error for "${pattern}":`, error);
       return 0;
     }
