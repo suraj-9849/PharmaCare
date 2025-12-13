@@ -67,7 +67,7 @@ const env: Environment = {
   VALKEY_HOST: process.env.VALKEY_HOST || 'localhost',
   VALKEY_PORT: parseInt(process.env.VALKEY_PORT || '6379', 10) || 6379,
   VALKEY_PASSWORD: process.env.VALKEY_PASSWORD,
-  CACHE_TTL: parseInt(process.env.CACHE_TTL || '300', 10), // 5 minutes default
+  CACHE_TTL: parseInt(process.env.CACHE_TTL || '300', 10) || 300, // 5 minutes default
 
   // Helpers
   isDevelopment: process.env.NODE_ENV === 'development',
