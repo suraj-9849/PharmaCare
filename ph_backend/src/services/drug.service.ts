@@ -78,7 +78,7 @@ export class DrugService {
     }
 
     // Cache the result
-    await CacheService.drug.set(id, drug);
+    await CacheService.drug.set(parseInt(id), drug);
 
     return drug;
   }
@@ -117,10 +117,7 @@ export class DrugService {
     });
 
     // Invalidate drug caches and related inventory/low-stock caches
-    await Promise.all([
-      CacheService.drug.invalidate(),
-      CacheService.inventory.invalidate(),
-    ]);
+    await Promise.all([CacheService.drug.invalidate(), CacheService.inventory.invalidate()]);
 
     return drug;
   }

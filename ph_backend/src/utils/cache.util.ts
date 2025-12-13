@@ -95,6 +95,7 @@ class CacheUtil {
         }, 0) ?? 0;
 
       return deletedCount;
+    } catch (error) {
       console.error(`Cache delete pattern error for "${pattern}":`, error);
       return 0;
     }
