@@ -4,7 +4,7 @@ Uses Neon PostgreSQL database
 """
 
 from langchain.tools import tool
-from sqlalchemy import create_engine, text, func
+from sqlalchemy import create_engine, text
 from sqlalchemy.pool import NullPool
 from datetime import datetime, timedelta
 import random
@@ -17,6 +17,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+
 def get_db_engine():
     """Create database engine with NullPool for Neon"""
     return create_engine(
@@ -27,9 +28,10 @@ def get_db_engine():
             "keepalives": 1,
             "keepalives_idle": 30,
             "keepalives_interval": 10,
-            "keepalives_count": 5
-        }
+            "keepalives_count": 5,
+        },
     )
+
 
 def mock_price_search(drug_name: str):
     """Simulates searching for drug prices online"""
@@ -39,7 +41,8 @@ def mock_price_search(drug_name: str):
     for source in sources:
         price = round(base_price * random.uniform(0.85, 1.15), 2)
         results.append({"source": source, "price": price})
-    return sorted(results, key=lambda x: x['price'])
+    return sorted(results, key=lambda x: x["price"])
+
 
 @tool
 def check_low_stock(query: str = "") -> str:
@@ -51,7 +54,8 @@ def check_low_stock(query: str = "") -> str:
     try:
         with engine.connect() as conn:
             # Query to find drugs with total inventory below reorder level
-            sql = text("""
+            sql = text(
+                """
                 SELECT
                     d.id,
                     d.brand_name,
@@ -65,7 +69,8 @@ def check_low_stock(query: str = "") -> str:
                 HAVING COALESCE(SUM(ib.quantity), 0) < d.reorder_level
                 ORDER BY (d.reorder_level - COALESCE(SUM(ib.quantity), 0)) DESC
                 LIMIT 20
-            """)
+            """
+            )
             result = conn.execute(sql)
             rows = result.fetchall()
 
@@ -95,6 +100,7 @@ def check_low_stock(query: str = "") -> str:
     except Exception as e:
         return f"❌ Error checking stock: {str(e)}"
 
+
 @tool
 def check_expiring_stock(days: str = "30") -> str:
     """
@@ -104,13 +110,14 @@ def check_expiring_stock(days: str = "30") -> str:
     """
     try:
         num_days = int(days) if days.isdigit() else 30
-    except:
+    except (ValueError, AttributeError):
         num_days = 30
 
     engine = get_db_engine()
     try:
         with engine.connect() as conn:
-            sql = text("""
+            sql = text(
+                """
                 SELECT
                     d.brand_name,
                     d.generic_name,
@@ -126,7 +133,8 @@ def check_expiring_stock(days: str = "30") -> str:
                     AND ib.quantity > 0
                 ORDER BY ib.expiry_date ASC
                 LIMIT 20
-            """)
+            """
+            )
             result = conn.execute(sql, {"days_interval": timedelta(days=num_days)})
             rows = result.fetchall()
 
@@ -147,12 +155,15 @@ def check_expiring_stock(days: str = "30") -> str:
             response += f"\n**Total units expiring:** {total_qty}\n"
             response += "\n### 💡 Recommendations\n"
             response += "- Consider running promotions on items expiring within 14 days\n"
-            response += "- Items expiring within 7 days should be prioritized for sale or disposal\n"
+            response += (
+                "- Items expiring within 7 days should be prioritized for sale or disposal\n"
+            )
 
             return response
 
     except Exception as e:
         return f"❌ Error checking expiry: {str(e)}"
+
 
 @tool
 def get_inventory_summary(query: str = "") -> str:
@@ -164,17 +175,20 @@ def get_inventory_summary(query: str = "") -> str:
     try:
         with engine.connect() as conn:
             # Total drugs and batches
-            stats_sql = text("""
+            stats_sql = text(
+                """
                 SELECT
                     (SELECT COUNT(*) FROM drugs) as total_drugs,
                     (SELECT COUNT(*) FROM inventory_batches WHERE quantity > 0) as active_batches,
                     (SELECT COALESCE(SUM(quantity), 0) FROM inventory_batches) as total_units,
                     (SELECT COUNT(*) FROM suppliers) as total_suppliers
-            """)
+            """
+            )
             stats = conn.execute(stats_sql).fetchone()
 
             # Category breakdown
-            category_sql = text("""
+            category_sql = text(
+                """
                 SELECT
                     d.category,
                     COUNT(DISTINCT d.id) as drug_count,
@@ -183,11 +197,13 @@ def get_inventory_summary(query: str = "") -> str:
                 LEFT JOIN inventory_batches ib ON d.id = ib.drug_id
                 GROUP BY d.category
                 ORDER BY total_stock DESC
-            """)
+            """
+            )
             categories = conn.execute(category_sql).fetchall()
 
             # Low stock count
-            low_stock_sql = text("""
+            low_stock_sql = text(
+                """
                 SELECT COUNT(*) as low_stock_count
                 FROM (
                     SELECT d.id
@@ -196,7 +212,8 @@ def get_inventory_summary(query: str = "") -> str:
                     GROUP BY d.id, d.reorder_level
                     HAVING COALESCE(SUM(ib.quantity), 0) < d.reorder_level
                 ) subq
-            """)
+            """
+            )
             low_stock = conn.execute(low_stock_sql).fetchone()
 
             response = "## 📊 Inventory Summary\n\n"
@@ -218,6 +235,7 @@ def get_inventory_summary(query: str = "") -> str:
     except Exception as e:
         return f"❌ Error getting summary: {str(e)}"
 
+
 @tool
 def place_order(order_details: str) -> str:
     """
@@ -225,12 +243,12 @@ def place_order(order_details: str) -> str:
     Input should be like '50 Paracetamol and 30 Amoxicillin' or 'order 100 Dolo 650'.
     """
     # Parse items from text
-    pattern = r'(\d+)\s+(?:units?\s+(?:of\s+)?)?([a-zA-Z0-9\s\-]+?)(?:,|\s+and\s+|$)'
+    pattern = r"(\d+)\s+(?:units?\s+(?:of\s+)?)?([a-zA-Z0-9\s\-]+?)(?:,|\s+and\s+|$)"
     matches = re.findall(pattern, order_details, re.IGNORECASE)
 
     if not matches:
         # Try simpler pattern
-        pattern = r'(\d+)\s+([a-zA-Z0-9\s\-]+)'
+        pattern = r"(\d+)\s+([a-zA-Z0-9\s\-]+)"
         matches = re.findall(pattern, order_details, re.IGNORECASE)
 
     items = [(int(qty), name.strip()) for qty, name in matches if name.strip()]
@@ -246,7 +264,7 @@ def place_order(order_details: str) -> str:
 
     for qty, drug_name in items:
         prices = mock_price_search(drug_name)
-        price_map = {p['source']: p['price'] for p in prices}
+        price_map = {p["source"]: p["price"] for p in prices}
 
         best_source = min(price_map, key=price_map.get)
         best_price = price_map[best_source]
@@ -270,12 +288,13 @@ def place_order(order_details: str) -> str:
 
     response += "### 🔗 Quick Links\n"
     for qty, drug_name in items[:5]:
-        encoded_name = drug_name.replace(' ', '%20')
+        encoded_name = drug_name.replace(" ", "%20")
         response += f"- [{drug_name}](https://www.1mg.com/search/all?name={encoded_name})\n"
 
     response += "\n---\n**To confirm purchase:** Type `Confirmed payment for " + order_details + "`"
 
     return response
+
 
 @tool
 def add_stock_to_inventory(confirmation_details: str) -> str:
@@ -284,14 +303,18 @@ def add_stock_to_inventory(confirmation_details: str) -> str:
     Use when user confirms payment like 'Confirmed payment for 50 Paracetamol'.
     """
     # Parse items
-    pattern = r'(\d+)\s+(?:units?\s+(?:of\s+)?)?([a-zA-Z0-9\s\-]+?)(?:,|\s+and\s+|$)'
+    pattern = r"(\d+)\s+(?:units?\s+(?:of\s+)?)?([a-zA-Z0-9\s\-]+?)(?:,|\s+and\s+|$)"
     matches = re.findall(pattern, confirmation_details, re.IGNORECASE)
 
     if not matches:
-        pattern = r'(\d+)\s+([a-zA-Z0-9\s\-]+)'
+        pattern = r"(\d+)\s+([a-zA-Z0-9\s\-]+)"
         matches = re.findall(pattern, confirmation_details, re.IGNORECASE)
 
-    items = [(int(qty), name.strip()) for qty, name in matches if name.strip() and name.strip().lower() not in ['confirmed', 'payment', 'for']]
+    items = [
+        (int(qty), name.strip())
+        for qty, name in matches
+        if name.strip() and name.strip().lower() not in ["confirmed", "payment", "for"]
+    ]
 
     if not items:
         return "❌ Could not parse items. Please try: 'Confirmed payment for 50 Dolo 650'"
@@ -311,11 +334,13 @@ def add_stock_to_inventory(confirmation_details: str) -> str:
 
             for qty, drug_name in items:
                 # Find drug (case-insensitive partial match)
-                drug_sql = text("""
+                drug_sql = text(
+                    """
                     SELECT id, brand_name FROM drugs
                     WHERE LOWER(brand_name) LIKE LOWER(:name)
                     LIMIT 1
-                """)
+                """
+                )
                 drug = conn.execute(drug_sql, {"name": f"%{drug_name}%"}).fetchone()
 
                 if not drug:
@@ -324,31 +349,40 @@ def add_stock_to_inventory(confirmation_details: str) -> str:
 
                 # Create new batch
                 batch_id = str(uuid.uuid4())[:24]  # cuid-like
-                batch_number = f"ORD-{datetime.now().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+                batch_number = (
+                    f"ORD-{datetime.now().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+                )
                 purchase_price = round(random.uniform(20, 200), 2)
                 sell_price = round(purchase_price * 1.3, 2)  # 30% markup
                 expiry_date = datetime.now() + timedelta(days=365 + random.randint(0, 365))
 
-                insert_sql = text("""
+                insert_sql = text(
+                    """
                     INSERT INTO inventory_batches
                     (id, drug_id, batch_number, quantity, purchase_price, sell_price, expiry_date, supplier_id, location, date_added, created_at, updated_at)
                     VALUES
                     (:id, :drug_id, :batch_number, :quantity, :purchase_price, :sell_price, :expiry_date, :supplier_id, :location, NOW(), NOW(), NOW())
-                """)
+                """
+                )
 
-                conn.execute(insert_sql, {
-                    "id": batch_id,
-                    "drug_id": drug.id,
-                    "batch_number": batch_number,
-                    "quantity": qty,
-                    "purchase_price": purchase_price,
-                    "sell_price": sell_price,
-                    "expiry_date": expiry_date,
-                    "supplier_id": supplier_id,
-                    "location": "Main Storage"
-                })
+                conn.execute(
+                    insert_sql,
+                    {
+                        "id": batch_id,
+                        "drug_id": drug.id,
+                        "batch_number": batch_number,
+                        "quantity": qty,
+                        "purchase_price": purchase_price,
+                        "sell_price": sell_price,
+                        "expiry_date": expiry_date,
+                        "supplier_id": supplier_id,
+                        "location": "Main Storage",
+                    },
+                )
 
-                results.append(f"✅ Added **{qty}** units of **{drug.brand_name}** (Batch: {batch_number})")
+                results.append(
+                    f"✅ Added **{qty}** units of **{drug.brand_name}** (Batch: {batch_number})"
+                )
 
             conn.commit()
 
@@ -360,6 +394,7 @@ def add_stock_to_inventory(confirmation_details: str) -> str:
     except Exception as e:
         return f"❌ Error updating inventory: {str(e)}"
 
+
 @tool
 def remove_stock_from_inventory(removal_details: str) -> str:
     """
@@ -367,14 +402,18 @@ def remove_stock_from_inventory(removal_details: str) -> str:
     Use when user says 'remove 10 Dolo' or 'discard expired Paracetamol'.
     Uses FIFO - removes from oldest batches first.
     """
-    pattern = r'(\d+)\s+(?:units?\s+(?:of\s+)?)?([a-zA-Z0-9\s\-]+?)(?:,|\s+and\s+|$)'
+    pattern = r"(\d+)\s+(?:units?\s+(?:of\s+)?)?([a-zA-Z0-9\s\-]+?)(?:,|\s+and\s+|$)"
     matches = re.findall(pattern, removal_details, re.IGNORECASE)
 
     if not matches:
-        pattern = r'(\d+)\s+([a-zA-Z0-9\s\-]+)'
+        pattern = r"(\d+)\s+([a-zA-Z0-9\s\-]+)"
         matches = re.findall(pattern, removal_details, re.IGNORECASE)
 
-    items = [(int(qty), name.strip()) for qty, name in matches if name.strip() and name.strip().lower() not in ['remove', 'delete', 'discard']]
+    items = [
+        (int(qty), name.strip())
+        for qty, name in matches
+        if name.strip() and name.strip().lower() not in ["remove", "delete", "discard"]
+    ]
 
     if not items:
         return "❌ Could not parse items. Please try: 'Remove 10 Dolo 650'"
@@ -386,11 +425,13 @@ def remove_stock_from_inventory(removal_details: str) -> str:
         with engine.connect() as conn:
             for qty_to_remove, drug_name in items:
                 # Find drug
-                drug_sql = text("""
+                drug_sql = text(
+                    """
                     SELECT id, brand_name FROM drugs
                     WHERE LOWER(brand_name) LIKE LOWER(:name)
                     LIMIT 1
-                """)
+                """
+                )
                 drug = conn.execute(drug_sql, {"name": f"%{drug_name}%"}).fetchone()
 
                 if not drug:
@@ -398,12 +439,14 @@ def remove_stock_from_inventory(removal_details: str) -> str:
                     continue
 
                 # Get batches with stock, ordered by expiry (FIFO)
-                batches_sql = text("""
+                batches_sql = text(
+                    """
                     SELECT id, batch_number, quantity, expiry_date
                     FROM inventory_batches
                     WHERE drug_id = :drug_id AND quantity > 0
                     ORDER BY expiry_date ASC
-                """)
+                """
+                )
                 batches = conn.execute(batches_sql, {"drug_id": drug.id}).fetchall()
 
                 if not batches:
@@ -419,27 +462,33 @@ def remove_stock_from_inventory(removal_details: str) -> str:
 
                     if batch.quantity >= remaining:
                         # Partial removal from this batch
-                        update_sql = text("""
+                        update_sql = text(
+                            """
                             UPDATE inventory_batches
                             SET quantity = quantity - :qty, updated_at = NOW()
                             WHERE id = :id
-                        """)
+                        """
+                        )
                         conn.execute(update_sql, {"qty": remaining, "id": batch.id})
                         removed += remaining
                         remaining = 0
                     else:
                         # Remove entire batch quantity
-                        update_sql = text("""
+                        update_sql = text(
+                            """
                             UPDATE inventory_batches
                             SET quantity = 0, updated_at = NOW()
                             WHERE id = :id
-                        """)
+                        """
+                        )
                         conn.execute(update_sql, {"id": batch.id})
                         removed += batch.quantity
                         remaining -= batch.quantity
 
                 if remaining > 0:
-                    results.append(f"⚠️ Removed **{removed}** of **{drug.brand_name}** (requested {qty_to_remove}, only {removed} available)")
+                    results.append(
+                        f"⚠️ Removed **{removed}** of **{drug.brand_name}** (requested {qty_to_remove}, only {removed} available)"
+                    )
                 else:
                     results.append(f"✅ Removed **{removed}** units of **{drug.brand_name}**")
 
@@ -449,6 +498,7 @@ def remove_stock_from_inventory(removal_details: str) -> str:
 
     except Exception as e:
         return f"❌ Error removing stock: {str(e)}"
+
 
 @tool
 def get_sales_analytics(period: str = "today") -> str:
@@ -463,7 +513,7 @@ def get_sales_analytics(period: str = "today") -> str:
         "today": "CURRENT_DATE",
         "week": "CURRENT_DATE - INTERVAL '7 days'",
         "month": "CURRENT_DATE - INTERVAL '30 days'",
-        "all": "DATE '2020-01-01'"
+        "all": "DATE '2020-01-01'",
     }
 
     date_filter = period_map.get(period.lower(), period_map["today"])
@@ -471,7 +521,8 @@ def get_sales_analytics(period: str = "today") -> str:
     try:
         with engine.connect() as conn:
             # Total sales
-            sales_sql = text(f"""
+            sales_sql = text(
+                f"""
                 SELECT
                     COUNT(*) as total_transactions,
                     COALESCE(SUM(total_amount), 0) as total_revenue,
@@ -479,11 +530,13 @@ def get_sales_analytics(period: str = "today") -> str:
                 FROM sales
                 WHERE sale_date >= {date_filter}
                     AND status = 'COMPLETED'
-            """)
+            """
+            )
             sales = conn.execute(sales_sql).fetchone()
 
             # Top selling drugs
-            top_drugs_sql = text(f"""
+            top_drugs_sql = text(
+                f"""
                 SELECT
                     d.brand_name,
                     SUM(si.quantity) as units_sold,
@@ -496,11 +549,13 @@ def get_sales_analytics(period: str = "today") -> str:
                 GROUP BY d.id, d.brand_name
                 ORDER BY units_sold DESC
                 LIMIT 5
-            """)
+            """
+            )
             top_drugs = conn.execute(top_drugs_sql).fetchall()
 
             # Payment method breakdown
-            payment_sql = text(f"""
+            payment_sql = text(
+                f"""
                 SELECT
                     payment_method,
                     COUNT(*) as count,
@@ -510,7 +565,8 @@ def get_sales_analytics(period: str = "today") -> str:
                     AND status = 'COMPLETED'
                 GROUP BY payment_method
                 ORDER BY total DESC
-            """)
+            """
+            )
             payments = conn.execute(payment_sql).fetchall()
 
             response = f"## 📈 Sales Analytics ({period.title()})\n\n"
@@ -524,7 +580,9 @@ def get_sales_analytics(period: str = "today") -> str:
                 response += "| Drug | Units Sold | Revenue |\n"
                 response += "|------|------------|--------|\n"
                 for drug in top_drugs:
-                    response += f"| {drug.brand_name} | {drug.units_sold} | ₹{float(drug.revenue):,.2f} |\n"
+                    response += (
+                        f"| {drug.brand_name} | {drug.units_sold} | ₹{float(drug.revenue):,.2f} |\n"
+                    )
                 response += "\n"
 
             if payments:
