@@ -53,7 +53,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { formatDateTime, formatDate } from '@/lib/utils';
-import type { PaginatedResponse } from '@/lib/types';
+import type { PaginatedResponse, Drug } from '@/lib/types';
 
 interface Medication {
   medicationName: string;
@@ -124,16 +124,6 @@ interface MedicationDialogState {
   quantity: number;
 }
 
-interface Drug {
-  id: string;
-  brandName: string;
-  genericName: string;
-  category: string;
-  manufacturer: string;
-  requiresPrescription: boolean;
-  sku: string;
-}
-
 interface ReorderDialogState {
   isOpen: boolean;
   medication: AvailabilityResult | null;
@@ -197,6 +187,7 @@ export default function PrescriptionVerificationPage() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [isViewHistorySheetOpen, setIsViewHistorySheetOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('verification');
   const [selectedHistoryPrescription, setSelectedHistoryPrescription] =
     useState<PrescriptionHistory | null>(null);
 
@@ -321,10 +312,14 @@ export default function PrescriptionVerificationPage() {
   const handlePurchase = async () => {
     if (!prescriptionData || !availabilityResults) return;
 
-    // Check if all items are at least partially available
-    const allOutOfStock = availabilityResults.every((r) => r.status === 'OUT_OF_STOCK');
-    if (allOutOfStock) {
-      setError('All prescribed medications are out of stock');
+    // Filter out items that are completely out of stock
+    const availableItems = availabilityResults.filter(
+      (r) => r.status === 'IN_STOCK' || r.status === 'LOW_STOCK'
+    );
+
+    // Check if there are any available items to purchase
+    if (availableItems.length === 0) {
+      setError('All prescribed medications are out of stock. Cannot process purchase.');
       return;
     }
 
@@ -341,7 +336,7 @@ export default function PrescriptionVerificationPage() {
     try {
       const response = await apiClient.prescriptions.purchase(
         prescriptionData,
-        availabilityResults,
+        availableItems, // Send only available items
         paymentMethod,
         customerDetails.id,
         customerDetails.name,
@@ -351,7 +346,14 @@ export default function PrescriptionVerificationPage() {
       );
 
       const data = response as PurchaseResponse;
-      setSuccess(data.message || 'Purchase completed successfully! Stock updated.');
+
+      // Show success message with info about out of stock items
+      const outOfStockCount = availabilityResults.length - availableItems.length;
+      let successMsg = data.message || 'Purchase completed successfully! Stock updated.';
+      if (outOfStockCount > 0) {
+        successMsg += ` Note: ${outOfStockCount} item(s) were out of stock and not included.`;
+      }
+      setSuccess(successMsg);
 
       // Reset form after 3 seconds
       setTimeout(() => {
@@ -417,18 +419,32 @@ export default function PrescriptionVerificationPage() {
 
     setError(null);
   };
-  const handleRequestReorder = async (medicationName: string) => {
+  const handleRequestReorder = async () => {
     try {
+      if (!reorderDialog.medication) return;
+
+      const { matchResult, prescribedMedication } = reorderDialog.medication;
+
+      if (!matchResult.matchedDrugId) {
+        setError('Cannot create reorder: drug not found in inventory');
+        return;
+      }
+
       await apiClient.post('/reorders', {
-        medicineName: medicationName,
+        drugId: matchResult.matchedDrugId,
+        requestedQty: prescribedMedication.quantity,
         priority: 'HIGH',
-        notes: `Requested from prescription: ${medicationName}`,
+        notes: `Requested from prescription: ${matchResult.matchedDrugName}`,
       });
-      setSuccess(`Reorder request created for ${medicationName}`);
-      setReorderDialog({
-        isOpen: false,
-        medication: null,
-      });
+      setSuccess(`Reorder request created for ${matchResult.matchedDrugName}`);
+
+      // Close dialog after showing success message
+      setTimeout(() => {
+        setReorderDialog({
+          isOpen: false,
+          medication: null,
+        });
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create reorder request');
     }
@@ -512,21 +528,52 @@ export default function PrescriptionVerificationPage() {
 
   const handleHistoryReorder = async (prescription: PrescriptionHistory) => {
     try {
-      for (const med of prescription.medications) {
-        await apiClient.post('/reorders', {
-          medicineName: med.medicationName,
-          dosage: med.dosage,
-          quantity: med.quantity,
-          priority: 'MEDIUM',
-          notes: `Reorder from previous prescription: ${prescription.patientName}`,
+      setError(null);
+      setSuccess(null);
+
+      console.log('Loading prescription from history for new purchase:', prescription.id);
+
+      // Recreate prescription data from history
+      const historicalPrescriptionData = {
+        patientName: prescription.patientName,
+        doctorName: prescription.doctorName || null,
+        prescriptionDate: prescription.prescriptionDate
+          ? new Date(prescription.prescriptionDate).toISOString().split('T')[0]
+          : null,
+        medications: prescription.medications,
+        confidence: prescription.confidence || 85,
+      };
+
+      // Set the prescription data to trigger availability check
+      setPrescriptionData(historicalPrescriptionData);
+
+      // Switch to the verification tab
+      setActiveTab('verification');
+
+      // Check availability for these medications
+      await checkAvailability(prescription.medications);
+
+      // Pre-fill customer details if available
+      if (prescription.customerName) {
+        setCustomerDetails({
+          id: undefined,
+          name: prescription.customerName,
+          phone: prescription.customerPhone || '',
+          email: prescription.customerEmail || '',
+          address: prescription.customerAddress || '',
         });
       }
-      setSuccess('Reorder requests created successfully!');
-      setTimeout(() => setSuccess(null), 3000);
+
+      setSuccess(
+        `✓ Prescription loaded from history!\nPatient: ${prescription.patientName}\nChecking availability for ${prescription.medications.length} medication(s)...`
+      );
+
+      // Scroll to top to show the verification tab
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      console.error('Failed to create reorder requests:', err);
-      setError('Failed to create reorder requests');
-      setTimeout(() => setError(null), 3000);
+      console.error('Failed to load prescription from history:', err);
+      setError('Failed to load prescription from history');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -548,13 +595,14 @@ export default function PrescriptionVerificationPage() {
       </div>
 
       <Tabs
-        defaultValue="verification"
-        className="w-full"
+        value={activeTab}
         onValueChange={(value) => {
+          setActiveTab(value);
           if (value === 'history') {
             fetchPrescriptionHistory();
           }
         }}
+        className="w-full"
       >
         <TabsList className="grid w-full max-w-md grid-cols-2 mb-5">
           <TabsTrigger value="verification">
@@ -779,12 +827,15 @@ export default function PrescriptionVerificationPage() {
                               size="sm"
                               variant="outline"
                               className="w-full text-xs gap-1"
-                              onClick={() =>
+                              onClick={() => {
                                 setReorderDialog({
                                   isOpen: true,
                                   medication: result,
-                                })
-                              }
+                                });
+                                // Clear any previous success/error messages
+                                setSuccess(null);
+                                setError(null);
+                              }}
                             >
                               <RefreshCw className="w-3 h-3" />
                               Request Reorder
@@ -1135,6 +1186,18 @@ export default function PrescriptionVerificationPage() {
           </DialogHeader>
           {reorderDialog.medication && (
             <div className="space-y-4 py-4">
+              {success && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-green-800">{success}</p>
+                </div>
+              )}
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
               <div>
                 <label className="text-sm font-medium mb-1 block">Medicine Name</label>
                 <p className="text-sm p-2 bg-gray-50 rounded">
@@ -1147,12 +1210,7 @@ export default function PrescriptionVerificationPage() {
                   {reorderDialog.medication.prescribedMedication.quantity}
                 </p>
               </div>
-              <Button
-                onClick={() => {
-                  handleRequestReorder(reorderDialog.medication!.matchResult.matchedDrugName);
-                }}
-                className="w-full"
-              >
+              <Button onClick={handleRequestReorder} disabled={!!success} className="w-full">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Create Reorder Request
               </Button>

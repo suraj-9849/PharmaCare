@@ -1,7 +1,9 @@
 import { Resend } from 'resend';
 import env from '../config/env';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend: Resend | null = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 interface LowStockEmailData {
   drugName: string;
@@ -139,12 +141,14 @@ export class EmailService {
         </div>
       `;
 
-      await resend.emails.send({
-        from: 'PharmaCare <onboarding@resend.dev>',
-        to: process.env.ADMIN_EMAIL,
-        subject: ` Low Stock Alert - ${criticalDrugs.length} Critical Items`,
-        html: emailBody,
-      });
+      if (resend && process.env.ADMIN_EMAIL) {
+        await resend!.emails.send({
+          from: 'PharmaCare <onboarding@resend.dev>',
+          to: process.env.ADMIN_EMAIL,
+          subject: ` Low Stock Alert - ${criticalDrugs.length} Critical Items`,
+          html: emailBody,
+        });
+      }
 
       console.log(` Low stock alert email sent to ${process.env.ADMIN_EMAIL}`);
     } catch (error) {
@@ -223,12 +227,14 @@ export class EmailService {
         </div>
       `;
 
-      await resend.emails.send({
-        from: 'PharmaCare <onboarding@resend.dev>',
-        to: process.env.ADMIN_EMAIL,
-        subject: ` URGENT: ${drugs.length} Items Out of Stock`,
-        html: emailBody,
-      });
+      if (resend && process.env.ADMIN_EMAIL) {
+        await resend!.emails.send({
+          from: 'PharmaCare <onboarding@resend.dev>',
+          to: process.env.ADMIN_EMAIL,
+          subject: ` URGENT: ${drugs.length} Items Out of Stock`,
+          html: emailBody,
+        });
+      }
 
       console.log(` Out of stock alert email sent to ${process.env.ADMIN_EMAIL}`);
     } catch (error) {

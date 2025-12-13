@@ -24,7 +24,7 @@ import {
 import { Search, Eye, Pill, RefreshCw } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { formatDateTime, formatDate } from '@/lib/utils';
-import type { PaginatedResponse } from '@/lib/types';
+import type { PaginatedResponse, Drug } from '@/lib/types';
 
 interface Medication {
   medicationName: string;
@@ -91,17 +91,51 @@ export default function PrescriptionHistoryPage() {
 
   const handleReorder = async (prescription: PrescriptionHistory) => {
     try {
+      let successCount = 0;
+      const failedMeds: string[] = [];
+
       // Create reorder requests for all medications in the prescription
       for (const med of prescription.medications) {
-        await apiClient.post('/reorders', {
-          medicineName: med.medicationName,
-          dosage: med.dosage,
-          quantity: med.quantity,
-          priority: 'MEDIUM',
-          notes: `Reorder from previous prescription: ${prescription.patientName}`,
-        });
+        try {
+          // Search for the drug by name
+          const searchResponse = await apiClient.get<PaginatedResponse<Drug>>('/drugs', {
+            search: med.medicationName,
+            limit: 1,
+          });
+
+          const drugs = searchResponse.data || [];
+
+          if (drugs.length === 0) {
+            failedMeds.push(med.medicationName);
+            continue;
+          }
+
+          const drug = drugs[0];
+
+          // Create reorder request
+          await apiClient.post('/reorders', {
+            drugId: drug.id,
+            requestedQty: med.quantity,
+            priority: 'MEDIUM',
+            notes: `Reorder from previous prescription: ${prescription.patientName}`,
+          });
+
+          successCount++;
+        } catch (medError) {
+          console.error(`Failed to create reorder for ${med.medicationName}:`, medError);
+          failedMeds.push(med.medicationName);
+        }
       }
-      alert('Reorder requests created successfully!');
+
+      if (successCount > 0) {
+        let message = `Successfully created ${successCount} reorder request(s)`;
+        if (failedMeds.length > 0) {
+          message += `.\nFailed for: ${failedMeds.join(', ')}`;
+        }
+        alert(message);
+      } else {
+        alert('Failed to create any reorder requests. Medications not found in inventory.');
+      }
     } catch (err) {
       console.error('Failed to create reorder requests:', err);
       alert('Failed to create reorder requests');
