@@ -3,12 +3,18 @@ import { CreateDrugRequest } from '../types';
 import { generateSKU, calculatePagination } from '../utils/helpers';
 import { ERROR_MESSAGES } from '../constants';
 import { Drug, InventoryBatch } from '@prisma/client';
+import CacheService from './cache.service';
 
 export class DrugService {
   /**
    * Get all drugs with pagination
    */
   async getAllDrugs(page: number = 1, limit: number = 10, search?: string) {
+    // Try to get from cache
+    const cacheParams = { page, limit, search };
+    const cached = await CacheService.drug.getList(cacheParams);
+    if (cached) return cached;
+
     const where = search
       ? {
           OR: [
@@ -39,13 +45,22 @@ export class DrugService {
       },
     });
 
-    return { drugs, pagination };
+    const result = { drugs, pagination };
+
+    // Cache the result
+    await CacheService.drug.setList(result, cacheParams);
+
+    return result;
   }
 
   /**
    * Get drug by ID
    */
   async getDrugById(id: string) {
+    // Try to get from cache
+    const cached = await CacheService.drug.get(parseInt(id));
+    if (cached) return cached;
+
     const drug = await prisma.drug.findUnique({
       where: { id },
       include: {
@@ -61,6 +76,9 @@ export class DrugService {
     if (!drug) {
       throw new Error(ERROR_MESSAGES.DRUG_NOT_FOUND);
     }
+
+    // Cache the result
+    await CacheService.drug.set(parseInt(id), drug);
 
     return drug;
   }
@@ -83,6 +101,9 @@ export class DrugService {
       },
     });
 
+    // Invalidate drug caches
+    await CacheService.drug.invalidate();
+
     return drug;
   }
 
@@ -95,6 +116,9 @@ export class DrugService {
       data,
     });
 
+    // Invalidate drug caches and related inventory/low-stock caches
+    await Promise.all([CacheService.drug.invalidate(), CacheService.inventory.invalidate()]);
+
     return drug;
   }
 
@@ -105,12 +129,19 @@ export class DrugService {
     await prisma.drug.delete({
       where: { id },
     });
+
+    // Invalidate drug caches
+    await CacheService.drug.invalidate();
   }
 
   /**
    * Get low stock drugs
    */
   async getLowStockDrugs() {
+    // Try to get from cache
+    const cached = await CacheService.inventory.getLowStock();
+    if (cached) return cached;
+
     const drugs = await prisma.drug.findMany({
       include: {
         inventoryBatches: true,
@@ -124,6 +155,9 @@ export class DrugService {
       );
       return totalStock <= drug.reorderLevel;
     });
+
+    // Cache the result
+    await CacheService.inventory.setLowStock(lowStockDrugs);
 
     return lowStockDrugs;
   }

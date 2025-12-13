@@ -27,6 +27,12 @@ interface Environment {
   RESEND_API_KEY: string;
   ADMIN_EMAIL: string;
 
+  // Valkey/Redis Cache
+  VALKEY_HOST: string;
+  VALKEY_PORT: number;
+  VALKEY_PASSWORD?: string;
+  CACHE_TTL: number;
+
   // Helpers
   isDevelopment: boolean;
   isProduction: boolean;
@@ -56,6 +62,12 @@ const env: Environment = {
   // Email
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
+
+  // Valkey/Redis Cache
+  VALKEY_HOST: process.env.VALKEY_HOST || 'localhost',
+  VALKEY_PORT: parseInt(process.env.VALKEY_PORT || '6379', 10) || 6379,
+  VALKEY_PASSWORD: process.env.VALKEY_PASSWORD,
+  CACHE_TTL: parseInt(process.env.CACHE_TTL || '300', 10) || 300, // 5 minutes default
 
   // Helpers
   isDevelopment: process.env.NODE_ENV === 'development',

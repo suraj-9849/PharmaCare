@@ -17,7 +17,8 @@ router.use(authenticate);
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { page = 1, limit = 10, search } = req.query;
-    const result = await customerService.getAllCustomers(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any = await customerService.getAllCustomers(
       Number(page),
       Number(limit),
       search as string
