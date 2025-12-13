@@ -2,12 +2,18 @@ import prisma from '../config/database';
 import { CreateCustomerRequest } from '../types';
 import { calculatePagination } from '../utils/helpers';
 import { ERROR_MESSAGES } from '../constants';
+import CacheService from './cache.service';
 
 export class CustomerService {
   /**
    * Get all customers with pagination
    */
   async getAllCustomers(page: number = 1, limit: number = 10, search?: string) {
+    // Try to get from cache
+    const cacheParams = { page, limit, search };
+    const cached = await CacheService.customer.getList(cacheParams);
+    if (cached) return cached;
+
     const where = search
       ? {
           OR: [
@@ -28,13 +34,22 @@ export class CustomerService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return { customers, pagination };
+    const result = { customers, pagination };
+
+    // Cache the result
+    await CacheService.customer.setList(result, cacheParams);
+
+    return result;
   }
 
   /**
    * Get customer by ID
    */
   async getCustomerById(id: string) {
+    // Try to get from cache
+    const cached = await CacheService.customer.get(parseInt(id));
+    if (cached) return cached;
+
     const customer = await prisma.customer.findUnique({
       where: { id },
     });
@@ -42,6 +57,9 @@ export class CustomerService {
     if (!customer) {
       throw new Error(ERROR_MESSAGES.CUSTOMER_NOT_FOUND);
     }
+
+    // Cache the result
+    await CacheService.customer.set(parseInt(id), customer);
 
     return customer;
   }
@@ -59,6 +77,9 @@ export class CustomerService {
       },
     });
 
+    // Invalidate customer caches
+    await CacheService.customer.invalidate();
+
     return customer;
   }
 
@@ -70,6 +91,9 @@ export class CustomerService {
       where: { id },
       data,
     });
+
+    // Invalidate customer caches
+    await CacheService.customer.invalidate();
 
     return customer;
   }

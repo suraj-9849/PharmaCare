@@ -6,6 +6,7 @@ import { specs } from './config/swagger';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { connectDatabase } from './config/database';
+import ValkeyClient from './config/valkey';
 
 const app: Application = express();
 
@@ -39,8 +40,17 @@ app.get('/', (_req, res) => {
   });
 });
 
-app.get('/health', (_req, res) => {
-  res.status(200).send('OK');
+app.get('/health', async (_req, res) => {
+  const valkeyHealthy = await ValkeyClient.healthCheck();
+  const health = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    services: {
+      database: 'connected',
+      cache: valkeyHealthy ? 'connected' : 'disconnected',
+    },
+  };
+  res.status(200).json(health);
 });
 
 // Error handlers
@@ -50,8 +60,11 @@ app.use(errorHandler);
 // Start server
 const startServer = async () => {
   try {
-    // Connect to database first
+    // Connect to database
     await connectDatabase();
+
+    // Initialize Valkey client
+    ValkeyClient.getInstance();
 
     const server = app.listen(env.PORT, () => {
       console.log(`
@@ -63,10 +76,24 @@ const startServer = async () => {
 ║   Environment: ${env.NODE_ENV}                                ║
 ║   Port: ${env.PORT}                                              ║
 ║   URL: http://localhost:${env.PORT}                              ║
+║   Cache: Valkey (Redis-compatible)                       ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
       `);
     });
+
+    // Graceful shutdown
+    const gracefulShutdown = async (signal: string) => {
+      console.log(`\n${signal} received. Shutting down gracefully...`);
+      await ValkeyClient.disconnect();
+      server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
     return server;
   } catch (error) {
