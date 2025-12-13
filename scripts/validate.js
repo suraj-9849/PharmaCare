@@ -48,6 +48,8 @@ async function validate() {
   log(`${colors.bold}║   PharmaCare Validation Suite         ║`, colors.green);
   log(`${colors.bold}╚════════════════════════════════════════╝${colors.reset}`, colors.green);
 
+  const rootDir = path.resolve(__dirname, '..');
+
   const checks = [
     { name: 'Backend: Type Check', cmd: 'pnpm', args: ['backend:type-check'] },
     { name: 'Backend: Lint Check', cmd: 'pnpm', args: ['backend:lint'] },
@@ -55,17 +57,20 @@ async function validate() {
     { name: 'Frontend: Type Check', cmd: 'pnpm', args: ['frontend:type-check'] },
     { name: 'Frontend: Lint Check', cmd: 'pnpm', args: ['frontend:lint'] },
     { name: 'Frontend: Format Check', cmd: 'pnpm', args: ['frontend:format:check'] },
+    { name: 'Python: Type Check', cmd: 'uv', args: ['--directory', path.join(rootDir, 'ai_assistant'), 'run', 'mypy', '.'], cwd: rootDir },
+    { name: 'Python: Lint Check', cmd: 'uv', args: ['--directory', path.join(rootDir, 'ai_assistant'), 'run', 'flake8', '.'], cwd: rootDir },
+    { name: 'Python: Format Check', cmd: 'uv', args: ['--directory', path.join(rootDir, 'ai_assistant'), 'run', 'black', '--check', '.'], cwd: rootDir },
   ];
 
   const results = [];
-  const rootDir = path.resolve(__dirname, '..');
 
   for (const check of checks) {
     log(`\n${'='.repeat(50)}`, colors.yellow);
     log(`${check.name}`, colors.bold);
     log(`${'='.repeat(50)}`, colors.yellow);
 
-    const success = await runCommand(check.cmd, check.args, rootDir);
+    const cwd = check.cwd || rootDir;
+    const success = await runCommand(check.cmd, check.args, cwd);
     results.push({ name: check.name, success });
 
     if (success) {
