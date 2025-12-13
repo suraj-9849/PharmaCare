@@ -116,8 +116,11 @@ export class DrugService {
       data,
     });
 
-    // Invalidate drug caches
-    await CacheService.drug.invalidate();
+    // Invalidate drug caches and related inventory/low-stock caches
+    await Promise.all([
+      CacheService.drug.invalidate(),
+      CacheService.inventory.invalidate(),
+    ]);
 
     return drug;
   }
