@@ -13,8 +13,8 @@ export const metricsMiddleware = (_req: Request, res: Response, _next: NextFunct
   res.setHeader('Content-Type', register.contentType || 'text/plain; version=0.0.4');
   register
     .metrics()
-    .then((metrics) => res.status(200).send(metrics))
-    .catch((err) => {
+    .then((metrics: string) => res.status(200).send(metrics))
+    .catch((err: Error) => {
       console.error('Failed to gather metrics:', err);
       res.status(500).send('Error collecting metrics');
     });

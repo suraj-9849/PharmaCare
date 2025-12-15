@@ -6,8 +6,10 @@ import { specs } from './config/swagger';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { metricsMiddleware, metricsRoute } from './middleware/metrics';
+import { requestLogger } from './middleware/requestLogger';
 import { connectDatabase } from './config/database';
 import ValkeyClient from './config/valkey';
+import logger from './config/logger';
 
 const app: Application = express();
 
@@ -24,6 +26,9 @@ app.use(
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request logging
+app.use(requestLogger);
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
@@ -52,7 +57,7 @@ app.get('/health', async (_req, res) => {
     const { prisma } = await import('./config/database');
     await prisma.$queryRaw`SELECT 1`;
   } catch (error) {
-    console.error('Database health check failed:', error);
+    logger.error('Database health check failed:', error);
     databaseHealthy = false;
   }
 
@@ -71,17 +76,18 @@ app.get('/health', async (_req, res) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Start server
 const startServer = async () => {
   try {
     // Connect to database
     await connectDatabase();
+    logger.info('Database connected successfully');
 
     // Initialize Valkey client
     ValkeyClient.getInstance();
+    logger.info('Valkey client initialized');
 
     const server = app.listen(env.PORT, () => {
-      console.log(`
+      const banner = `
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
 ║   ${env.APP_NAME} API Server                                   ║
@@ -92,15 +98,17 @@ const startServer = async () => {
 ║   URL: http://localhost:${env.PORT}                              ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
-      `);
+      `;
+      console.log(banner);
+      logger.info(`${env.APP_NAME} server started on port ${env.PORT}`);
     });
 
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
-      console.log(`\n${signal} received. Shutting down gracefully...`);
+      logger.info(`${signal} received. Shutting down gracefully...`);
       await ValkeyClient.disconnect();
       server.close(() => {
-        console.log('Server closed');
+        logger.info('Server closed');
         process.exit(0);
       });
     };
@@ -110,7 +118,7 @@ const startServer = async () => {
 
     return server;
   } catch (error) {
-    console.error('Failed to start server:', error);
+    logger.error('Failed to start server:', error);
     process.exit(1);
   }
 };
