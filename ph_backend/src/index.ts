@@ -5,6 +5,7 @@ import env from './config/env';
 import { specs } from './config/swagger';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { metricsMiddleware, metricsRoute } from './middleware/metrics';
 import { connectDatabase } from './config/database';
 import ValkeyClient from './config/valkey';
 
@@ -26,6 +27,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
+
+// Prometheus metrics endpoint
+app.get(metricsRoute, metricsMiddleware);
 
 // API Routes
 app.use('/api', routes);
@@ -86,7 +90,6 @@ const startServer = async () => {
 ║   Environment: ${env.NODE_ENV}                                ║
 ║   Port: ${env.PORT}                                              ║
 ║   URL: http://localhost:${env.PORT}                              ║
-║   Cache: Valkey (Redis-compatible)                       ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
       `);
