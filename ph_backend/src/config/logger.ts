@@ -20,7 +20,7 @@ const transports: winston.transport[] = [
 if (env.NODE_ENV !== 'test') {
   transports.push(
     new LokiTransport({
-      host: 'http://localhost:3100',
+      host: process.env.LOKI_URL || 'http://localhost:3100',
       labels: {
         app: env.APP_NAME,
         environment: env.NODE_ENV,
