@@ -3,7 +3,6 @@ import { CreateBatchRequest } from '../types';
 import { calculatePagination, isExpired, isExpiringSoon } from '../utils/helpers';
 import { ERROR_MESSAGES } from '../constants';
 import { InventoryBatch, Drug } from '@prisma/client';
-import CacheService from './cache.service';
 
 export class InventoryService {
   /**
@@ -82,7 +81,6 @@ export class InventoryService {
     });
 
     // Invalidate inventory and related caches
-    await CacheService.inventory.invalidate();
 
     return batch;
   }
@@ -106,7 +104,6 @@ export class InventoryService {
     });
 
     // Invalidate inventory and related caches
-    await CacheService.inventory.invalidate();
 
     return batch;
   }
@@ -120,7 +117,6 @@ export class InventoryService {
     });
 
     // Invalidate inventory and related caches
-    await CacheService.inventory.invalidate();
   }
 
   /**

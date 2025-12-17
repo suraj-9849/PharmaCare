@@ -8,7 +8,6 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { metricsMiddleware, metricsRoute } from './middleware/metrics';
 import { requestLogger } from './middleware/requestLogger';
 import { connectDatabase } from './config/database';
-import ValkeyClient from './config/valkey';
 import logger from './config/logger';
 
 const app: Application = express();
@@ -52,8 +51,6 @@ app.get('/', (_req, res) => {
 });
 
 app.get('/health', async (_req, res) => {
-  const valkeyHealthy = await ValkeyClient.healthCheck();
-
   let databaseHealthy = true;
   try {
     const { prisma } = await import('./config/database');
@@ -64,11 +61,10 @@ app.get('/health', async (_req, res) => {
   }
 
   const health = {
-    status: databaseHealthy && valkeyHealthy ? 'healthy' : 'degraded',
+    status: databaseHealthy ? 'healthy' : 'degraded',
     timestamp: new Date().toISOString(),
     services: {
       database: databaseHealthy ? 'connected' : 'disconnected',
-      cache: valkeyHealthy ? 'connected' : 'disconnected',
     },
   };
   res.status(200).json(health);
@@ -83,10 +79,6 @@ const startServer = async () => {
     // Connect to database
     await connectDatabase();
     logger.info('Database connected successfully');
-
-    // Initialize Valkey client
-    ValkeyClient.getInstance();
-    logger.info('Valkey client initialized');
 
     const server = app.listen(env.PORT, () => {
       const banner = `
@@ -108,7 +100,6 @@ const startServer = async () => {
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
       logger.info(`${signal} received. Shutting down gracefully...`);
-      await ValkeyClient.disconnect();
       server.close(() => {
         logger.info('Server closed');
         process.exit(0);

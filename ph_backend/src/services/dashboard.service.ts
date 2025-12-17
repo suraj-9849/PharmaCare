@@ -1,15 +1,12 @@
 import prisma from '../config/database';
 import { getStartOfToday, getEndOfToday, isExpiringSoon, isExpired } from '../utils/helpers';
 import { Sale, InventoryBatch, Drug } from '@prisma/client';
-import CacheService from './cache.service';
 export class DashboardService {
   /**
    * Get dashboard statistics
    */
   async getDashboardStats() {
     // Try to get from cache
-    const cached = await CacheService.dashboard.getStats();
-    if (cached) return cached;
 
     const startOfToday = getStartOfToday();
     const endOfToday = getEndOfToday();
@@ -153,7 +150,6 @@ export class DashboardService {
     };
 
     // Cache the result with short TTL since stats change frequently
-    await CacheService.dashboard.setStats(result);
 
     return result;
   }
