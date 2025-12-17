@@ -4,12 +4,6 @@ import { authenticate } from '../middleware/auth';
 import { successResponse, errorResponse, paginatedResponse } from '../utils/response';
 import { HTTP_STATUS, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../constants';
 import { CreateDrugRequest } from '../types';
-import {
-  cacheMiddleware,
-  invalidateCacheMiddleware,
-  cacheKeyGenerators,
-} from '../middleware/cache';
-import { CacheTTL, CacheInvalidationPattern } from '../types/cache.types';
 
 const router: Router = Router();
 
@@ -20,36 +14,27 @@ router.use(authenticate);
  * GET /api/drugs
  * Get all drugs with pagination
  */
-router.get(
-  '/',
-  cacheMiddleware(CacheTTL.MEDIUM, (req) => cacheKeyGenerators.withQuery(req, 'drugs')),
-  async (req: Request, res: Response) => {
-    try {
-      const { page = 1, limit = 10, search } = req.query;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result: any = await drugService.getAllDrugs(
-        Number(page),
-        Number(limit),
-        search as string
-      );
-      return paginatedResponse(
-        res,
-        result.drugs,
-        result.pagination,
-        SUCCESS_MESSAGES.FETCH_SUCCESS
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
-      return errorResponse(res, message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
-    }
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const { page = 1, limit = 10, search } = req.query;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any = await drugService.getAllDrugs(
+      Number(page),
+      Number(limit),
+      search as string
+    );
+    return paginatedResponse(res, result.drugs, result.pagination, SUCCESS_MESSAGES.FETCH_SUCCESS);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
+    return errorResponse(res, message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
-);
+});
 
 /**
  * GET /api/drugs/categories
  * Get drug categories
  */
-router.get('/categories', cacheMiddleware(CacheTTL.LONG), async (_req: Request, res: Response) => {
+router.get('/categories', async (_req: Request, res: Response) => {
   try {
     const categories = await drugService.getCategories();
     return successResponse(res, categories, SUCCESS_MESSAGES.FETCH_SUCCESS);
@@ -63,7 +48,7 @@ router.get('/categories', cacheMiddleware(CacheTTL.LONG), async (_req: Request, 
  * GET /api/drugs/low-stock
  * Get low stock drugs
  */
-router.get('/low-stock', cacheMiddleware(CacheTTL.SHORT), async (_req: Request, res: Response) => {
+router.get('/low-stock', async (_req: Request, res: Response) => {
   try {
     const drugs = await drugService.getLowStockDrugs();
     return successResponse(res, drugs, SUCCESS_MESSAGES.FETCH_SUCCESS);
@@ -77,42 +62,34 @@ router.get('/low-stock', cacheMiddleware(CacheTTL.SHORT), async (_req: Request, 
  * GET /api/drugs/:id
  * Get drug by ID
  */
-router.get(
-  '/:id',
-  cacheMiddleware(CacheTTL.LONG, (req) => `drug:${req.params.id}`),
-  async (req: Request, res: Response) => {
-    try {
-      const drug = await drugService.getDrugById(req.params.id);
-      return successResponse(res, drug, SUCCESS_MESSAGES.FETCH_SUCCESS);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
-      const statusCode =
-        message === ERROR_MESSAGES.DRUG_NOT_FOUND
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.INTERNAL_SERVER_ERROR;
-      return errorResponse(res, message, statusCode);
-    }
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const drug = await drugService.getDrugById(req.params.id);
+    return successResponse(res, drug, SUCCESS_MESSAGES.FETCH_SUCCESS);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
+    const statusCode =
+      message === ERROR_MESSAGES.DRUG_NOT_FOUND
+        ? HTTP_STATUS.NOT_FOUND
+        : HTTP_STATUS.INTERNAL_SERVER_ERROR;
+    return errorResponse(res, message, statusCode);
   }
-);
+});
 
 /**
  * POST /api/drugs
  * Create new drug
  */
-router.post(
-  '/',
-  invalidateCacheMiddleware(CacheInvalidationPattern.DRUGS),
-  async (req: Request, res: Response) => {
-    try {
-      const data: CreateDrugRequest = req.body;
-      const drug = await drugService.createDrug(data);
-      return successResponse(res, drug, SUCCESS_MESSAGES.DRUG_CREATED, HTTP_STATUS.CREATED);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
-      return errorResponse(res, message, HTTP_STATUS.BAD_REQUEST);
-    }
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const data: CreateDrugRequest = req.body;
+    const drug = await drugService.createDrug(data);
+    return successResponse(res, drug, SUCCESS_MESSAGES.DRUG_CREATED, HTTP_STATUS.CREATED);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
+    return errorResponse(res, message, HTTP_STATUS.BAD_REQUEST);
   }
-);
+});
 
 /**
  * PUT /api/drugs/:id
