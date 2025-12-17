@@ -261,3 +261,50 @@ for i in {1..30}; do
   fi
   sleep 15
 done
+
+
+
+
+
+
+
+
+
+
+# Direct to AWS ECS (force push)
+
+
+for i in {1..30}; do 
+  STATUS=$(aws ecs describe-services --cluster pharmacare-cluster --services pharmacare-service --region ap-southeast-2 --query 'services[0].deployments[0].rolloutState' --output text 2>/dev/null)
+  TIME=$(date +'%H:%M:%S')
+  RUNNING=$(aws ecs describe-services --cluster pharmacare-cluster --services pharmacare-service --region ap-southeast-2 --query 'services[0].deployments[0].runningCount' --output text 2>/dev/null)
+  echo "[$TIME] Rollout Status: $STATUS | Running Tasks: $RUNNING"
+  if [[ "$STATUS" == "COMPLETED" ]]; then
+    echo ""
+    echo "✅ DEPLOYMENT COMPLETE!"
+    echo ""
+    sleep 10
+    echo "Testing /metrics endpoint..."
+    curl -s http://pharmacare-alb-809690050.ap-southeast-2.elb.amazonaws.com/metrics | head -20
+    break
+  fi
+  sleep 5
+done
+
+
+for i in {1..30}; do 
+  STATUS=$(aws ecs describe-services --cluster pharmacare-cluster --services pharmacare-service --region ap-southeast-2 --query 'services[0].deployments[0].rolloutState' --output text 2>/dev/null)
+  TIME=$(date +'%H:%M:%S')
+  RUNNING=$(aws ecs describe-services --cluster pharmacare-cluster --services pharmacare-service --region ap-southeast-2 --query 'services[0].deployments[0].runningCount' --output text 2>/dev/null)
+  echo "[$TIME] Rollout Status: $STATUS | Running Tasks: $RUNNING"
+  if [[ "$STATUS" == "COMPLETED" ]]; then
+    echo ""
+    echo "✅ DEPLOYMENT COMPLETE!"
+    echo ""
+    sleep 10
+    echo "Testing /metrics endpoint..."
+    curl -s http://pharmacare-alb-809690050.ap-southeast-2.elb.amazonaws.com/metrics | head -20
+    break
+  fi
+  sleep 5
+done

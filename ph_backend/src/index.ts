@@ -33,9 +33,7 @@ app.use(requestLogger);
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
 
 // Prometheus metrics endpoint
-if (env.NODE_ENV !== 'production') {
-  app.get(metricsRoute, metricsMiddleware);
-}
+app.get(metricsRoute, metricsMiddleware);
 
 // API Routes
 app.use('/api', routes);
