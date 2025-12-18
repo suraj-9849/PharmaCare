@@ -1,4 +1,4 @@
-import nodemailer, { Transporter } from 'nodemailer';
+import { Resend } from 'resend';
 import logger from '../config/logger';
 
 interface SupplierOrderEmailData {
@@ -17,33 +17,23 @@ interface SupplierOrderEmailData {
   contactPhone?: string;
 }
 
-class SupplierEmailService {
-  private transporter: Transporter | null = null;
+const resend: Resend | null = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
+class SupplierEmailService {
   constructor() {
-    this.initializeTransporter();
+    this.initialize();
   }
 
-  private initializeTransporter() {
+  private initialize() {
     try {
-      // Only initialize if SMTP credentials are provided
-      if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-        logger.warn('SMTP credentials not configured. Email service will run in simulation mode.');
+      if (!process.env.RESEND_API_KEY) {
+        logger.warn('RESEND_API_KEY not configured. Email service will run in simulation mode.');
         return;
       }
 
-      // Configure nodemailer transporter
-      this.transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASSWORD,
-        },
-      });
-
-      logger.info('Supplier email service initialized successfully');
+      logger.info('Supplier email service initialized successfully with Resend API');
     } catch (error) {
       logger.error('Failed to initialize supplier email service:', error);
       if (process.env.NODE_ENV !== 'production') {
@@ -201,15 +191,15 @@ class SupplierEmailService {
   }
 
   /**
-   * Send supplier order email
+   * Send supplier order email using Resend API
    */
   async sendSupplierOrderEmail(data: SupplierOrderEmailData): Promise<{
     success: boolean;
     messageId?: string;
     error?: string;
   }> {
-    if (!this.transporter) {
-      logger.warn('Email transporter not configured. Simulating email send.');
+    if (!resend) {
+      logger.warn('Resend API not configured. Simulating email send.');
       // In development, simulate successful send
       return {
         success: true,
@@ -222,19 +212,26 @@ class SupplierEmailService {
       const urgencyPrefix =
         data.urgency === 'HIGH' ? '[URGENT] ' : data.urgency === 'MEDIUM' ? '[Priority] ' : '';
 
-      const mailOptions = {
-        from: `"PharmaCare System" <${process.env.SMTP_USER}>`,
+      const response = await resend!.emails.send({
+        from: 'PharmaCare <onboarding@resend.dev>',
         to: data.supplierEmail,
         subject: `${urgencyPrefix}Purchase Order - ${data.drugName} (${data.quantity} units)`,
         html,
-      };
+      });
 
-      const info = await this.transporter.sendMail(mailOptions);
-      logger.info(`Supplier order email sent successfully: ${info.messageId}`);
+      if (response.error) {
+        logger.error('Failed to send supplier order email:', response.error);
+        return {
+          success: false,
+          error: response.error.message,
+        };
+      }
+
+      logger.info(`Supplier order email sent successfully: ${response.data?.id}`);
 
       return {
         success: true,
-        messageId: info.messageId,
+        messageId: response.data?.id,
       };
     } catch (error) {
       logger.error('Failed to send supplier order email:', error);
@@ -246,17 +243,17 @@ class SupplierEmailService {
   }
 
   /**
-   * Send test email
+   * Send test email using Resend API
    */
   async sendTestEmail(to: string): Promise<boolean> {
-    if (!this.transporter) {
-      logger.warn('Email transporter not configured. Test email not sent.');
+    if (!resend) {
+      logger.warn('Resend API not configured. Test email not sent.');
       return false;
     }
 
     try {
-      const mailOptions = {
-        from: `"PharmaCare System" <${process.env.SMTP_USER}>`,
+      const response = await resend!.emails.send({
+        from: 'PharmaCare <onboarding@resend.dev>',
         to,
         subject: 'PharmaCare Email Service Test',
         html: `
@@ -265,9 +262,13 @@ class SupplierEmailService {
           <p>If you received this, the email service is working correctly.</p>
           <p><em>Sent at: ${new Date().toISOString()}</em></p>
         `,
-      };
+      });
 
-      await this.transporter.sendMail(mailOptions);
+      if (response.error) {
+        logger.error('Failed to send test email:', response.error);
+        return false;
+      }
+
       logger.info('Test email sent successfully');
       return true;
     } catch (error) {

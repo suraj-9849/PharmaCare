@@ -32,7 +32,7 @@ async function testServices() {
       'Paracetamol',
       'Acetaminophen'
     );
-    
+
     logger.info(`✅ Found ${searchResults.suppliers.length} suppliers:`);
     searchResults.suppliers.forEach((supplier, index) => {
       logger.info(`   ${index + 1}. ${supplier.name} (${supplier.source})`);
@@ -47,10 +47,8 @@ async function testServices() {
   // Test 3: Contact Extraction Test
   logger.info('🔎 Test 3: Contact Extraction');
   try {
-    const contact = await webSearchService.extractSupplierContact(
-      'https://www.indiamart.com'
-    );
-    
+    const contact = await webSearchService.extractSupplierContact('https://www.indiamart.com');
+
     if (contact.email || contact.phone || contact.company) {
       logger.info('✅ Contact extraction working:');
       if (contact.company) logger.info(`   Company: ${contact.company}`);
@@ -65,12 +63,12 @@ async function testServices() {
 
   console.log('\n');
   logger.info('✨ Service tests completed!\n');
-  
+
   // Summary
   logger.info('📋 Configuration Status:');
   logger.info(`   SMTP Configured: ${process.env.SMTP_USER ? '✅ Yes' : '❌ No'}`);
   logger.info(`   Google Search API: ${process.env.GOOGLE_SEARCH_API_KEY ? '✅ Yes' : '❌ No'}`);
-  
+
   console.log('\n');
   logger.info('💡 Next Steps:');
   if (!process.env.SMTP_USER) {

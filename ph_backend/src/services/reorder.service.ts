@@ -417,13 +417,16 @@ export class ReorderService {
         throw new Error('Reorder request not found');
       }
 
-      if (!reorder.supplier) {
-        throw new Error('No supplier associated with this reorder request');
+      // Use provided contact details (from previous supplier selection)
+      const { contactEmail: supplierEmail, contactPerson: supplierName } = data;
+
+      if (!supplierEmail) {
+        throw new Error('Supplier email is required');
       }
 
       const emailResult = await supplierEmailService.sendSupplierOrderEmail({
-        supplierName: reorder.supplier.supplierName,
-        supplierEmail: reorder.supplier.email,
+        supplierName,
+        supplierEmail,
         drugName: reorder.drug.brandName,
         genericName: reorder.drug.genericName || undefined,
         quantity: data.quantity,
@@ -524,7 +527,7 @@ export class ReorderService {
         data: {
           status: 'COMPLETED',
           completedAt: new Date(),
-          actualCost: actualCost,
+          actualCost,
         },
         include: {
           drug: true,

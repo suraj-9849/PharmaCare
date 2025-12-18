@@ -25,9 +25,11 @@ import {
   TrendingUp,
   ShoppingCart,
   Trash2,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
+import { ReorderPanel } from '@/components/agents/ReorderPanel';
 
 interface ChatMessage {
   id: string;
@@ -189,14 +191,18 @@ export default function AgentsPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 flex-col">
-        <TabsList className="mb-4 grid w-full max-w-md grid-cols-2">
+        <TabsList className="mb-4 grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="chat" className="gap-2">
             <Sparkles className="h-4 w-4" />
             Chat
           </TabsTrigger>
+          <TabsTrigger value="reorder" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Reorder
+          </TabsTrigger>
           <TabsTrigger value="upload" className="gap-2">
             <Upload className="h-4 w-4" />
-            Upload Inventory
+            Upload
           </TabsTrigger>
         </TabsList>
 
@@ -296,6 +302,21 @@ export default function AgentsPage() {
                 </Button>
               </div>
             </div>
+          </Card>
+        </TabsContent>
+
+        {/* Reorder Tab */}
+        <TabsContent value="reorder" className="flex flex-1 flex-col mt-0">
+          <Card className="flex flex-1 flex-col overflow-hidden rounded-2xl border-gray-200/80 bg-white shadow-sm">
+            <CardHeader className="border-b bg-gray-50/50 py-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <RefreshCw className="h-5 w-5 text-violet-600" />
+                Smart Reorder System
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 p-0 overflow-hidden">
+              <ReorderPanel />
+            </CardContent>
           </Card>
         </TabsContent>
 

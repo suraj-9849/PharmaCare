@@ -28,7 +28,7 @@ async function retryOperation<T>(operation: () => Promise<T>, retries = 3): Prom
     } catch (error: any) {
       if (i === retries - 1 || error.code !== 'ETIMEDOUT') throw error;
       console.log(`⏳ Connection timeout, retrying... (${i + 1}/${retries})`);
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
   throw new Error('Max retries reached');
@@ -39,7 +39,7 @@ async function main() {
 
   try {
     // Check if admin already exists
-    const existingAdmin = await retryOperation(() => 
+    const existingAdmin = await retryOperation(() =>
       prisma.user.findUnique({
         where: { email: 'ph@gmail.com' },
       })

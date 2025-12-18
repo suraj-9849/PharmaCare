@@ -1,6 +1,12 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import OpenAI from 'openai';
 import logger from '../config/logger';
+import { config } from '../config/env';
+
+const openai = new OpenAI({
+  apiKey: config.OPENAI_API_KEY || '',
+});
 
 export interface SupplierSearchResult {
   name: string;
@@ -39,13 +45,28 @@ class WebSearchService {
       : `${drugName} pharmaceutical supplier India wholesale`;
 
     try {
-      // Try Google Custom Search API first if configured
-      if (process.env.GOOGLE_SEARCH_API_KEY && process.env.GOOGLE_SEARCH_ENGINE_ID) {
-        return await this.searchWithGoogleAPI(searchQuery, drugName);
-      }
+      // Get suppliers from multiple sources in parallel
+      const [marketplaceResults, aiRecommendations] = await Promise.all([
+        // Try Google Custom Search API first if configured, otherwise use marketplaces
+        process.env.GOOGLE_SEARCH_API_KEY && process.env.GOOGLE_SEARCH_ENGINE_ID
+          ? this.searchWithGoogleAPI(searchQuery, drugName)
+          : this.searchPharmaceuticalMarketplaces(drugName, genericName),
+        // Get AI-powered recommendations
+        this.getAISupplierRecommendations(drugName, genericName),
+      ]);
 
-      // Fallback to targeted pharmaceutical marketplaces
-      return await this.searchPharmaceuticalMarketplaces(drugName, genericName);
+      // Combine and deduplicate results
+      const allSuppliers = [
+        ...aiRecommendations.map((s) => ({ ...s, source: 'AI Recommended' })),
+        ...marketplaceResults.suppliers,
+      ];
+
+      return {
+        drugName,
+        suppliers: allSuppliers.slice(0, 15),
+        searchQuery,
+        timestamp: new Date(),
+      };
     } catch (error) {
       logger.error('Error searching for suppliers:', error);
       throw new Error('Failed to search for suppliers');
@@ -69,12 +90,13 @@ class WebSearchService {
         },
       });
 
-      const suppliers: SupplierSearchResult[] = response.data.items?.map((item: any) => ({
-        name: item.title,
-        url: item.link,
-        snippet: item.snippet,
-        source: 'Google Search',
-      })) || [];
+      const suppliers: SupplierSearchResult[] =
+        response.data.items?.map((item: any) => ({
+          name: item.title,
+          url: item.link,
+          snippet: item.snippet,
+          source: 'Google Search',
+        })) || [];
 
       return {
         drugName,
@@ -124,10 +146,7 @@ class WebSearchService {
   /**
    * Search 1mg for medicines
    */
-  private async search1mg(
-    drugName: string,
-    genericName?: string
-  ): Promise<SupplierSearchResult[]> {
+  private async search1mg(drugName: string, genericName?: string): Promise<SupplierSearchResult[]> {
     try {
       const searchTerm = encodeURIComponent(genericName || drugName);
       const url = `https://www.1mg.com/search/all?name=${searchTerm}`;
@@ -138,7 +157,7 @@ class WebSearchService {
         {
           name: `${drugName} - 1mg`,
           url,
-          snippet: 'Available on 1mg - India\'s trusted online pharmacy',
+          snippet: "Available on 1mg - India's trusted online pharmacy",
           source: '1mg',
         },
       ];
@@ -248,8 +267,9 @@ class WebSearchService {
       const phone = phoneMatches ? phoneMatches[0] : undefined;
 
       // Try to extract company name
-      const company = $('meta[property="og:site_name"]').attr('content') || 
-                      $('title').text().split('-')[0].trim();
+      const company =
+        $('meta[property="og:site_name"]').attr('content') ||
+        $('title').text().split('-')[0].trim();
 
       return {
         email,
@@ -259,6 +279,71 @@ class WebSearchService {
     } catch (error) {
       logger.error('Error extracting supplier contact:', error);
       return {};
+    }
+  }
+
+  /**
+   * Get AI-powered supplier recommendations using OpenAI
+   */
+  async getAISupplierRecommendations(
+    drugName: string,
+    genericName?: string
+  ): Promise<SupplierSearchResult[]> {
+    if (!config.OPENAI_API_KEY) {
+      logger.warn('OpenAI API key not configured for supplier recommendations');
+      return [];
+    }
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a pharmaceutical supply chain expert. Provide top Indian pharmaceutical distributors and wholesalers for the requested medicine. Return JSON only.`,
+          },
+          {
+            role: 'user',
+            content: `Find 5 reputable pharmaceutical suppliers/distributors in India for:
+Drug: ${drugName}
+${genericName ? `Generic Name: ${genericName}` : ''}
+
+Return JSON array with format:
+[
+  {
+    "name": "Company Name",
+    "url": "https://website.com",
+    "snippet": "Brief description of the supplier",
+    "source": "AI Recommendation"
+  }
+]
+
+Focus on verified B2B pharmaceutical distributors, not retail pharmacies. Include major companies like:
+- Sun Pharma Distributors
+- Cipla Partners
+- Medline India
+- Local registered medical wholesalers
+
+Only return the JSON array, no other text.`,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 500,
+      });
+
+      const content = completion.choices[0]?.message?.content || '[]';
+
+      // Parse JSON from response
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const recommendations = JSON.parse(jsonMatch[0]) as SupplierSearchResult[];
+        return recommendations.slice(0, 5);
+      }
+
+      return [];
+    } catch (error) {
+      logger.error('Error getting AI supplier recommendations:', error);
+      return [];
     }
   }
 }

@@ -337,6 +337,47 @@ class ApiClient {
       body: data ? JSON.stringify(data) : undefined,
     });
   }
+
+  // Reorder endpoints
+  reorders = {
+    getAll: (params?: { page?: number; limit?: number; status?: string; priority?: string }) =>
+      this.getPaginated<unknown>('/reorders', params),
+    getById: (id: string) => this.get<ApiResponse<unknown>>(`/reorders/${id}`),
+    getStats: () => this.get<ApiResponse<unknown>>('/reorders/stats'),
+    getDrugsNeedingReorder: () => this.get<ApiResponse<unknown>>('/reorders/drugs-needing-reorder'),
+    create: (data: {
+      drugId: string;
+      requestedQty: number;
+      priority?: string;
+      notes?: string;
+      supplierId?: string;
+    }) => this.post<unknown>('/reorders', data),
+    update: (id: string, data: unknown) => this.patch<unknown>(`/reorders/${id}`, data),
+    delete: (id: string) => this.delete<unknown>(`/reorders/${id}`),
+    approve: (id: string) => this.post<unknown>(`/reorders/${id}/approve`),
+    reject: (id: string, notes?: string) => this.post<unknown>(`/reorders/${id}/reject`, { notes }),
+    markOrdered: (id: string) => this.post<unknown>(`/reorders/${id}/ordered`),
+    markReceived: (id: string) => this.post<unknown>(`/reorders/${id}/receive`),
+    complete: (id: string, actualCost?: number) =>
+      this.post<unknown>(`/reorders/${id}/complete`, { actualCost }),
+    getPreviousSuppliers: (id: string) =>
+      this.get<ApiResponse<unknown>>(`/reorders/${id}/previous-suppliers`),
+    searchSuppliers: (id: string) =>
+      this.get<ApiResponse<unknown>>(`/reorders/${id}/search-suppliers`),
+    sendEmail: (
+      id: string,
+      data: { quantity: number; contactPerson: string; contactEmail: string; contactPhone?: string }
+    ) => this.post<unknown>(`/reorders/${id}/send-email`, data),
+    createFromPublicSupplier: (data: {
+      drugId: string;
+      requestedQty: number;
+      supplierName: string;
+      supplierEmail: string;
+      supplierUrl: string;
+      estimatedCost?: number;
+      notes?: string;
+    }) => this.post<unknown>('/reorders/from-public-supplier', data),
+  };
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);
