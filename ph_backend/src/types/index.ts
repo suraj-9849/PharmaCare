@@ -319,3 +319,85 @@ export interface PickValidationResult {
   message: string;
   alert?: IncorrectPickAlert;
 }
+
+// Reorder Types (Enhanced)
+export type ReorderStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'ORDERED'
+  | 'RECEIVED'
+  | 'REJECTED'
+  | 'COMPLETED';
+
+export type SupplierSource = 'PREVIOUS' | 'PUBLIC';
+
+export interface ReorderRequest {
+  id: string;
+  drugId: string;
+  requestedBy: string;
+  requestedQty: number;
+  currentStock: number;
+  reorderLevel: number;
+  status: ReorderStatus;
+  priority: string;
+  notes?: string;
+  approvedBy?: string;
+  approvedAt?: Date;
+  orderedAt?: Date;
+  receivedAt?: Date;
+  completedAt?: Date;
+  supplierId?: string;
+  supplierSource?: SupplierSource;
+  supplierEmail?: string;
+  supplierName?: string;
+  supplierUrl?: string;
+  estimatedCost?: number;
+  actualCost?: number;
+  emailSent: boolean;
+  emailSentAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PreviousSupplier {
+  id: string;
+  name: string;
+  email: string;
+  contactNumber: string;
+  address?: string;
+  lastPurchaseDate: Date;
+  lastPurchasePrice: number;
+  totalPurchases: number;
+}
+
+export interface PublicSupplierSearchResult {
+  name: string;
+  url: string;
+  snippet: string;
+  price?: string;
+  source: string;
+}
+
+export interface MedicineSearchResult {
+  drugName: string;
+  suppliers: PublicSupplierSearchResult[];
+  searchQuery: string;
+  timestamp: Date;
+}
+
+export interface SendSupplierEmailRequest {
+  quantity: number;
+  contactPerson: string;
+  contactEmail: string;
+  contactPhone?: string;
+}
+
+export interface CreatePublicSupplierReorderRequest {
+  drugId: string;
+  requestedQty: number;
+  supplierName: string;
+  supplierEmail: string;
+  supplierUrl: string;
+  estimatedCost?: number;
+  notes?: string;
+}

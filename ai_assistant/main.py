@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.prebuilt import create_react_agent
@@ -26,7 +27,10 @@ import pandas as pd
 # Load environment variables
 load_dotenv()
 
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+# Configure AI provider
+AI_PROVIDER = os.getenv("AI_PROVIDER", "google").lower()
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
+os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY", "")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Import Agent Tools
@@ -89,8 +93,22 @@ def get_db_engine():
 
 # ==================== LLM SETUP ====================
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-llm_creative = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+def create_llm(temperature: float = 0):
+    """Create LLM based on configured provider"""
+    if AI_PROVIDER == "google":
+        return ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash-exp",
+            temperature=temperature,
+            google_api_key=os.getenv("GOOGLE_API_KEY")
+        )
+    else:
+        return ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=temperature
+        )
+
+llm = create_llm(temperature=0)
+llm_creative = create_llm(temperature=0.7)
 
 # ==================== CHATBOT (Text-to-SQL) ====================
 

@@ -23,9 +23,21 @@ interface Environment {
 
   // OpenAI
   OPENAI_API_KEY: string;
+
   // Email
   RESEND_API_KEY: string;
   ADMIN_EMAIL: string;
+
+  // SMTP Configuration (for supplier emails)
+  SMTP_HOST: string;
+  SMTP_PORT: string;
+  SMTP_USER: string;
+  SMTP_PASSWORD: string;
+  SMTP_SECURE: string;
+
+  // Google Search API (for public supplier search)
+  GOOGLE_SEARCH_API_KEY: string;
+  GOOGLE_SEARCH_ENGINE_ID: string;
 
   // Helpers
   isDevelopment: boolean;
@@ -53,9 +65,21 @@ const env: Environment = {
 
   // OpenAI
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+
   // Email
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
+
+  // SMTP Configuration
+  SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
+  SMTP_PORT: process.env.SMTP_PORT || '587',
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD || '',
+  SMTP_SECURE: process.env.SMTP_SECURE || 'false',
+
+  // Google Search API
+  GOOGLE_SEARCH_API_KEY: process.env.GOOGLE_SEARCH_API_KEY || '',
+  GOOGLE_SEARCH_ENGINE_ID: process.env.GOOGLE_SEARCH_ENGINE_ID || '',
 
   // Helpers
   isDevelopment: process.env.NODE_ENV === 'development',

@@ -217,4 +217,144 @@ router.post('/:id/receive', async (req: AuthenticatedRequest, res: Response) => 
   }
 });
 
+/**
+ * GET /api/reorders/:id/previous-suppliers
+ * Get previous suppliers for a drug in reorder request
+ */
+router.get('/:id/previous-suppliers', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const reorder = await reorderService.getReorderById(req.params.id);
+    const suppliers = await reorderService.getPreviousSuppliers(reorder.drugId);
+    return successResponse(res, suppliers, 'Previous suppliers fetched successfully');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
+    return errorResponse(res, message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+/**
+ * GET /api/reorders/:id/search-suppliers
+ * Search for public suppliers for a drug in reorder request
+ */
+router.get('/:id/search-suppliers', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const reorder = await reorderService.getReorderById(req.params.id);
+    const searchResults = await reorderService.searchPublicSuppliers(reorder.drugId);
+    return successResponse(res, searchResults, 'Supplier search completed successfully');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
+    return errorResponse(res, message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+/**
+ * POST /api/reorders/:id/send-email
+ * Send email to supplier for reorder
+ */
+router.post('/:id/send-email', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return errorResponse(res, ERROR_MESSAGES.UNAUTHORIZED, HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    const { quantity, contactPerson, contactEmail, contactPhone } = req.body;
+
+    if (!quantity || !contactPerson || !contactEmail) {
+      return errorResponse(
+        res,
+        'Quantity, contact person, and contact email are required',
+        HTTP_STATUS.BAD_REQUEST
+      );
+    }
+
+    const emailResult = await reorderService.sendSupplierEmail({
+      reorderId: req.params.id,
+      userId: req.user.id,
+      quantity,
+      contactPerson,
+      contactEmail,
+      contactPhone,
+    });
+
+    if (emailResult.success) {
+      return successResponse(res, emailResult, 'Email sent to supplier successfully');
+    } else {
+      return errorResponse(
+        res,
+        emailResult.error || 'Failed to send email',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR
+      );
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
+    return errorResponse(res, message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+/**
+ * POST /api/reorders/from-public-supplier
+ * Create reorder request from public supplier
+ */
+router.post('/from-public-supplier', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return errorResponse(res, ERROR_MESSAGES.UNAUTHORIZED, HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    const { drugId, requestedQty, supplierName, supplierEmail, supplierUrl, estimatedCost, notes } =
+      req.body;
+
+    if (!drugId || !requestedQty || !supplierName || !supplierEmail || !supplierUrl) {
+      return errorResponse(
+        res,
+        'Drug ID, quantity, supplier name, email, and URL are required',
+        HTTP_STATUS.BAD_REQUEST
+      );
+    }
+
+    const reorder = await reorderService.createReorderFromPublicSupplier(req.user.id, {
+      drugId,
+      requestedQty: Number(requestedQty),
+      supplierName,
+      supplierEmail,
+      supplierUrl,
+      estimatedCost: estimatedCost ? Number(estimatedCost) : undefined,
+      notes,
+    });
+
+    return successResponse(
+      res,
+      reorder,
+      'Reorder request from public supplier created successfully',
+      HTTP_STATUS.CREATED
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
+    return errorResponse(res, message, HTTP_STATUS.BAD_REQUEST);
+  }
+});
+
+/**
+ * POST /api/reorders/:id/complete
+ * Mark reorder as completed
+ */
+router.post('/:id/complete', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return errorResponse(res, ERROR_MESSAGES.UNAUTHORIZED, HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    const { actualCost } = req.body;
+    const reorder = await reorderService.completeReorder(
+      req.params.id,
+      actualCost ? Number(actualCost) : undefined
+    );
+
+    return successResponse(res, reorder, 'Reorder marked as completed successfully');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.INTERNAL_ERROR;
+    return errorResponse(res, message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
 export default router;

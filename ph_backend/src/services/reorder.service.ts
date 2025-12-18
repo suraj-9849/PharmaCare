@@ -1,6 +1,9 @@
 import prisma from '../config/database';
 import { calculatePagination } from '../utils/helpers';
 import { ERROR_MESSAGES } from '../constants';
+import { supplierEmailService } from './supplier-email.service';
+import { webSearchService } from './web-search.service';
+import logger from '../config/logger';
 
 interface CreateReorderRequest {
   drugId: string;
@@ -9,6 +12,15 @@ interface CreateReorderRequest {
   notes?: string;
   supplierId?: string;
   estimatedCost?: number;
+}
+
+interface SendSupplierEmailRequest {
+  reorderId: string;
+  userId: string;
+  quantity: number;
+  contactPerson: string;
+  contactEmail: string;
+  contactPhone?: string;
 }
 
 interface UpdateReorderRequest {
@@ -313,6 +325,218 @@ export class ReorderService {
       .sort((a, b) => a.stockPercentage - b.stockPercentage);
 
     return drugsNeedingReorder;
+  }
+
+  /**
+   * Get previous suppliers for a drug
+   */
+  async getPreviousSuppliers(drugId: string) {
+    try {
+      // Get suppliers from previous inventory batches
+      const batches = await prisma.inventoryBatch.findMany({
+        where: {
+          drugId,
+          supplierId: { not: null },
+        },
+        include: {
+          supplier: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+      });
+
+      // Get unique suppliers with purchase history
+      const supplierMap = new Map();
+
+      batches.forEach((batch) => {
+        if (batch.supplier && !supplierMap.has(batch.supplierId)) {
+          supplierMap.set(batch.supplierId, {
+            id: batch.supplier.id,
+            name: batch.supplier.supplierName,
+            email: batch.supplier.email,
+            contactNumber: batch.supplier.contactNumber,
+            address: batch.supplier.address,
+            lastPurchaseDate: batch.createdAt,
+            lastPurchasePrice: batch.purchasePrice,
+            totalPurchases: 1,
+          });
+        } else if (batch.supplier) {
+          const existing = supplierMap.get(batch.supplierId);
+          existing.totalPurchases += 1;
+        }
+      });
+
+      return Array.from(supplierMap.values());
+    } catch (error) {
+      logger.error('Error getting previous suppliers:', error);
+      throw new Error('Failed to get previous suppliers');
+    }
+  }
+
+  /**
+   * Search for public suppliers
+   */
+  async searchPublicSuppliers(drugId: string) {
+    try {
+      const drug = await prisma.drug.findUnique({
+        where: { id: drugId },
+      });
+
+      if (!drug) {
+        throw new Error(ERROR_MESSAGES.DRUG_NOT_FOUND);
+      }
+
+      const searchResults = await webSearchService.searchMedicineSuppliers(
+        drug.brandName,
+        drug.genericName
+      );
+
+      return searchResults;
+    } catch (error) {
+      logger.error('Error searching public suppliers:', error);
+      throw new Error('Failed to search public suppliers');
+    }
+  }
+
+  /**
+   * Send email to supplier for reorder
+   */
+  async sendSupplierEmail(data: SendSupplierEmailRequest) {
+    try {
+      const reorder = await prisma.reorderRequest.findUnique({
+        where: { id: data.reorderId },
+        include: {
+          drug: true,
+          supplier: true,
+        },
+      });
+
+      if (!reorder) {
+        throw new Error('Reorder request not found');
+      }
+
+      if (!reorder.supplier) {
+        throw new Error('No supplier associated with this reorder request');
+      }
+
+      const emailResult = await supplierEmailService.sendSupplierOrderEmail({
+        supplierName: reorder.supplier.supplierName,
+        supplierEmail: reorder.supplier.email,
+        drugName: reorder.drug.brandName,
+        genericName: reorder.drug.genericName || undefined,
+        quantity: data.quantity,
+        urgency: reorder.priority as 'HIGH' | 'MEDIUM' | 'LOW',
+        currentStock: reorder.currentStock,
+        reorderLevel: reorder.reorderLevel,
+        estimatedCost: reorder.estimatedCost ? Number(reorder.estimatedCost) : undefined,
+        notes: reorder.notes || undefined,
+        contactPerson: data.contactPerson,
+        contactEmail: data.contactEmail,
+        contactPhone: data.contactPhone,
+      });
+
+      // Update reorder request to mark email as sent
+      if (emailResult.success) {
+        await prisma.reorderRequest.update({
+          where: { id: data.reorderId },
+          data: {
+            emailSent: true,
+            emailSentAt: new Date(),
+            status: 'ORDERED',
+            orderedAt: new Date(),
+          },
+        });
+      }
+
+      return emailResult;
+    } catch (error) {
+      logger.error('Error sending supplier email:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create reorder from public supplier
+   */
+  async createReorderFromPublicSupplier(
+    userId: string,
+    data: {
+      drugId: string;
+      requestedQty: number;
+      supplierName: string;
+      supplierEmail: string;
+      supplierUrl: string;
+      estimatedCost?: number;
+      notes?: string;
+    }
+  ) {
+    try {
+      const drug = await prisma.drug.findUnique({
+        where: { id: data.drugId },
+        include: { inventoryBatches: true },
+      });
+
+      if (!drug) {
+        throw new Error(ERROR_MESSAGES.DRUG_NOT_FOUND);
+      }
+
+      const currentStock = drug.inventoryBatches.reduce((sum, batch) => sum + batch.quantity, 0);
+
+      const reorder = await prisma.reorderRequest.create({
+        data: {
+          drugId: data.drugId,
+          requestedBy: userId,
+          requestedQty: data.requestedQty,
+          currentStock,
+          reorderLevel: drug.reorderLevel,
+          supplierSource: 'PUBLIC',
+          supplierName: data.supplierName,
+          supplierEmail: data.supplierEmail,
+          supplierUrl: data.supplierUrl,
+          estimatedCost: data.estimatedCost,
+          notes: data.notes,
+          priority: currentStock <= drug.reorderLevel * 0.25 ? 'HIGH' : 'MEDIUM',
+        },
+        include: {
+          drug: true,
+          requestedByUser: {
+            select: { id: true, username: true, email: true },
+          },
+        },
+      });
+
+      return reorder;
+    } catch (error) {
+      logger.error('Error creating reorder from public supplier:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark reorder as completed
+   */
+  async completeReorder(id: string, actualCost?: number) {
+    try {
+      const reorder = await prisma.reorderRequest.update({
+        where: { id },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+          actualCost: actualCost,
+        },
+        include: {
+          drug: true,
+          supplier: true,
+        },
+      });
+
+      return reorder;
+    } catch (error) {
+      logger.error('Error completing reorder:', error);
+      throw new Error('Failed to complete reorder');
+    }
   }
 }
 

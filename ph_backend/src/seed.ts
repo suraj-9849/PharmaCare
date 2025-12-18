@@ -6,25 +6,44 @@ import env from './config/env';
 
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  connectionTimeoutMillis: 60000,
-  statement_timeout: 60000,
-  query_timeout: 60000,
+  connectionTimeoutMillis: 120000,
+  statement_timeout: 120000,
+  query_timeout: 120000,
+  max: 1,
+  idleTimeoutMillis: 0,
+  allowExitOnIdle: false,
 });
 
 const adapter = new PrismaPg(pool);
 
 const prisma = new PrismaClient({
   adapter,
+  log: ['error', 'warn'],
 });
+
+async function retryOperation<T>(operation: () => Promise<T>, retries = 3): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      if (i === retries - 1 || error.code !== 'ETIMEDOUT') throw error;
+      console.log(`⏳ Connection timeout, retrying... (${i + 1}/${retries})`);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  }
+  throw new Error('Max retries reached');
+}
 
 async function main() {
   console.log('🌱 Starting comprehensive database seeding...\n');
 
   try {
     // Check if admin already exists
-    const existingAdmin = await prisma.user.findUnique({
-      where: { email: 'ph@gmail.com' },
-    });
+    const existingAdmin = await retryOperation(() => 
+      prisma.user.findUnique({
+        where: { email: 'ph@gmail.com' },
+      })
+    );
 
     let adminUser;
 

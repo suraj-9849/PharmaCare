@@ -37,6 +37,12 @@ enum ReorderStatus {
   ORDERED
   RECEIVED
   REJECTED
+  COMPLETED
+}
+
+enum SupplierSource {
+  PREVIOUS
+  PUBLIC
 }
 
 enum ShelfStatus {
@@ -215,28 +221,36 @@ model SystemSetting {
 }
 
 model ReorderRequest {
-  id               String        @id @default(cuid())
-  drugId           String        @map("drug_id")
-  requestedBy      String        @map("requested_by") // User ID
-  requestedQty     Int           @map("requested_qty")
-  currentStock     Int           @default(0) @map("current_stock")
-  reorderLevel     Int           @map("reorder_level")
-  status           ReorderStatus @default(PENDING)
-  priority         String        @default("MEDIUM") // HIGH, MEDIUM, LOW
+  id               String         @id @default(cuid())
+  drugId           String         @map("drug_id")
+  requestedBy      String         @map("requested_by") // User ID
+  requestedQty     Int            @map("requested_qty")
+  currentStock     Int            @default(0) @map("current_stock")
+  reorderLevel     Int            @map("reorder_level")
+  status           ReorderStatus  @default(PENDING)
+  priority         String         @default("MEDIUM") // HIGH, MEDIUM, LOW
   notes            String?
-  approvedBy       String?       @map("approved_by") // User ID
-  approvedAt       DateTime?     @map("approved_at")
-  orderedAt        DateTime?     @map("ordered_at")
-  receivedAt       DateTime?     @map("received_at")
-  supplierId       String?       @map("supplier_id")
-  estimatedCost    Decimal?      @map("estimated_cost") @db.Decimal(10, 2)
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
+  approvedBy       String?        @map("approved_by") // User ID
+  approvedAt       DateTime?      @map("approved_at")
+  orderedAt        DateTime?      @map("ordered_at")
+  receivedAt       DateTime?      @map("received_at")
+  completedAt      DateTime?      @map("completed_at")
+  supplierId       String?        @map("supplier_id")
+  supplierSource   SupplierSource? @map("supplier_source") // PREVIOUS or PUBLIC
+  supplierEmail    String?        @map("supplier_email") // For public suppliers
+  supplierName     String?        @map("supplier_name") // For public suppliers
+  supplierUrl      String?        @map("supplier_url") // Source URL for public suppliers
+  estimatedCost    Decimal?       @map("estimated_cost") @db.Decimal(10, 2)
+  actualCost       Decimal?       @map("actual_cost") @db.Decimal(10, 2)
+  emailSent        Boolean        @default(false) @map("email_sent")
+  emailSentAt      DateTime?      @map("email_sent_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
 
   // Relations
-  drug           Drug      @relation(fields: [drugId], references: [id], onDelete: Cascade)
-  requestedByUser User     @relation("RequestedReorders", fields: [requestedBy], references: [id], onDelete: Cascade)
-  approvedByUser  User?    @relation("ApprovedReorders", fields: [approvedBy], references: [id], onDelete: SetNull)
+  drug            Drug      @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  requestedByUser User      @relation("RequestedReorders", fields: [requestedBy], references: [id], onDelete: Cascade)
+  approvedByUser  User?     @relation("ApprovedReorders", fields: [approvedBy], references: [id], onDelete: SetNull)
   supplier        Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
   @@map("reorder_requests")
