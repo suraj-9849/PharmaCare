@@ -1,0 +1,204 @@
+### Smart Shelf Testing - HTTP Requests
+### Use with REST Client VSCode extension or copy to Postman
+
+@baseUrl = http://localhost:5000/api
+@token = YOUR_JWT_TOKEN_HERE
+
+### 1. Create Shelf Location A1
+POST {{baseUrl}}/smart-shelf
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "shelfCode": "A1",
+  "shelfName": "Main Pharmacy Shelf A",
+  "row": "1",
+  "column": "A",
+  "zone": "General",
+  "capacity": 50,
+  "qrCode": "QR-SHELF-A1",
+  "notes": "First test shelf"
+}
+
+### 2. Create Shelf Location B2 (Refrigerated)
+POST {{baseUrl}}/smart-shelf
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "shelfCode": "B2",
+  "shelfName": "Refrigerated Shelf B",
+  "row": "2",
+  "column": "B",
+  "zone": "Refrigerated",
+  "capacity": 30,
+  "qrCode": "QR-SHELF-B2",
+  "notes": "Cold storage shelf"
+}
+
+### 3. Create Shelf Location C3 (Controlled)
+POST {{baseUrl}}/smart-shelf
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "shelfCode": "C3",
+  "shelfName": "Controlled Substances Shelf",
+  "row": "3",
+  "column": "C",
+  "zone": "Controlled",
+  "capacity": 100,
+  "qrCode": "QR-SHELF-C3",
+  "notes": "Locked cabinet for controlled meds"
+}
+
+### 4. Get All Shelves
+GET {{baseUrl}}/smart-shelf
+Authorization: Bearer {{token}}
+
+### 5. Get Shelf by ID (replace {shelfId})
+GET {{baseUrl}}/smart-shelf/{shelfId}
+Authorization: Bearer {{token}}
+
+### 6. Get Smart Shelf Analytics
+GET {{baseUrl}}/smart-shelf/analytics
+Authorization: Bearer {{token}}
+
+### 7. Add Batch to Shelf (replace {shelfId} and {batchId})
+POST {{baseUrl}}/smart-shelf/{shelfId}/batch/{batchId}
+Authorization: Bearer {{token}}
+
+### 8. Get Shelf Queue (replace {shelfId})
+GET {{baseUrl}}/smart-shelf/{shelfId}/queue
+Authorization: Bearer {{token}}
+
+### 9. Validate Batch Pick - CORRECT pick (replace {shelfId} and {batchId})
+POST {{baseUrl}}/smart-shelf/{shelfId}/validate-pick
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "batchId": "{batchId-at-position-0}"
+}
+
+### 10. Validate Batch Pick - INCORRECT pick (replace {shelfId} and {batchId})
+POST {{baseUrl}}/smart-shelf/{shelfId}/validate-pick
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "batchId": "{batchId-not-at-position-0}"
+}
+
+### 11. Get Unacknowledged Alerts
+GET {{baseUrl}}/smart-shelf/alerts/unacknowledged?limit=10
+Authorization: Bearer {{token}}
+
+### 12. Acknowledge Alert (replace {alertId})
+PATCH {{baseUrl}}/smart-shelf/alerts/{alertId}/acknowledge
+Authorization: Bearer {{token}}
+
+### 13. Get Expiring Batches (30 days)
+GET {{baseUrl}}/smart-shelf/expiring?days=30&limit=20
+Authorization: Bearer {{token}}
+
+### 14. Record Expiry Action - Return to Vendor (replace {batchId})
+POST {{baseUrl}}/smart-shelf/expiry-action
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "batchId": "{batchId}",
+  "action": "RETURN_TO_VENDOR",
+  "quantity": 100,
+  "vendorReturn": true,
+  "reason": "Expiring soon, vendor accepts returns",
+  "notes": "Contacted vendor XYZ"
+}
+
+### 15. Record Expiry Action - Discount (replace {batchId})
+POST {{baseUrl}}/smart-shelf/expiry-action
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "batchId": "{batchId}",
+  "action": "DISCOUNT",
+  "quantity": 50,
+  "vendorReturn": false,
+  "discountAmount": 25.00,
+  "reason": "Apply 25% discount to clear stock",
+  "notes": "Promotional sale"
+}
+
+### 16. Record Expiry Action - Dispose (replace {batchId})
+POST {{baseUrl}}/smart-shelf/expiry-action
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "batchId": "{batchId}",
+  "action": "DISPOSE",
+  "quantity": 20,
+  "vendorReturn": false,
+  "reason": "Expired and damaged",
+  "notes": "Disposed according to regulations"
+}
+
+### 17. Get Expiry Action History
+GET {{baseUrl}}/smart-shelf/expiry-actions?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### 18. Get Expiry Actions for Specific Batch (replace {batchId})
+GET {{baseUrl}}/smart-shelf/expiry-actions?batchId={batchId}&limit=10
+Authorization: Bearer {{token}}
+
+### 19. Remove Batch from Front of Queue (replace {shelfId})
+DELETE {{baseUrl}}/smart-shelf/{shelfId}/batch/front
+Authorization: Bearer {{token}}
+
+### 20. Update Shelf (replace {shelfId})
+PUT {{baseUrl}}/smart-shelf/{shelfId}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "shelfName": "Updated Shelf Name",
+  "capacity": 75,
+  "status": "ACTIVE",
+  "notes": "Updated notes"
+}
+
+### 21. Delete Shelf (replace {shelfId} - only works if no batches)
+DELETE {{baseUrl}}/smart-shelf/{shelfId}
+Authorization: Bearer {{token}}
+
+### ===== HELPER REQUESTS =====
+
+### Get All Inventory Batches (to find batch IDs)
+GET {{baseUrl}}/inventory?page=1&limit=50
+Authorization: Bearer {{token}}
+
+### Get All Drugs (to create batches)
+GET {{baseUrl}}/drugs?page=1&limit=50
+Authorization: Bearer {{token}}
+
+### Get All Suppliers (to create batches)
+GET {{baseUrl}}/suppliers?page=1&limit=50
+Authorization: Bearer {{token}}
+
+### Create Test Batch (Expiring Soon) - replace drugId and supplierId
+POST {{baseUrl}}/inventory
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "drugId": "{drugId}",
+  "batchNumber": "TEST-BATCH-001",
+  "quantity": 100,
+  "purchasePrice": 50,
+  "sellPrice": 100,
+  "expiryDate": "2025-01-05",
+  "supplierId": "{supplierId}",
+  "location": "Warehouse A"
+}
