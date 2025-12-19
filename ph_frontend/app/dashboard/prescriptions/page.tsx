@@ -14,6 +14,8 @@ import {
   Calendar,
   Eye,
   Search,
+  MapPin,
+  Minus,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
@@ -54,6 +56,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { formatDateTime, formatDate } from '@/lib/utils';
 import type { PaginatedResponse, Drug } from '@/lib/types';
+import { BatchSelectionCard } from '@/components/prescriptions/batch-selection-card';
+import { ShelfLocationDialog } from '@/components/prescriptions/shelf-location-dialog';
 
 interface Medication {
   medicationName: string;
@@ -72,12 +76,24 @@ interface PrescriptionData {
   confidence: number;
 }
 
+interface ShelfLocation {
+  id: string;
+  shelfCode: string;
+  shelfName: string | null;
+  row: string | null;
+  column: string | null;
+  zone: string | null;
+  slotPosition: number | null;
+}
+
 interface InventoryBatch {
   id: string;
   batchNumber: string;
   quantity: number;
   expiryDate: string;
   sellPrice: number;
+  slotPosition: number | null;
+  shelfLocation: ShelfLocation | null;
 }
 
 interface AvailabilityResult {
@@ -190,6 +206,12 @@ export default function PrescriptionVerificationPage() {
   const [activeTab, setActiveTab] = useState<string>('verification');
   const [selectedHistoryPrescription, setSelectedHistoryPrescription] =
     useState<PrescriptionHistory | null>(null);
+  const [showBatchSelection, setShowBatchSelection] = useState(false);
+  const [selectedBatches, setSelectedBatches] = useState<Record<string, Array<{batchId: string; quantity: number}>>>({});
+  const [selectedShelfLocation, setSelectedShelfLocation] = useState<{
+    location: ShelfLocation;
+    slotPosition: number | null;
+  } | null>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -309,21 +331,46 @@ export default function PrescriptionVerificationPage() {
     }
   };
 
-  const handlePurchase = async () => {
-    if (!prescriptionData || !availabilityResults) return;
+  const handleProceedToBatchSelection = () => {
+    if (!availabilityResults) return;
 
-    // Filter out items that are completely out of stock
+    // Filter out completely out of stock items
     const availableItems = availabilityResults.filter(
       (r) => r.status === 'IN_STOCK' || r.status === 'LOW_STOCK'
     );
 
-    // Check if there are any available items to purchase
     if (availableItems.length === 0) {
-      setError('All prescribed medications are out of stock. Cannot process purchase.');
+      setError('All prescribed medications are out of stock. Cannot proceed.');
       return;
     }
 
-    // Validate at least customer name is provided
+    // Auto-select first batch for each medication (FEFO)
+    const autoSelections: Record<string, Array<{batchId: string; quantity: number}>> = {};
+
+    availableItems.forEach((result) => {
+      const medName = result.prescribedMedication.medicationName;
+      const requiredQty = result.prescribedMedication.quantity;
+      const batches = result.availableBatches;
+
+      if (batches.length > 0) {
+        const firstBatch = batches[0]; // FEFO: First expiring
+        const qtyFromBatch = Math.min(requiredQty, firstBatch.quantity);
+
+        autoSelections[medName] = [{
+          batchId: firstBatch.id,
+          quantity: qtyFromBatch,
+        }];
+      }
+    });
+
+    setSelectedBatches(autoSelections);
+    setShowBatchSelection(true);
+  };
+
+  const handlePurchase = async () => {
+    if (!prescriptionData || !availabilityResults) return;
+
+    // Validate customer name
     if (!customerDetails.name.trim()) {
       setError('Please provide customer name');
       return;
@@ -334,30 +381,44 @@ export default function PrescriptionVerificationPage() {
     setSuccess(null);
 
     try {
+      // Convert selectedBatches to API format
+      const batchSelections: Array<{medicationName: string; batchId: string; quantity: number}> = [];
+
+      Object.entries(selectedBatches).forEach(([medName, batches]) => {
+        batches.forEach(batch => {
+          batchSelections.push({
+            medicationName: medName,
+            batchId: batch.batchId,
+            quantity: batch.quantity,
+          });
+        });
+      });
+
+      // Get only available items
+      const availableItems = availabilityResults.filter(
+        (r) => r.status === 'IN_STOCK' || r.status === 'LOW_STOCK'
+      );
+
       const response = await apiClient.prescriptions.purchase(
         prescriptionData,
-        availableItems, // Send only available items
+        availableItems,
         paymentMethod,
         customerDetails.id,
         customerDetails.name,
         customerDetails.phone,
         customerDetails.email,
-        customerDetails.address
+        customerDetails.address,
+        batchSelections
       );
 
       const data = response as PurchaseResponse;
+      setSuccess(data.message || 'Purchase completed successfully!');
 
-      // Show success message with info about out of stock items
-      const outOfStockCount = availabilityResults.length - availableItems.length;
-      let successMsg = data.message || 'Purchase completed successfully! Stock updated.';
-      if (outOfStockCount > 0) {
-        successMsg += ` Note: ${outOfStockCount} item(s) were out of stock and not included.`;
-      }
-      setSuccess(successMsg);
-
-      // Reset form after 3 seconds
+      // Reset after 3 seconds
       setTimeout(() => {
         handleClear();
+        setShowBatchSelection(false);
+        setSelectedBatches({});
       }, 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process purchase');
@@ -917,45 +978,118 @@ export default function PrescriptionVerificationPage() {
                     />
                   </div>
 
-                  {/* Payment & Purchase */}
-                  <div className="space-y-4 pt-4 border-t">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Payment Method</label>
-                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="CASH">Cash</SelectItem>
-                          <SelectItem value="CARD">Card</SelectItem>
-                          <SelectItem value="UPI">UPI</SelectItem>
-                          <SelectItem value="CREDIT">Credit</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  {/* Batch Selection or Direct Purchase */}
+                  {!showBatchSelection ? (
+                    <div className="space-y-4 pt-4 border-t">
+                      <Button
+                        onClick={handleProceedToBatchSelection}
+                        disabled={availabilityResults.every((r) => r.status === 'OUT_OF_STOCK')}
+                        className="w-full"
+                        size="lg"
+                      >
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Proceed to Batch Selection
+                      </Button>
                     </div>
+                  ) : (
+                    <div className="space-y-4 pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">Select Batches (FEFO)</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowBatchSelection(false);
+                            setSelectedBatches({});
+                          }}
+                        >
+                          ← Back
+                        </Button>
+                      </div>
 
-                    <Button
-                      onClick={handlePurchase}
-                      disabled={
-                        isPurchasing ||
-                        availabilityResults.every((r) => r.status === 'OUT_OF_STOCK')
-                      }
-                      className="w-full"
-                      size="lg"
-                    >
-                      {isPurchasing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Processing Purchase...
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart className="w-4 h-4 mr-2" />
-                          Process Purchase & Update Stock
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                      {/* Batch Selection Cards */}
+                      <div className="max-h-96 overflow-y-auto space-y-3">
+                        {availabilityResults
+                          .filter((r) => r.status === 'IN_STOCK' || r.status === 'LOW_STOCK')
+                          .map((result) => (
+                            <BatchSelectionCard
+                              key={result.prescribedMedication.medicationName}
+                              result={result}
+                              selectedBatches={selectedBatches[result.prescribedMedication.medicationName] || []}
+                              onBatchesChange={(batches) => {
+                                setSelectedBatches({
+                                  ...selectedBatches,
+                                  [result.prescribedMedication.medicationName]: batches,
+                                });
+                              }}
+                              onViewShelfLocation={(location, slotPosition) => {
+                                setSelectedShelfLocation({ location, slotPosition });
+                              }}
+                            />
+                          ))}
+                      </div>
+
+                      {/* Calculate Total */}
+                      {(() => {
+                        let total = 0;
+                        Object.entries(selectedBatches).forEach(([medName, batches]) => {
+                          const result = availabilityResults.find(
+                            r => r.prescribedMedication.medicationName === medName
+                          );
+                          if (result) {
+                            batches.forEach(batch => {
+                              const batchData = result.availableBatches.find(b => b.id === batch.batchId);
+                              if (batchData) {
+                                total += batch.quantity * batchData.sellPrice;
+                              }
+                            });
+                          }
+                        });
+                        return (
+                          <div className="flex justify-between items-center p-3 bg-green-50 rounded font-semibold text-lg">
+                            <span>Total Amount:</span>
+                            <span className="text-green-600">₹{total.toFixed(2)}</span>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Payment Method */}
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Payment Method</label>
+                        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="CASH">Cash</SelectItem>
+                            <SelectItem value="CARD">Card</SelectItem>
+                            <SelectItem value="UPI">UPI</SelectItem>
+                            <SelectItem value="CREDIT">Credit</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Process Purchase Button */}
+                      <Button
+                        onClick={handlePurchase}
+                        disabled={isPurchasing}
+                        className="w-full"
+                        size="lg"
+                      >
+                        {isPurchasing ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Processing Purchase...
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-4 h-4 mr-2" />
+                            Process Purchase & Update Stock
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </Card>
               ) : (
                 <Card className="p-12 text-center">
@@ -1374,6 +1508,14 @@ export default function PrescriptionVerificationPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Shelf Location Dialog */}
+      <ShelfLocationDialog
+        location={selectedShelfLocation?.location || null}
+        slotPosition={selectedShelfLocation?.slotPosition || null}
+        open={!!selectedShelfLocation}
+        onOpenChange={(open) => !open && setSelectedShelfLocation(null)}
+      />
     </div>
   );
 }

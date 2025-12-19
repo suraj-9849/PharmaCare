@@ -16,6 +16,7 @@ import alertRoutes from './alert.routes';
 import reorderRoutes from './reorder.routes';
 import smartShelfRoutes from './smart-shelf.routes';
 import notificationRoutes from './notification.routes';
+import deviceRoutes from './device.routes';
 // TEMPORARY - DELETE AFTER TESTING
 import testNotificationRoutes from './test-notifications.routes';
 
@@ -39,6 +40,7 @@ router.use('/alerts', alertRoutes);
 router.use('/reorders', reorderRoutes);
 router.use('/smart-shelf', smartShelfRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/devices', deviceRoutes);
 // TEMPORARY - DELETE AFTER TESTING
 router.use('/test-notifications', testNotificationRoutes);
 

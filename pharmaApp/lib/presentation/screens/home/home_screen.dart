@@ -8,6 +8,7 @@ import 'package:pharma_care/data/repositories/alert_repository.dart';
 import 'package:pharma_care/presentation/screens/home/widgets/alert_card.dart';
 import 'package:pharma_care/presentation/screens/home/widgets/stats_card.dart';
 import 'package:pharma_care/presentation/screens/home/widgets/activity_feed.dart';
+import 'package:pharma_care/presentation/widgets/low_stock_notification_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -198,6 +199,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
+
+                    const Divider(height: 1),
+
+                    // Low Stock Notifications Section (New!)
+                    const LowStockNotificationWidget(),
 
                     const Divider(height: 1),
 

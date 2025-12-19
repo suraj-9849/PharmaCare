@@ -37,6 +37,7 @@ enum ReorderStatus {
   ORDERED
   RECEIVED
   REJECTED
+  COMPLETED
 }
 
 enum ShelfStatus {

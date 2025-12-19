@@ -4,13 +4,9 @@ import { config } from '../config/env';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
+// OpenAI client for invoice processing
 const openai = new OpenAI({
-  apiKey: config.OPENROUTER_API_KEY || '',
-  baseURL: 'https://openrouter.ai/api/v1',
-  defaultHeaders: {
-    'HTTP-Referer': 'http://localhost:5000',
-    'X-Title': 'DrugDesk',
-  },
+  apiKey: config.OPENAI_API_KEY || '',
 });
 
 interface InvoiceData {
@@ -48,13 +44,13 @@ interface DrugMatchResult {
 
 export class InvoiceService {
   /**
-   * Extract invoice data using OpenRouter (gpt-oss-120b:free)
+   * Extract invoice data using OpenAI GPT-4o-mini
    */
   async extractInvoiceData(imageBuffer: Buffer, mimeType: string): Promise<InvoiceData> {
     const base64Image = imageBuffer.toString('base64');
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-oss-120b:free',
+      model: 'gpt-4o-mini', // OpenAI GPT-4o-mini for invoice processing
       messages: [
         {
           role: 'user',
@@ -124,7 +120,7 @@ Important rules:
   }
 
   /**
-   * Match extracted drug name with existing drugs in database using OpenRouter (gpt-oss-120b:free)
+   * Match extracted drug name with existing drugs in database using OpenAI GPT-4o-mini
    */
   async matchDrug(extractedName: string, genericName?: string | null): Promise<DrugMatchResult> {
     // Get existing drugs from database
@@ -161,7 +157,7 @@ Matching rules:
 - Return ONLY valid JSON, no markdown`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-oss-120b:free',
+      model: 'gpt-4o-mini', // OpenAI GPT-4o-mini for drug matching
       messages: [
         {
           role: 'user',

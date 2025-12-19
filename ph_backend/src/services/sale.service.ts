@@ -146,6 +146,12 @@ export class SaleService {
         sku: string;
       }> = [];
 
+      const stockAlertData: Array<{
+        drugId: string;
+        alertType: 'LOW_STOCK' | 'OUT_OF_STOCK';
+        message: string;
+      }> = [];
+
       for (const item of validItems) {
         // Update batch quantity
         const updatedBatch = await tx.inventoryBatch.update({
@@ -180,9 +186,15 @@ export class SaleService {
             category: drug.category || 'N/A',
             sku: drug.sku || 'N/A',
           });
+
+          stockAlertData.push({
+            drugId: drug.id,
+            alertType: 'OUT_OF_STOCK',
+            message: `${drug.brandName} is out of stock. Please reorder immediately.`,
+          });
         }
-        // Check for low stock (10% or 25%)
-        else if (stockPercentage <= 25) {
+        // Check for low stock (at or below reorder level)
+        else if (totalStock <= drug.reorderLevel) {
           lowStockAlerts.push({
             drugName: drug.genericName || drug.brandName,
             brandName: drug.brandName,
@@ -192,11 +204,36 @@ export class SaleService {
             category: drug.category || 'N/A',
             sku: drug.sku || 'N/A',
           });
+
+          stockAlertData.push({
+            drugId: drug.id,
+            alertType: 'LOW_STOCK',
+            message: `${drug.brandName} is running low (${totalStock} left, reorder level: ${drug.reorderLevel}). Please reorder soon.`,
+          });
         }
       }
 
-      return { newSale, lowStockAlerts, outOfStockAlerts, skippedItems: outOfStockItems };
+      return { newSale, lowStockAlerts, outOfStockAlerts, skippedItems: outOfStockItems, stockAlertData };
+    }, {
+      timeout: 10000, // Increase timeout to 10 seconds
     });
+
+    // Create stock alerts in database (after transaction to avoid timeout)
+    if (sale.stockAlertData.length > 0) {
+      for (const alertData of sale.stockAlertData) {
+        await prisma.stockAlert.create({
+          data: {
+            drugId: alertData.drugId,
+            alertType: alertData.alertType,
+            message: alertData.message,
+            isRead: false,
+            notificationSent: false,
+          },
+        }).catch((err) => {
+          console.error('Failed to create stock alert:', err);
+        });
+      }
+    }
 
     // Send email alerts if any (async, don't block the response)
     if (sale.outOfStockAlerts.length > 0) {

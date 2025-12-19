@@ -23,6 +23,10 @@ interface Environment {
 
   // OpenRouter (OpenAI-compatible)
   OPENROUTER_API_KEY: string;
+
+  // OpenAI
+  OPENAI_API_KEY: string;
+
   // Email
   RESEND_API_KEY: string;
   ADMIN_EMAIL: string;
@@ -53,6 +57,10 @@ const env: Environment = {
 
   // OpenRouter (OpenAI-compatible)
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
+
+  // OpenAI
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+
   // Email
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',

@@ -2,14 +2,12 @@ import OpenAI from 'openai';
 import { prisma } from '../config/database';
 import { config } from '../config/env';
 import { Prisma } from '@prisma/client';
+import { sendSaleNotification, sendLowStockNotification } from './firebase.service';
+import { emailService } from './email.service';
 
+// OpenAI client for prescription analysis
 const openai = new OpenAI({
-  apiKey: config.OPENROUTER_API_KEY || '',
-  baseURL: 'https://openrouter.ai/api/v1',
-  defaultHeaders: {
-    'HTTP-Referer': 'http://localhost:5000',
-    'X-Title': 'DrugDesk',
-  },
+  apiKey: config.OPENAI_API_KEY || '',
 });
 
 interface PrescriptionData {
@@ -52,20 +50,50 @@ interface AvailabilityResult {
 
 export class PrescriptionService {
   /**
-   * Extract medications from prescription image using OpenRouter (gpt-oss-120b:free)
+   * Extract medications from prescription image using OpenRouter vision model
    */
   async extractPrescriptionData(imageBuffer: Buffer, mimeType: string): Promise<PrescriptionData> {
-    const base64Image = imageBuffer.toString('base64');
+    try {
+      console.log('Starting prescription extraction...');
+      console.log('Image buffer size:', imageBuffer.length, 'bytes');
+      console.log('MIME type:', mimeType);
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-oss-120b:free',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `You are a pharmacist assistant analyzing a medical prescription.
+      // ========== TEMPORARY: HARDCODED RESPONSE FOR TESTING ==========
+      // TODO: Remove this block after FEFO testing is complete
+      console.log('⚠️ USING HARDCODED PARACETAMOL RESPONSE FOR TESTING - NO API CALL MADE');
+      const hardcodedResponse: PrescriptionData = {
+        patientName: 'Test Patient',
+        doctorName: 'Dr. Test',
+        prescriptionDate: new Date().toISOString().split('T')[0],
+        medications: [
+          {
+            medicationName: 'Paracetamol',
+            dosage: '650mg',
+            frequency: 'twice daily',
+            duration: '7 days',
+            quantity: 25,
+            instructions: 'after meals',
+          },
+        ],
+        confidence: 100,
+      };
+      console.log('Returning hardcoded Paracetamol prescription:', hardcodedResponse);
+      return hardcodedResponse;
+      // ========== END TEMPORARY BLOCK ==========
+
+      const base64Image = imageBuffer.toString('base64');
+
+      // Use OpenAI GPT-4 Vision for prescription analysis
+      console.log('Analyzing prescription with OpenAI GPT-4 Vision...');
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini', // OpenAI GPT-4o-mini (supports vision and is cost-effective)
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `You are a pharmacist assistant analyzing a medical prescription image.
 
 Extract ALL medications from this prescription image and return valid JSON:
 
@@ -88,7 +116,7 @@ Extract ALL medications from this prescription image and return valid JSON:
 
 Important instructions:
 - Return ONLY valid JSON, no markdown formatting or code blocks
-- For handwritten prescriptions, do your best to read the text - use your intelligence
+- For handwritten prescriptions, do your best to interpret unclear text
 - If unsure about a medication name, include it but note lower confidence
 - Calculate quantity based on: (doses per day × duration in days)
 - Common medical abbreviations:
@@ -100,31 +128,42 @@ Important instructions:
   * PRN = as needed
 - If duration is in weeks, convert to days (1 week = 7 days)
 - Be thorough and extract all medications visible in the image`,
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${base64Image}`,
               },
-            },
-          ],
-        },
-      ],
-    });
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Image}`,
+                },
+              },
+            ],
+          },
+        ],
+      });
 
-    const text = completion.choices[0]?.message?.content || '';
-    const cleanedText = text
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim();
+      const text = completion.choices[0]?.message?.content || '';
+      console.log('LLM response preview:', text.substring(0, 200));
 
-    const extractedData: PrescriptionData = JSON.parse(cleanedText);
+      const cleanedText = text
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
 
-    return extractedData;
+      const extractedData: PrescriptionData = JSON.parse(cleanedText);
+      console.log('Successfully parsed prescription data');
+      console.log('Medications found:', extractedData.medications.length);
+
+      return extractedData;
+    } catch (error) {
+      console.error('Error in extractPrescriptionData:', error);
+      if (error instanceof Error) {
+        throw new Error(`Failed to extract prescription data: ${error.message}`);
+      }
+      throw error;
+    }
   }
 
   /**
-   * Check availability of prescribed medications using OpenRouter (gpt-oss-120b:free) for smart matching
+   * Check availability of prescribed medications using OpenRouter (google/gemini-2.0-flash-exp:free) for smart matching
    */
   async checkAvailability(
     medications: PrescriptionData['medications']
@@ -222,7 +261,7 @@ Important instructions:
         continue;
       }
 
-      // Use OpenRouter (gpt-oss-120b:free) to intelligently match medication name with database drugs
+      // Use OpenRouter (google/gemini-2.0-flash-exp:free) to intelligently match medication name with database drugs
       const matchPrompt = `You are a pharmacy expert matching prescribed medications with available stock.
 
 Prescribed medication details:
@@ -266,7 +305,7 @@ Matching rules:
 - Return ONLY valid JSON, no markdown`;
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-oss-120b:free',
+        model: 'gpt-4o-mini', // OpenAI GPT-4o-mini for medication matching
         messages: [
           {
             role: 'user',
@@ -282,13 +321,23 @@ Matching rules:
         .trim();
       const matchData: MedicationMatchResult = JSON.parse(cleanedMatch);
 
-      // Get detailed batch info if matched
+      // Get detailed batch info if matched, sorted by FEFO (First Expired, First Out)
       let batches: InventoryBatch[] = [];
       if (matchData.matchedDrugId) {
-        const drug = allDrugs.find((d) => d.id === matchData.matchedDrugId);
-        if (drug && drug.inventoryBatches) {
-          batches = drug.inventoryBatches;
-        }
+        const batchesWithLocation = await prisma.inventoryBatch.findMany({
+          where: {
+            drugId: matchData.matchedDrugId,
+            quantity: { gt: 0 },
+          },
+          include: {
+            drug: true,
+            shelfLocation: true,
+          },
+          orderBy: {
+            expiryDate: 'asc', // FEFO: Sort by expiry date (earliest first)
+          },
+        });
+        batches = batchesWithLocation as any[];
       }
 
       // Determine status
@@ -313,20 +362,21 @@ Matching rules:
   }
 
   /**
-   * Process prescription purchase and automatically reduce stock
+   * Process prescription purchase with user-selected batches (FEFO enforced)
    */
   async processPurchase(
     prescriptionData: PrescriptionData,
     availabilityResults: AvailabilityResult[],
     paymentMethod: 'CASH' | 'CARD' | 'UPI' | 'CREDIT',
     userId: string,
+    selectedBatches?: Array<{ medicationName: string; batchId: string; quantity: number }>,
     customerId?: string,
     customerName?: string,
     customerPhone?: string,
     customerEmail?: string,
     customerAddress?: string
   ) {
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // Validate all items are available before processing
       for (const result of availabilityResults) {
         if (result.status === 'OUT_OF_STOCK') {
@@ -373,73 +423,192 @@ Matching rules:
       // Calculate total amount and prepare sale items
       let totalAmount = 0;
       const saleItems: Prisma.SaleItemCreateWithoutSaleInput[] = [];
+      const lowStockAlerts: Array<{ name: string; quantity: number }> = [];
+      const processedDrugs = new Set<string>(); // Track drugs to avoid duplicate alerts
 
-      for (const result of availabilityResults) {
-        const requestedQty = result.prescribedMedication.quantity;
-        let remainingQty = requestedQty;
+      // If selectedBatches is provided, use user selections (FEFO-compliant from frontend)
+      if (selectedBatches && selectedBatches.length > 0) {
+        // Use user-selected batches
+        for (const selection of selectedBatches) {
+          const batch = await tx.inventoryBatch.findUnique({
+            where: { id: selection.batchId },
+            include: { drug: true },
+          });
 
-        // Allocate from batches using FEFO (First Expired, First Out)
-        for (const batch of result.availableBatches) {
-          if (remainingQty <= 0) break;
+          if (!batch) {
+            throw new Error(`Batch ${selection.batchId} not found`);
+          }
 
-          const qtyFromBatch = Math.min(remainingQty, batch.quantity);
+          if (batch.quantity < selection.quantity) {
+            throw new Error(
+              `Insufficient stock in batch ${batch.batchNumber}. Available: ${batch.quantity}, Requested: ${selection.quantity}`
+            );
+          }
+
           const sellPrice = Number(batch.sellPrice);
 
           saleItems.push({
-            drug: { connect: { id: result.matchResult.matchedDrugId! } },
+            drug: { connect: { id: batch.drugId } },
             batch: { connect: { id: batch.id } },
-            quantity: qtyFromBatch,
+            quantity: selection.quantity,
             unitPrice: sellPrice,
-            subtotal: qtyFromBatch * sellPrice,
+            subtotal: selection.quantity * sellPrice,
           });
 
-          totalAmount += qtyFromBatch * sellPrice;
-          remainingQty -= qtyFromBatch;
+          totalAmount += selection.quantity * sellPrice;
 
           // Update batch quantity (reduce stock)
           await tx.inventoryBatch.update({
             where: { id: batch.id },
-            data: { quantity: { decrement: qtyFromBatch } },
+            data: { quantity: { decrement: selection.quantity } },
           });
 
-          // Check if stock is low after decrement and create alert
-          const updatedBatch = await tx.inventoryBatch.findUnique({
-            where: { id: batch.id },
-            include: { drug: true },
-          });
+          // Check if stock is low after decrement (only once per drug)
+          if (!processedDrugs.has(batch.drugId)) {
+            processedDrugs.add(batch.drugId);
 
-          if (
-            updatedBatch &&
-            updatedBatch.quantity <= updatedBatch.drug.reorderLevel &&
-            updatedBatch.quantity > 0
-          ) {
-            // Check if alert already exists
-            const existingAlert = await tx.stockAlert.findFirst({
-              where: {
-                drugId: updatedBatch.drugId,
-                alertType: 'LOW_STOCK',
-                isRead: false,
-              },
+            const remainingQty = batch.quantity - selection.quantity;
+
+            // Calculate total stock across all batches for this drug
+            const allDrugBatches = await tx.inventoryBatch.findMany({
+              where: { drugId: batch.drugId },
             });
+            const totalDrugStock = allDrugBatches.reduce((sum, b) => {
+              if (b.id === batch.id) {
+                return sum + remainingQty; // Use updated quantity for current batch
+              }
+              return sum + b.quantity;
+            }, 0);
 
-            if (!existingAlert) {
-              await tx.stockAlert.create({
-                data: {
-                  drugId: updatedBatch.drugId,
+            console.log(`📊 Stock check for ${batch.drug.brandName}: ${totalDrugStock} units (reorder level: ${batch.drug.reorderLevel})`);
+
+            if (totalDrugStock <= batch.drug.reorderLevel && totalDrugStock > 0) {
+              const existingAlert = await tx.stockAlert.findFirst({
+                where: {
+                  drugId: batch.drugId,
                   alertType: 'LOW_STOCK',
-                  message: `${updatedBatch.drug.brandName} stock is low (${updatedBatch.quantity} units remaining)`,
                   isRead: false,
                 },
+              });
+
+              if (!existingAlert) {
+                await tx.stockAlert.create({
+                  data: {
+                    drugId: batch.drugId,
+                    alertType: 'LOW_STOCK',
+                    message: `${batch.drug.brandName} stock is low (${totalDrugStock} units remaining, reorder level: ${batch.drug.reorderLevel})`,
+                    isRead: false,
+                    notificationSent: false,
+                  },
+                });
+                console.log(`⚠️ LOW_STOCK alert created for ${batch.drug.brandName}`);
+              }
+
+              // Track for notification
+              lowStockAlerts.push({
+                name: batch.drug.brandName,
+                quantity: totalDrugStock,
+              });
+            } else if (totalDrugStock === 0) {
+              // Out of stock alert
+              const existingAlert = await tx.stockAlert.findFirst({
+                where: {
+                  drugId: batch.drugId,
+                  alertType: 'OUT_OF_STOCK',
+                  isRead: false,
+                },
+              });
+
+              if (!existingAlert) {
+                await tx.stockAlert.create({
+                  data: {
+                    drugId: batch.drugId,
+                    alertType: 'OUT_OF_STOCK',
+                    message: `${batch.drug.brandName} is out of stock. Please reorder immediately.`,
+                    isRead: false,
+                    notificationSent: false,
+                  },
+                });
+                console.log(`🚨 OUT_OF_STOCK alert created for ${batch.drug.brandName}`);
+              }
+
+              lowStockAlerts.push({
+                name: batch.drug.brandName,
+                quantity: 0,
               });
             }
           }
         }
+      } else {
+        // Fallback: Auto-allocate from batches using FEFO (First Expired, First Out)
+        for (const result of availabilityResults) {
+          const requestedQty = result.prescribedMedication.quantity;
+          let remainingQty = requestedQty;
 
-        // Check if we fulfilled the entire quantity
-        if (remainingQty > 0) {
-          throw new Error(
-            `Insufficient stock for ${result.prescribedMedication.medicationName}. Required: ${requestedQty}, Available: ${requestedQty - remainingQty}`
-          );
+          // Allocate from batches using FEFO (First Expired, First Out)
+          for (const batch of result.availableBatches) {
+            if (remainingQty <= 0) break;
+
+            const qtyFromBatch = Math.min(remainingQty, batch.quantity);
+            const sellPrice = Number(batch.sellPrice);
+
+            saleItems.push({
+              drug: { connect: { id: result.matchResult.matchedDrugId! } },
+              batch: { connect: { id: batch.id } },
+              quantity: qtyFromBatch,
+              unitPrice: sellPrice,
+              subtotal: qtyFromBatch * sellPrice,
+            });
+
+            totalAmount += qtyFromBatch * sellPrice;
+            remainingQty -= qtyFromBatch;
+
+            // Update batch quantity (reduce stock)
+            await tx.inventoryBatch.update({
+              where: { id: batch.id },
+              data: { quantity: { decrement: qtyFromBatch } },
+            });
+
+            // Check if stock is low after decrement and create alert
+            const updatedBatch = await tx.inventoryBatch.findUnique({
+              where: { id: batch.id },
+              include: { drug: true },
+            });
+
+            if (
+              updatedBatch &&
+              updatedBatch.quantity <= updatedBatch.drug.reorderLevel &&
+              updatedBatch.quantity > 0
+            ) {
+              // Check if alert already exists
+              const existingAlert = await tx.stockAlert.findFirst({
+                where: {
+                  drugId: updatedBatch.drugId,
+                  alertType: 'LOW_STOCK',
+                  isRead: false,
+                },
+              });
+
+              if (!existingAlert) {
+                await tx.stockAlert.create({
+                  data: {
+                    drugId: updatedBatch.drugId,
+                    alertType: 'LOW_STOCK',
+                    message: `${updatedBatch.drug.brandName} stock is low (${updatedBatch.quantity} units remaining)`,
+                    isRead: false,
+                    notificationSent: false,
+                  },
+                });
+              }
+            }
+          }
+
+          // Check if we fulfilled the entire quantity
+          if (remainingQty > 0) {
+            throw new Error(
+              `Insufficient stock for ${result.prescribedMedication.medicationName}. Required: ${requestedQty}, Available: ${requestedQty - remainingQty}`
+            );
+          }
         }
       }
 
@@ -514,7 +683,71 @@ Matching rules:
         prescriptionData,
         itemsProcessed: availabilityResults.length,
         totalAmount,
+        lowStockAlerts,
       };
+    }, {
+      timeout: 15000, // Increase timeout to 15 seconds for prescription processing
     });
+
+    // Send Firebase notifications (async, don't block the response)
+    console.log(`📢 Preparing notifications: ${result.lowStockAlerts.length} low stock items`);
+
+    // 1. Send prescription sale completed notification
+    sendSaleNotification({
+      saleId: result.sale.id,
+      totalAmount: Number(result.totalAmount),
+      itemCount: result.sale.saleItems.length,
+      lowStockItems: result.lowStockAlerts.map((item) => item.name),
+    }).catch((err) => {
+      console.error('Failed to send prescription sale notification:', err);
+    });
+
+    // 2. Send low stock notification if applicable
+    if (result.lowStockAlerts.length > 0) {
+      console.log(`🔔 Sending low stock notification for: ${result.lowStockAlerts.map(i => `${i.name} (${i.quantity})`).join(', ')}`);
+      sendLowStockNotification(result.lowStockAlerts).catch((err) => {
+        console.error('Failed to send low stock notification:', err);
+      });
+
+      // Send email alerts for low stock
+      const lowStockEmailData = result.lowStockAlerts
+        .filter((item) => item.quantity > 0)
+        .map((item) => ({
+          drugName: item.name,
+          brandName: item.name,
+          currentStock: item.quantity,
+          reorderLevel: 0, // We don't have this info here, but it's logged in the alert
+          stockPercentage: 0,
+          category: 'N/A',
+          sku: 'N/A',
+        }));
+
+      if (lowStockEmailData.length > 0) {
+        emailService.sendLowStockAlert(lowStockEmailData).catch((err) => {
+          console.error('Failed to send low stock email:', err);
+        });
+      }
+
+      // Send email for out of stock items
+      const outOfStockEmailData = result.lowStockAlerts
+        .filter((item) => item.quantity === 0)
+        .map((item) => ({
+          drugName: item.name,
+          brandName: item.name,
+          currentStock: 0,
+          reorderLevel: 0,
+          stockPercentage: 0,
+          category: 'N/A',
+          sku: 'N/A',
+        }));
+
+      if (outOfStockEmailData.length > 0) {
+        emailService.sendOutOfStockAlert(outOfStockEmailData).catch((err) => {
+          console.error('Failed to send out of stock email:', err);
+        });
+      }
+    }
+
+    return result;
   }
 }

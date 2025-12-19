@@ -1,5 +1,6 @@
 import admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
+import prisma from '../config/database';
 
 dotenv.config();
 
@@ -71,7 +72,23 @@ export const sendNotification = async (
     }
 
     const { title, body, data = {} } = payload;
-    const { tokens, topic, priority = 'high' } = options;
+    let { tokens, topic, priority = 'high' } = options;
+
+    // If no tokens or topic specified, get all active device tokens
+    if (!tokens && !topic) {
+      const activeDevices = await prisma.userDevice.findMany({
+        where: { isActive: true },
+        select: { fcmToken: true },
+      });
+      
+      if (activeDevices.length === 0) {
+        console.log('⚠️ No active devices found, falling back to topic');
+        topic = 'all-users';
+      } else {
+        tokens = activeDevices.map(device => device.fcmToken);
+        console.log(`📱 Sending to ${tokens.length} active devices`);
+      }
+    }
 
     const baseMessage = {
       notification: {

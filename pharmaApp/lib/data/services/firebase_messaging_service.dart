@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pharma_care/data/services/api_service.dart';
+import 'package:pharma_care/data/services/notification_service.dart';
 import 'dart:io' show Platform;
 
 class FirebaseMessagingService {
@@ -9,6 +10,7 @@ class FirebaseMessagingService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
   final ApiService _apiService = ApiService.instance;
+  final NotificationService _notificationService = NotificationService.instance;
 
   static FirebaseMessagingService get instance {
     _instance ??= FirebaseMessagingService._();
@@ -110,7 +112,7 @@ class FirebaseMessagingService {
         ?.createNotificationChannel(androidChannel);
   }
 
-  /// Register device with Firebase Cloud Functions
+  /// Register device with backend
   Future<void> _registerDevice() async {
     try {
       final token = await _firebaseMessaging.getToken();
@@ -122,30 +124,25 @@ class FirebaseMessagingService {
 
       print('📱 FCM Token: ${token.substring(0, 20)}...');
 
-      // Get user ID from shared preferences
-      final userId = await _apiService.getToken(); // Using this as userId for now
+      // Check if user is logged in
+      final isAuthenticated = await _apiService.isAuthenticated();
 
-      if (userId == null) {
+      if (!isAuthenticated) {
         print('⚠️  User not logged in, skipping device registration');
         return;
       }
 
-      // Register with Firebase Cloud Function
-      // Replace YOUR_REGION and YOUR_PROJECT with actual values
-      const functionUrl = 'https://us-central1-DrugDesk-app.cloudfunctions.net/registerDevice';
-
-      final response = await _apiService.dio.post(
-        functionUrl,
-        data: {
-          'fcmToken': token,
-          'deviceId': await _getDeviceId(),
-          'platform': Platform.isIOS ? 'ios' : 'android',
-          'userId': userId,
-        },
+      // Register with backend
+      final registered = await _notificationService.registerDevice(
+        token,
+        deviceId: await _getDeviceId(),
+        platform: Platform.isIOS ? 'ios' : 'android',
       );
 
-      if (response.data['success'] == true) {
+      if (registered) {
         print('✅ Device registered for notifications');
+      } else {
+        print('⚠️  Device registration failed');
       }
 
       // Listen for token refresh
@@ -170,6 +167,19 @@ class FirebaseMessagingService {
     print('Title: ${message.notification?.title}');
     print('Body: ${message.notification?.body}');
     print('Data: ${message.data}');
+
+    // Save notification to local storage
+    _notificationService.addNotification(
+      NotificationModel(
+        id: message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        title: message.notification?.title ?? 'Notification',
+        message: message.notification?.body ?? '',
+        type: message.data['type'] ?? 'UNKNOWN',
+        createdAt: DateTime.now(),
+        isRead: false,
+        data: message.data,
+      ),
+    );
 
     // Show local notification when app is in foreground
     _showLocalNotification(message);
@@ -259,13 +269,7 @@ class FirebaseMessagingService {
       final token = await _firebaseMessaging.getToken();
       if (token == null) return;
 
-      // Call Firebase Cloud Function
-      const functionUrl = 'https://us-central1-DrugDesk-app.cloudfunctions.net/unregisterDevice';
-
-      await _apiService.dio.post(
-        functionUrl,
-        data: {'fcmToken': token},
-      );
+      await _notificationService.unregisterDevice(token);
 
       print('✅ Device unregistered from notifications');
     } catch (e) {
@@ -276,7 +280,7 @@ class FirebaseMessagingService {
   /// Get all alerts from Firebase Cloud Functions
   Future<List<Map<String, dynamic>>> getAlerts({bool unreadOnly = false}) async {
     try {
-      const functionUrl = 'https://us-central1-DrugDesk-app.cloudfunctions.net/getAlerts';
+      const functionUrl = 'https://us-central1-pharmacare-app.cloudfunctions.net/getAlerts';
 
       final response = await _apiService.dio.get(
         '$functionUrl?unreadOnly=$unreadOnly',
@@ -296,7 +300,7 @@ class FirebaseMessagingService {
   /// Mark alert as read
   Future<bool> markAlertRead(String alertId) async {
     try {
-      const functionUrl = 'https://us-central1-DrugDesk-app.cloudfunctions.net/markAlertRead';
+      const functionUrl = 'https://us-central1-pharmacare-app.cloudfunctions.net/markAlertRead';
 
       final response = await _apiService.dio.post(
         functionUrl,
@@ -313,7 +317,7 @@ class FirebaseMessagingService {
   /// Mark all alerts as read
   Future<bool> markAllAlertsRead() async {
     try {
-      const functionUrl = 'https://us-central1-DrugDesk-app.cloudfunctions.net/markAllAlertsRead';
+      const functionUrl = 'https://us-central1-pharmacare-app.cloudfunctions.net/markAllAlertsRead';
 
       final response = await _apiService.dio.post(functionUrl);
 

@@ -4,3 +4,6 @@ dist
 .env
 
 /generated/prisma
+
+# Google Cloud service account (contains private keys)
+service-account.json

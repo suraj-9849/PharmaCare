@@ -815,7 +815,7 @@ async def upload_inventory(file: UploadFile = File(...)):
                     results["added"] += 1
 
                 except Exception as e:
-                    results["errors"].append(f"Row {idx+2}: {str(e)}")
+                    results["errors"].append(f"Row {idx + 2}: {str(e)}")
 
             conn.commit()
 

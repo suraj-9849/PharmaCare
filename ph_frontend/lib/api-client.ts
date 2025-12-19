@@ -285,7 +285,8 @@ class ApiClient {
       customerName?: string,
       customerPhone?: string,
       customerEmail?: string,
-      customerAddress?: string
+      customerAddress?: string,
+      selectedBatches?: Array<{medicationName: string; batchId: string; quantity: number}>
     ) =>
       this.post<unknown>('/prescriptions/purchase', {
         prescriptionData,
@@ -296,6 +297,7 @@ class ApiClient {
         customerPhone,
         customerEmail,
         customerAddress,
+        selectedBatches,
       }),
     test: () => this.get<unknown>('/prescriptions/test'),
   };

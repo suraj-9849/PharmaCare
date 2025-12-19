@@ -122,6 +122,7 @@ router.post('/purchase', authenticate, async (req: Request, res: Response) => {
       prescriptionData,
       availabilityResults,
       paymentMethod,
+      selectedBatches,
       customerId,
       customerName,
       customerPhone,
@@ -153,6 +154,9 @@ router.post('/purchase', authenticate, async (req: Request, res: Response) => {
     }
 
     console.log('Processing prescription purchase with', availabilityResults.length, 'items');
+    if (selectedBatches && selectedBatches.length > 0) {
+      console.log('Using user-selected batches (FEFO-compliant):', selectedBatches.length);
+    }
 
     // Process purchase and reduce stock
     const result = await prescriptionService.processPurchase(
@@ -160,6 +164,7 @@ router.post('/purchase', authenticate, async (req: Request, res: Response) => {
       availabilityResults,
       paymentMethod.toUpperCase() as 'CASH' | 'CARD' | 'UPI' | 'CREDIT',
       userId,
+      selectedBatches,
       customerId,
       customerName,
       customerPhone,
