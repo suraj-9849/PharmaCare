@@ -1,6 +1,6 @@
 class ApiConstants {
   // AWS Backend URL - Works on both emulator and real device!
-  static const String baseUrl = 'http://DrugDesk-alb-809690050.ap-southeast-2.elb.amazonaws.com/api';
+  static const String baseUrl = 'http://pharmacare-alb-809690050.ap-southeast-2.elb.amazonaws.com/api';
 
   // Auth endpoints
   static const String login = '/auth/login';

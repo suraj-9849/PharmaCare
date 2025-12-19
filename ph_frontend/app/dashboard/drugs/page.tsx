@@ -43,8 +43,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Edit, Trash2, Pill, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Pill, AlertCircle, Download } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { exportDrugsToExcel, generateFilename } from '@/lib/excel-export';
 import type { Drug, Supplier, PaginatedResponse } from '@/lib/types';
 
 const categories = [
@@ -84,6 +85,7 @@ export default function DrugsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [isExporting, setIsExporting] = useState(false);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -205,13 +207,34 @@ export default function DrugsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Drugs</h1>
           <p className="text-gray-500">Manage your drug inventory</p>
         </div>
-        <Button
-          onClick={() => handleOpenDialog()}
-          className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-        >
-          <Plus className="h-4 w-4" />
-          Add Drug
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={async () => {
+              try {
+                setIsExporting(true);
+                exportDrugsToExcel(drugs, generateFilename('drugs'));
+              } catch (error) {
+                console.error('Failed to export drugs:', error);
+                alert('Failed to export drugs to Excel');
+              } finally {
+                setIsExporting(false);
+              }
+            }}
+            disabled={isExporting || drugs.length === 0}
+            variant="outline"
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {isExporting ? 'Exporting...' : 'Export Excel'}
+          </Button>
+          <Button
+            onClick={() => handleOpenDialog()}
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+          >
+            <Plus className="h-4 w-4" />
+            Add Drug
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

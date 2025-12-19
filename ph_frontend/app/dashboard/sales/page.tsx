@@ -21,13 +21,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Eye, ShoppingCart, Receipt, DollarSign, FileText } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Eye,
+  ShoppingCart,
+  Receipt,
+  DollarSign,
+  FileText,
+  Download,
+} from 'lucide-react';
 import { NewSaleDialog } from '@/components/sales/new-sale-dialog';
 import { POSMode } from '@/components/sales/pos-mode';
 import { ReceiptTemplate } from '@/components/sales/receipt-template';
 import { InvoiceTemplate } from '@/components/sales/invoice-template';
 import { apiClient } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/utils';
+import { exportSalesToExcel, generateFilename } from '@/lib/excel-export';
 import type { Sale, SaleItem, PaginatedResponse } from '@/lib/types';
 
 export default function SalesPage() {
@@ -37,6 +47,7 @@ export default function SalesPage() {
   const [isNewSaleOpen, setIsNewSaleOpen] = useState(false);
   const [isPOSModeOpen, setIsPOSModeOpen] = useState(false);
   const [isViewSheetOpen, setIsViewSheetOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
@@ -153,6 +164,18 @@ export default function SalesPage() {
     fetchSales();
   };
 
+  const handleExportToExcel = async () => {
+    try {
+      setIsExporting(true);
+      exportSalesToExcel(sales, generateFilename('sales'));
+    } catch (error) {
+      console.error('Failed to export sales:', error);
+      alert('Failed to export sales to Excel');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const filteredSales = sales.filter(
     (sale) =>
       sale.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -171,20 +194,21 @@ export default function SalesPage() {
         </div>
         <div className="flex gap-3">
           <Button
+            onClick={handleExportToExcel}
+            disabled={isExporting || sales.length === 0}
+            variant="outline"
+            className="gap-2 h-10 px-6"
+          >
+            <Download className="h-5 w-5" />
+            {isExporting ? 'Exporting...' : 'Export Excel'}
+          </Button>
+          <Button
             onClick={() => setIsPOSModeOpen(true)}
             className="gap-2 bg-emerald-600 hover:bg-emerald-700 h-10 px-6"
           >
             <Plus className="h-5 w-5" />
             New Sale
           </Button>
-          {/* <Button
-            onClick={() => setIsNewSaleOpen(true)}
-            variant="outline"
-            className="gap-2 h-10 px-6"
-          >
-            <Plus className="h-5 w-5" />
-            Classic Mode
-          </Button> */}
         </div>
       </div>
 
