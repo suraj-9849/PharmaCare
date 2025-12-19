@@ -403,7 +403,7 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: Math.round(currentTotal * 100),
           currency: 'INR',
-          name: 'PharmaCare',
+          name: 'DrugDesk',
           description: 'Medicine Purchase',
           handler: async (response: { razorpay_payment_id: string }) => {
             try {
@@ -554,7 +554,7 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
           </Button>
           <Separator orientation="vertical" className="h-10 bg-emerald-500" />
           <div>
-            <h1 className="text-2xl font-bold">PharmaCare Point of Sale</h1>
+            <h1 className="text-2xl font-bold">DrugDesk Point of Sale</h1>
             <p className="text-emerald-100 text-sm">Fast & Efficient Transaction System</p>
           </div>
         </div>

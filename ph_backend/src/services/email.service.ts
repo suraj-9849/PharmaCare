@@ -140,7 +140,7 @@ export class EmailService {
       `;
 
       await resend.emails.send({
-        from: 'PharmaCare <onboarding@resend.dev>',
+        from: 'DrugDesk <onboarding@resend.dev>',
         to: process.env.ADMIN_EMAIL,
         subject: ` Low Stock Alert - ${criticalDrugs.length} Critical Items`,
         html: emailBody,
@@ -224,7 +224,7 @@ export class EmailService {
       `;
 
       await resend.emails.send({
-        from: 'PharmaCare <onboarding@resend.dev>',
+        from: 'DrugDesk <onboarding@resend.dev>',
         to: process.env.ADMIN_EMAIL,
         subject: ` URGENT: ${drugs.length} Items Out of Stock`,
         html: emailBody,

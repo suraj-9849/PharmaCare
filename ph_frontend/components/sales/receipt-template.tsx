@@ -105,7 +105,7 @@ export const ReceiptTemplate = React.forwardRef<HTMLDivElement, ReceiptTemplateP
                 marginBottom: '4px',
               }}
             >
-              PHARMACARE
+              DrugDesk
             </div>
             <div style={{ fontSize: '10px', color: '#666', marginBottom: '8px' }}>
               Pharmacy Management System

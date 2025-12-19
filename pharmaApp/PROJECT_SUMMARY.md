@@ -1,4 +1,4 @@
-# PharmaCare Flutter App - Project Summary
+# DrugDesk Flutter App - Project Summary
 
 ## ✅ What Has Been Completed
 
@@ -204,7 +204,7 @@ Expected behavior:
 - Scanner requests camera permission
 
 ### Step 2: Build Backend APIs (2-3 hours)
-1. Open `PharmaCare/ph_backend/`
+1. Open `DrugDesk/ph_backend/`
 2. Create `src/routes/` folder
 3. Copy API code from `SETUP_GUIDE.md`
 4. Test endpoints with Postman/Thunder Client

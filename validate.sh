@@ -12,7 +12,7 @@ FAILED=0
 
 echo ""
 echo -e "${BLUE}╔═══════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║        PharmaCare - Pre-Push Validation Script       ║${NC}"
+echo -e "${BLUE}║        DrugDesk - Pre-Push Validation Script       ║${NC}"
 echo -e "${BLUE}╚═══════════════════════════════════════════════════════╝${NC}"
 echo ""
 

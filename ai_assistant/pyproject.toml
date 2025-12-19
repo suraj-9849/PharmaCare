@@ -1,7 +1,7 @@
 [project]
-name = "pharmacare-ai-assistant"
+name = "DrugDesk-ai-assistant"
 version = "1.0.0"
-description = "PharmaCare AI Services - Text-to-SQL Chatbot + Intelligent Agent"
+description = "DrugDesk AI Services - Text-to-SQL Chatbot + Intelligent Agent"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.104.0",

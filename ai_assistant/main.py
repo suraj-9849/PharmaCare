@@ -1,5 +1,5 @@
 """
-PharmaCare AI Services - FastAPI Backend
+DrugDesk AI Services - FastAPI Backend
 Includes: Text-to-SQL Chatbot + Intelligent Agent
 For ZENITH'25 Hackathon
 """
@@ -79,7 +79,7 @@ from agent_tools import (
 # ==================== APP SETUP ====================
 
 app = FastAPI(
-    title="PharmaCare AI Services",
+    title="DrugDesk AI Services",
     description="Text-to-SQL Chatbot + Intelligent Agent API",
     version="2.0.0",
 )
@@ -119,7 +119,7 @@ def build_llm(model_name: str, temperature: float = 0):
         temperature=temperature,
         base_url=OPENROUTER_BASE_URL,
         api_key=OPENROUTER_API_KEY,
-        default_headers={"HTTP-Referer": "http://localhost:8000", "X-Title": "PharmaCare AI"},
+        default_headers={"HTTP-Referer": "http://localhost:8000", "X-Title": "DrugDesk AI"},
     )  # noqa: F821
 
 
@@ -171,7 +171,7 @@ Rules:
 
 RESPONSE_SYSTEM_PROMPT = """Summarize query results professionally with key findings and recommendations. Use markdown formatting."""
 
-GENERAL_SYSTEM_PROMPT = """You are PharmaCare Assistant - a pharmacy-focused AI that ONLY handles pharmaceutical and pharmacy management topics.
+GENERAL_SYSTEM_PROMPT = """You are DrugDesk Assistant - a pharmacy-focused AI that ONLY handles pharmaceutical and pharmacy management topics.
 
 You can help with:
 - Drug information, dosages, side effects, interactions
@@ -181,7 +181,7 @@ You can help with:
 - Pharmacy operations and best practices
 
 IMPORTANT: If a user asks about non-pharmacy topics (politics, entertainment, personal advice, coding, weather, sports, general knowledge unrelated to pharmacy), politely respond:
-"I'm PharmaCare Assistant, specialized in pharmacy management. I can help you with drug information, inventory, sales, and pharmacy operations. Please ask me something related to pharmacy!"
+"I'm DrugDesk Assistant, specialized in pharmacy management. I can help you with drug information, inventory, sales, and pharmacy operations. Please ask me something related to pharmacy!"
 
 Be concise, professional, and friendly."""
 
@@ -238,7 +238,7 @@ response_chain_fb = (
     | llm_fallback
 )
 
-REJECTION_SYSTEM_PROMPT = """You are PharmaCare Assistant - a smart, friendly pharmacy management AI.
+REJECTION_SYSTEM_PROMPT = """You are DrugDesk Assistant - a smart, friendly pharmacy management AI.
 
 The user asked something OUTSIDE your pharmacy scope. Generate a polite, witty, and contextual rejection message that:
 1. Acknowledges what they asked (be specific to their query)
@@ -298,7 +298,7 @@ general_chain_fb = (
 
 # ==================== AGENT SETUP ====================
 
-AGENT_SYSTEM_PROMPT = """You are the PharmaCare Inventory Manager - an intelligent agent that helps manage pharmacy operations.
+AGENT_SYSTEM_PROMPT = """You are the DrugDesk Inventory Manager - an intelligent agent that helps manage pharmacy operations.
 
 You have access to these tools:
 - check_low_stock: Find items below reorder level
@@ -340,7 +340,7 @@ agent_executor_fb = create_react_agent(llm_fallback, agent_tools, prompt=AGENT_S
 
 # ==================== REFINED AGENT SETUP ====================
 
-AGENT_SYSTEM_PROMPT_V2 = """You are the PharmaCare Inventory Manager - an intelligent agent that helps manage pharmacy operations.
+AGENT_SYSTEM_PROMPT_V2 = """You are the DrugDesk Inventory Manager - an intelligent agent that helps manage pharmacy operations.
 
 You have access to these tools:
 - check_low_stock: Find items below reorder level

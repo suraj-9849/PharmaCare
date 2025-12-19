@@ -1,4 +1,4 @@
-# PharmaCare Flutter App - Setup & Development Guide
+# DrugDesk Flutter App - Setup & Development Guide
 
 ## 📱 Project Overview
 
@@ -62,7 +62,7 @@ pharmaApp/
 
 You need to create API endpoints in your Node.js backend. Currently, you have a Prisma schema but no API routes.
 
-**Create these files in `PharmaCare/ph_backend/src/`:**
+**Create these files in `DrugDesk/ph_backend/src/`:**
 
 #### A. Authentication API (`src/routes/auth.ts`)
 ```typescript
@@ -388,13 +388,13 @@ class ApiService {
 
 #### A. Create Firebase Project
 1. Go to https://console.firebase.google.com/
-2. Click "Add project" → Enter "PharmaCare"
+2. Click "Add project" → Enter "DrugDesk"
 3. Disable Google Analytics (optional)
 4. Click "Create project"
 
 #### B. Add Android App
 1. In Firebase Console → Click Android icon
-2. Enter package name: `com.pharmacare.pharma_care`
+2. Enter package name: `com.DrugDesk.pharma_care`
 3. Download `google-services.json`
 4. Place it in `pharmaApp/android/app/`
 
@@ -430,7 +430,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const PharmaCareApp());
+  runApp(const DrugDeskApp());
 }
 ```
 

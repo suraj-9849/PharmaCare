@@ -4,13 +4,13 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'PharmaCare API',
+      title: 'DrugDesk API',
       version: '1.0.0',
       description:
         'Professional Pharmacy Management System API - Complete API documentation for managing drugs, inventory, sales, customers, and suppliers.',
       contact: {
         name: 'API Support',
-        email: 'support@pharmacare.com',
+        email: 'support@DrugDesk.com',
       },
       license: {
         name: 'ISC',
@@ -22,7 +22,7 @@ const options = {
         description: 'Development server',
       },
       {
-        url: 'https://api.pharmacare.com/api',
+        url: 'https://api.DrugDesk.com/api',
         description: 'Production server',
       },
     ],
@@ -301,7 +301,7 @@ const options = {
             email: {
               type: 'string',
               format: 'email',
-              example: 'user@pharmacare.com',
+              example: 'user@DrugDesk.com',
             },
             password: {
               type: 'string',

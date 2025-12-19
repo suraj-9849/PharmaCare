@@ -182,7 +182,7 @@ export function NewSaleDialog({ isOpen, onClose, onSaleCreated }: NewSaleDialogP
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: Math.round(currentTotal * 100), // Amount in paise
           currency: 'INR',
-          name: 'PharmaCare',
+          name: 'DrugDesk',
           description: 'Medicine Purchase',
           handler: async (response: { razorpay_payment_id: string }) => {
             try {

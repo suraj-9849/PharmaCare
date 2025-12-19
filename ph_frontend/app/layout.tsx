@@ -3,7 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
 
 export const metadata: Metadata = {
-  title: 'PharmaCare - Pharmacy Management System',
+  title: 'DrugDesk - Pharmacy Management System',
   description: 'Professional Pharmacy Management System for efficient healthcare operations',
 };
 

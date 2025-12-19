@@ -142,7 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
                   <Pill className="h-4 w-4 text-white" />
                 </div>
-                <span className="font-semibold text-gray-900">PharmaCare</span>
+                <span className="font-semibold text-gray-900">DrugDesk</span>
               </Link>
             )}
 

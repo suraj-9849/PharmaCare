@@ -989,7 +989,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pharmacare-ai-assistant"
+name = "DrugDesk-ai-assistant"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [

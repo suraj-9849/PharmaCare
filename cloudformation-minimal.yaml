@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'PharmaCare Backend Infrastructure - ECS Fargate with ALB (Minimal Free Tier)'
+Description: 'DrugDesk Backend Infrastructure - ECS Fargate with ALB (Minimal Free Tier)'
 
 Parameters:
   EnvironmentName:
@@ -10,7 +10,7 @@ Parameters:
 
   AppName:
     Type: String
-    Default: pharmacare
+    Default: DrugDesk
     Description: Application name
 
   DesiredCount:
@@ -289,7 +289,7 @@ Resources:
             - Name: PORT
               Value: '5000'
             - Name: APP_NAME
-              Value: PharmaCare
+              Value: DrugDesk
             - Name: APP_VERSION
               Value: '1.0.0'
             - Name: DATABASE_URL

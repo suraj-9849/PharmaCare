@@ -1,4 +1,4 @@
-# Backend Connection Guide - PharmaCare App
+# Backend Connection Guide - DrugDesk App
 
 ## ✅ What's Been Done
 
@@ -28,7 +28,7 @@ Your backend already has all these endpoints ready:
 
 ```bash
 # Navigate to backend directory
-cd "C:\Users\Sai Mohith\Desktop\pharmaCare\PharmaCare\ph_backend"
+cd "C:\Users\Sai Mohith\Desktop\DrugDesk\DrugDesk\ph_backend"
 
 # Install dependencies (if not already done)
 npm install
@@ -44,7 +44,7 @@ pnpm dev
 You should see:
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║   PharmaCare API Server                                   ║
+║   DrugDesk API Server                                   ║
 ║   Port: 5000                                              ║
 ║   URL: http://localhost:5000                              ║
 ╚═══════════════════════════════════════════════════════════╝
@@ -79,7 +79,7 @@ Your backend likely needs a user in the database. Check if you have any users:
 
 Or create a user through Prisma:
 ```bash
-cd "C:\Users\Sai Mohith\Desktop\pharmaCare\PharmaCare\ph_backend"
+cd "C:\Users\Sai Mohith\Desktop\DrugDesk\DrugDesk\ph_backend"
 npx prisma studio
 ```
 
@@ -87,7 +87,7 @@ This opens Prisma Studio where you can:
 1. Click on `User` table
 2. Add a new record:
    - username: `admin`
-   - email: `admin@pharmacare.com`
+   - email: `admin@DrugDesk.com`
    - passwordHash: (You'll need to hash a password - see below)
    - role: `ADMIN`
 
@@ -108,7 +108,7 @@ flutter run
 ### Step 5: Login
 
 Use your created credentials:
-- **Email**: `admin@pharmacare.com`
+- **Email**: `admin@DrugDesk.com`
 - **Password**: `admin123` (or whatever you set)
 
 ---

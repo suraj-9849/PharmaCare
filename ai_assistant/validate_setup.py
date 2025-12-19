@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quick validation script for AWS Bedrock + PharmaCare AI setup
+Quick validation script for AWS Bedrock + DrugDesk AI setup
 """
 
 import os
@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 print("=" * 60)
-print("PharmaCare AI Assistant - AWS Bedrock Setup Validation")
+print("DrugDesk AI Assistant - AWS Bedrock Setup Validation")
 print("=" * 60)
 
 # Check environment variables

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'PharmaCare AI Assistant Infrastructure - ECS Fargate with ALB'
+Description: 'DrugDesk AI Assistant Infrastructure - ECS Fargate with ALB'
 
 Parameters:
   EnvironmentName:
@@ -10,7 +10,7 @@ Parameters:
 
   AppName:
     Type: String
-    Default: pharmacare-ai
+    Default: DrugDesk-ai
     Description: Application name
 
   DesiredCount:

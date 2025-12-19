@@ -1,5 +1,5 @@
 """
-Agent Tools for PharmaCare Pharmacy Management (Refined Version)
+Agent Tools for DrugDesk Pharmacy Management (Refined Version)
 Uses Neon PostgreSQL database
 """
 

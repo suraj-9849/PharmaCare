@@ -1,4 +1,4 @@
-# PharmaCare App - Development Checklist
+# DrugDesk App - Development Checklist
 
 ## ✅ Completed
 

@@ -1,4 +1,4 @@
-# PharmaCare Mobile App
+# DrugDesk Mobile App
 
 A Flutter mobile application for pharmacy inventory management with real-time alerts and barcode scanning.
 

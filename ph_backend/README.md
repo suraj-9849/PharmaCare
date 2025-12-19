@@ -1,4 +1,4 @@
-# PharmaCare - Backend API
+# DrugDesk - Backend API
 
 Professional Pharmacy Management System API built with Express.js, TypeScript, and Prisma 7.
 
@@ -194,13 +194,13 @@ src/
 
 ```bash
 # Build image
-docker build -t pharmacare-api .
+docker build -t DrugDesk-api .
 
 # Run container
 docker run -p 5000:5000 \
   -e DATABASE_URL="postgresql://..." \
   -e JWT_SECRET="..." \
-  pharmacare-api
+  DrugDesk-api
 ```
 
 ### Using docker-compose

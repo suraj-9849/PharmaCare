@@ -4,7 +4,7 @@ services:
   # PostgreSQL Database
   db:
     image: postgres:16-alpine
-    container_name: pharmacare-db
+    container_name: DrugDesk-db
     env_file:
       - .env.docker
     environment:
@@ -21,7 +21,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - pharmacare-network
+      - DrugDesk-network
     command:
       - 'postgres'
       - '-c'
@@ -32,7 +32,7 @@ services:
     build:
       context: ./ph_backend
       dockerfile: Dockerfile
-    container_name: pharmacare-api
+    container_name: DrugDesk-api
     env_file:
       - .env.docker
     environment:
@@ -52,7 +52,7 @@ services:
       - ./ph_backend/src:/app/src
       - ./ph_backend/prisma:/app/prisma
     networks:
-      - pharmacare-network
+      - DrugDesk-network
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:5000/api/health']
@@ -66,7 +66,7 @@ services:
     build:
       context: ./ph_frontend
       dockerfile: Dockerfile
-    container_name: pharmacare-web
+    container_name: DrugDesk-web
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -77,7 +77,7 @@ services:
     depends_on:
       - backend
     networks:
-      - pharmacare-network
+      - DrugDesk-network
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:3000']
@@ -91,5 +91,5 @@ volumes:
     driver: local
 
 networks:
-  pharmacare-network:
+  DrugDesk-network:
     driver: bridge

@@ -69,7 +69,7 @@ export default function LoginPage() {
             <Pill className="h-8 w-8 text-emerald-600" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-gray-900">PharmaCare Pro</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-900">DrugDesk Pro</CardTitle>
             <CardDescription className="mt-2 text-gray-600">
               Professional Pharmacy Management System
             </CardDescription>
@@ -146,7 +146,7 @@ export default function LoginPage() {
 
           <div className="mt-6 border-t pt-6">
             <p className="text-center text-xs text-gray-500">
-              © {new Date().getFullYear()} PharmaCare Pro. All rights reserved.
+              © {new Date().getFullYear()} DrugDesk Pro. All rights reserved.
             </p>
           </div>
         </CardContent>

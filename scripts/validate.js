@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * PharmaCare Validation Script
+ * DrugDesk Validation Script
  * Runs type checking, linting, and formatting checks for all workspaces
  */
 
@@ -47,7 +47,7 @@ function runCommand(command, args, cwd) {
 
 async function validate() {
   log(`${colors.bold}╔════════════════════════════════════════╗`, colors.green);
-  log(`${colors.bold}║   PharmaCare Validation Suite         ║`, colors.green);
+  log(`${colors.bold}║   DrugDesk Validation Suite         ║`, colors.green);
   log(`${colors.bold}╚════════════════════════════════════════╝${colors.reset}`, colors.green);
 
   const results = [];

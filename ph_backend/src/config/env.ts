@@ -48,7 +48,7 @@ const env: Environment = {
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
 
   // Application
-  APP_NAME: process.env.APP_NAME || 'PharmaCare',
+  APP_NAME: process.env.APP_NAME || 'DrugDesk',
   APP_VERSION: process.env.APP_VERSION || '1.0.0',
 
   // OpenRouter (OpenAI-compatible)

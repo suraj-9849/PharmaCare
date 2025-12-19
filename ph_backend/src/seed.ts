@@ -501,7 +501,7 @@ async function main() {
         data: { key: 'currency', value: 'INR' },
       });
       await prisma.systemSetting.create({
-        data: { key: 'company_name', value: 'PharmaCare' },
+        data: { key: 'company_name', value: 'DrugDesk' },
       });
       console.log('✅ System settings created\n');
     } else {

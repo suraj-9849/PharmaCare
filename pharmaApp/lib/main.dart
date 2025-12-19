@@ -27,11 +27,11 @@ void main() async {
     print('⚠️ App will continue without push notifications');
   }
 
-  runApp(const PharmaCareApp());
+  runApp(const DrugDeskApp());
 }
 
-class PharmaCareApp extends StatelessWidget {
-  const PharmaCareApp({super.key});
+class DrugDeskApp extends StatelessWidget {
+  const DrugDeskApp({super.key});
 
   @override
   Widget build(BuildContext context) {

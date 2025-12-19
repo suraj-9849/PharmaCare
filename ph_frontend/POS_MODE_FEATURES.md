@@ -1,4 +1,4 @@
-# PharmaCare POS Mode - Feature Documentation
+# DrugDesk POS Mode - Feature Documentation
 
 ## Overview
 The new Full-Screen Point of Sale (POS) Mode is optimized for speed and walk-in customers, providing a modern, efficient interface for processing sales quickly.
@@ -87,7 +87,7 @@ Three large, color-coded payment buttons:
 All shortcuts are displayed in the top header for easy reference.
 
 ### 7. Visual Design
-- **PharmaCare Green Branding**: Emerald-600 (#059669) primary color
+- **DrugDesk Green Branding**: Emerald-600 (#059669) primary color
 - **High Contrast**: White background for readability
 - **Large Touch Targets**: Optimized for speed
 - **Clear Typography**: Easy to read at a glance

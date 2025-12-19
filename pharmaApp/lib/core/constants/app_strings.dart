@@ -1,6 +1,6 @@
 class AppStrings {
   // App
-  static const String appName = 'PharmaCare';
+  static const String appName = 'DrugDesk';
   static const String appTagline = 'Smart Pharmacy Management';
 
   // Auth

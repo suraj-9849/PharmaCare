@@ -1,8 +1,8 @@
 {
-  "name": "pharmacare",
+  "name": "DrugDesk",
   "version": "1.0.0",
   "private": true,
-  "description": "PharmaCare - Professional Pharmacy Management System",
+  "description": "DrugDesk - Professional Pharmacy Management System",
   "packages": [
     "ph_backend",
     "ph_frontend"

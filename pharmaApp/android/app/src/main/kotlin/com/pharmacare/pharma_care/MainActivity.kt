@@ -1,4 +1,4 @@
-package com.pharmacare.pharma_care
+package com.DrugDesk.pharma_care
 
 import io.flutter.embedding.android.FlutterActivity
 

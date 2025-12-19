@@ -98,7 +98,7 @@ export const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateP
               style={{ borderColor: '#059669' }}
             >
               <div>
-                <h1 className="text-4xl font-bold text-emerald-600">PharmaCare</h1>
+                <h1 className="text-4xl font-bold text-emerald-600">DrugDesk</h1>
                 <p className="text-sm text-gray-600 mt-1">Pharmacy Management System</p>
               </div>
               <div className="text-right">
@@ -118,7 +118,7 @@ export const InvoiceTemplate = React.forwardRef<HTMLDivElement, InvoiceTemplateP
               <div>
                 <h3 className="font-bold text-emerald-600 mb-3 text-sm">FROM:</h3>
                 <div className="text-sm text-gray-700 space-y-1">
-                  <div className="font-bold text-base">PHARMACARE</div>
+                  <div className="font-bold text-base">DrugDesk</div>
                   <div>Dundigal, Hyderabad</div>
                   <div>Telangana 500043</div>
                   <div className="mt-2">

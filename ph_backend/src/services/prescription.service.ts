@@ -8,7 +8,7 @@ const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   defaultHeaders: {
     'HTTP-Referer': 'http://localhost:5000',
-    'X-Title': 'PharmaCare',
+    'X-Title': 'DrugDesk',
   },
 });
 
