@@ -18,6 +18,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Search,
   X,
   AlertCircle,
@@ -39,9 +46,14 @@ import {
   MapPin,
   Check,
   ShieldAlert,
+  Eye,
+  Grid3x3,
+  MapPinned,
+  Pill,
+  Box,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import type { InventoryBatch, Customer } from '@/lib/types';
+import type { InventoryBatch, Customer, ShelfLocation } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 interface CartItem {
@@ -102,6 +114,12 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
     expiryDate: string;
     remainingQty: number;
   } | null>(null);
+
+  // Shelf Location View state
+  const [showShelfView, setShowShelfView] = useState(false);
+  const [viewingShelfData, setViewingShelfData] = useState<ShelfLocation | null>(null);
+  const [highlightedSlot, setHighlightedSlot] = useState<number | null>(null);
+  const [loadingShelf, setLoadingShelf] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const customerSearchRef = useRef<HTMLInputElement>(null);
@@ -534,6 +552,30 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
     setError('');
     setIsSubmitting(false);
     setPaymentProcessing(false);
+  };
+
+  // View shelf location for a cart item
+  const handleViewShelfLocation = async (item: CartItem) => {
+    if (!item.batch.shelfLocationId) {
+      setError('No shelf location assigned for this item');
+      return;
+    }
+
+    try {
+      setLoadingShelf(true);
+      const response = await apiClient.get<{ success: boolean; data: ShelfLocation }>(
+        `/smart-shelf/${item.batch.shelfLocationId}`
+      );
+      if (response?.data) {
+        setViewingShelfData(response.data);
+        setHighlightedSlot(item.batch.slotPosition || null);
+        setShowShelfView(true);
+      }
+    } catch {
+      setError('Failed to load shelf location');
+    } finally {
+      setLoadingShelf(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -1011,56 +1053,107 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
                 <p className="text-sm text-gray-400 mt-1">Scan or select products to add</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200">
+              <div className="p-4 space-y-3">
                 {cart.map((item, index) => (
-                  <div key={item.batchId} className="p-5 hover:bg-gray-50 transition-colors">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1 pr-3">
-                        <p className="font-bold text-gray-900 text-base leading-tight">
-                          {index + 1}. {item.batch.drug?.brandName}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">{item.batch.drug?.genericName}</p>
+                  <div 
+                    key={item.batchId} 
+                    className="bg-white rounded-xl border-2 border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all overflow-hidden"
+                  >
+                    {/* Item Header */}
+                    <div className="bg-gradient-to-r from-gray-50 to-white px-4 py-3 border-b border-gray-100">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold text-sm shrink-0">
+                            {index + 1}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-bold text-gray-900 text-base leading-tight truncate">
+                              {item.batch.drug?.brandName}
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-0.5 truncate">
+                              {item.batch.drug?.genericName}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {item.batch.shelfLocationId && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewShelfLocation(item)}
+                              disabled={loadingShelf}
+                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              title="View Shelf Location"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFromCart(item.batchId)}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                            title="Remove Item"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFromCart(item.batchId)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => updateCartQuantity(item.batchId, item.quantity - 1)}
-                          className="h-8 w-8 p-0 hover:bg-white"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-12 text-center font-bold text-gray-900">
-                          {item.quantity}
+                    {/* Item Details */}
+                    <div className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-4">
+                        {/* Batch & Location Info */}
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          <Badge variant="outline" className="font-medium text-gray-600 bg-gray-50">
+                            Batch: {item.batch.batchNumber}
+                          </Badge>
+                          {item.batch.shelfLocation && (
+                            <Badge variant="outline" className="font-medium text-blue-600 bg-blue-50 border-blue-200">
+                              <MapPinned className="h-3 w-3 mr-1" />
+                              {item.batch.shelfLocation.shelfCode}
+                            </Badge>
+                          )}
+                        </div>
+                        {/* Unit Price */}
+                        <span className="text-xs text-gray-500 font-medium whitespace-nowrap">
+                          ₹{item.unitPrice.toFixed(2)}/unit
                         </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => updateCartQuantity(item.batchId, item.quantity + 1)}
-                          disabled={item.quantity >= item.batch.quantity}
-                          className="h-8 w-8 p-0 hover:bg-white"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500">
-                          ₹{item.unitPrice.toFixed(2)} × {item.quantity}
-                        </p>
-                        <p className="font-bold text-lg text-emerald-600">
-                          ₹{(item.unitPrice * item.quantity).toFixed(2)}
-                        </p>
+
+                      {/* Quantity Controls & Total */}
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateCartQuantity(item.batchId, item.quantity - 1)}
+                            className="h-9 w-9 p-0 hover:bg-white rounded-md"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-14 text-center font-bold text-gray-900 text-lg">
+                            {item.quantity}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateCartQuantity(item.batchId, item.quantity + 1)}
+                            disabled={item.quantity >= item.batch.quantity}
+                            className="h-9 w-9 p-0 hover:bg-white rounded-md"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-400">
+                            {item.quantity} × ₹{item.unitPrice.toFixed(2)}
+                          </p>
+                          <p className="font-bold text-xl text-emerald-600">
+                            ₹{(item.unitPrice * item.quantity).toFixed(2)}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1241,7 +1334,264 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
+
       </AlertDialog>
+
+      {/* Shelf Location View Dialog */}
+      <Dialog open={showShelfView} onOpenChange={setShowShelfView}>
+        <DialogContent className="sm:max-w-[65vw] h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Grid3x3 className="h-5 w-5 text-blue-600" />
+              Shelf Location - Find Your Item
+            </DialogTitle>
+            <DialogDescription>
+              Locate the exact position of the item on the shelf
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewingShelfData && (
+            <div className="space-y-4">
+              {/* Shelf Info */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold text-lg text-gray-900">{viewingShelfData.shelfName}</h3>
+                  <Badge variant="outline" className="font-semibold">
+                    {viewingShelfData.shelfCode}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <span>{viewingShelfData.row} × {viewingShelfData.column} Grid</span>
+                  <span>•</span>
+                  <span>{viewingShelfData.capacity} Total Slots</span>
+                  {viewingShelfData.zone && (
+                    <>
+                      <span>•</span>
+                      <span>Zone: {viewingShelfData.zone}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Shelf Grid Layout - Professional Design from Shelf Management */}
+              {viewingShelfData.row && viewingShelfData.column && (
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200/60 px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                        <Grid3x3 className="h-4 w-4 text-blue-600" />
+                        Inventory Layout Matrix
+                      </h3>
+                      {highlightedSlot && (
+                        <Badge className="bg-blue-600 animate-pulse">
+                          Your Item → Slot #{highlightedSlot}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-4 bg-gradient-to-br from-white via-slate-50/30 to-indigo-50/20">
+                    {/* Rows */}
+                    {Array.from({ length: parseInt(viewingShelfData.row || '3') }).map((_, rowIdx) => {
+                      return (
+                        <div key={rowIdx} className="relative pl-20">
+                          {/* Row Label - Premium Professional Style */}
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 h-auto flex items-center">
+                            <div className="px-3 py-2 rounded-lg bg-gradient-to-br from-blue-500 via-indigo-500 to-slate-800 text-white text-[11px] font-bold shadow-lg border border-indigo-400/40 uppercase tracking-wider">
+                              Row {rowIdx + 1}
+                            </div>
+                          </div>
+
+                          {/* Shelf Container - Professional warehouse style */}
+                          <div className="bg-gradient-to-br from-white via-slate-50/50 to-indigo-50/40 rounded-xl border-2 border-indigo-300/60 p-4 shadow-lg">
+                            <div className="flex gap-2">
+                              {/* Slots */}
+                              {Array.from({ length: parseInt(viewingShelfData.column || '5') }).map((_, colIdx) => {
+                                const slotNumber = rowIdx * parseInt(viewingShelfData.column || '5') + colIdx + 1;
+                                const batchInSlot = viewingShelfData.batches?.find(
+                                  (b) => Number(b.slotPosition) === slotNumber
+                                );
+                                const isHighlighted = slotNumber === highlightedSlot;
+
+                                // Determine color based on expiry status and highlight
+                                const batch = batchInSlot;
+                                const daysUntilExpiry = batch?.daysUntilExpiry ?? 999;
+                                
+                                const getSlotColor = () => {
+                                  if (isHighlighted) {
+                                    return {
+                                      bg: 'bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-100',
+                                      border: 'border-blue-500 ring-4 ring-blue-300/50',
+                                      text: 'text-blue-800',
+                                      indicator: 'bg-blue-200',
+                                      barColor: 'from-blue-600 to-indigo-500',
+                                    };
+                                  }
+                                  if (!batch) {
+                                    return {
+                                      bg: 'bg-gradient-to-br from-slate-50 to-slate-100',
+                                      border: 'border-slate-300',
+                                      text: 'text-slate-500',
+                                      indicator: 'bg-slate-200',
+                                      barColor: 'from-slate-400 to-slate-300',
+                                    };
+                                  }
+                                  if (daysUntilExpiry < 0) {
+                                    return {
+                                      bg: 'bg-gradient-to-br from-red-50 via-white to-red-50/50',
+                                      border: 'border-red-400/60',
+                                      text: 'text-red-900',
+                                      indicator: 'bg-red-200/70',
+                                      barColor: 'from-red-600 to-red-500',
+                                    };
+                                  } else if (daysUntilExpiry <= 7) {
+                                    return {
+                                      bg: 'bg-gradient-to-br from-red-50 via-white to-red-50/50',
+                                      border: 'border-red-400/60',
+                                      text: 'text-red-800',
+                                      indicator: 'bg-red-200/70',
+                                      barColor: 'from-red-600 to-red-500',
+                                    };
+                                  } else if (daysUntilExpiry <= 14) {
+                                    return {
+                                      bg: 'bg-gradient-to-br from-orange-50 via-white to-orange-50/50',
+                                      border: 'border-orange-400/60',
+                                      text: 'text-orange-900',
+                                      indicator: 'bg-orange-200/70',
+                                      barColor: 'from-orange-600 to-orange-500',
+                                    };
+                                  } else if (daysUntilExpiry <= 30) {
+                                    return {
+                                      bg: 'bg-gradient-to-br from-amber-50 via-white to-amber-50/50',
+                                      border: 'border-amber-400/60',
+                                      text: 'text-amber-900',
+                                      indicator: 'bg-amber-200/70',
+                                      barColor: 'from-amber-600 to-amber-500',
+                                    };
+                                  } else {
+                                    return {
+                                      bg: 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30',
+                                      border: 'border-indigo-300/60',
+                                      text: 'text-slate-800',
+                                      indicator: 'bg-indigo-200/70',
+                                      barColor: 'from-indigo-600 to-blue-500',
+                                    };
+                                  }
+                                };
+
+                                const slotColor = getSlotColor();
+
+                                return (
+                                  <div key={colIdx} className="flex-1 group/slot">
+                                    {/* Slot Card - Professional Design */}
+                                    <div
+                                      className={cn(
+                                        'relative h-28 rounded-xl border-2 flex flex-col transition-all duration-300',
+                                        'shadow-md hover:shadow-xl overflow-hidden',
+                                        isHighlighted && 'scale-105 -translate-y-1',
+                                        slotColor.bg,
+                                        slotColor.border
+                                      )}
+                                    >
+                                      {/* Smooth gradient overlay on hover */}
+                                      <div className="absolute inset-0 opacity-0 group-hover/slot:opacity-50 bg-gradient-to-br from-white via-transparent to-transparent transition-opacity duration-300"></div>
+
+                                      {/* Top Status Bar */}
+                                      <div className={cn(
+                                        'h-1.5 bg-gradient-to-r transition-all duration-300',
+                                        `${slotColor.barColor}`
+                                      )}></div>
+
+                                      {/* Highlight Ping Animation */}
+                                      {isHighlighted && (
+                                        <div className="absolute top-1 right-1 z-20">
+                                          <span className="flex h-3 w-3">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600"></span>
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {batchInSlot ? (
+                                        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-2 py-2 gap-0.5">
+                                          {/* Icon Container */}
+                                          <div className={cn('p-1.5 rounded-lg', slotColor.indicator)}>
+                                            <Pill className={cn('h-3 w-3', slotColor.text)} />
+                                          </div>
+
+                                          {/* Brand Name */}
+                                          <p className={cn(
+                                            'text-[11px] font-bold truncate w-full text-center leading-snug',
+                                            slotColor.text
+                                          )}>
+                                            {batchInSlot.drug?.brandName || 'Medicine'}
+                                          </p>
+
+                                          {/* Quantity */}
+                                          <p className={cn(
+                                            'text-[10px] font-semibold opacity-85',
+                                            slotColor.text
+                                          )}>
+                                            QTY: {batchInSlot.quantity}
+                                          </p>
+
+                                          {/* Expiry Status */}
+                                          {daysUntilExpiry < 0 && (
+                                            <span className={cn(
+                                              'text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md',
+                                              slotColor.text, slotColor.indicator
+                                            )}>
+                                              EXPIRED
+                                            </span>
+                                          )}
+                                          {daysUntilExpiry >= 0 && daysUntilExpiry <= 7 && (
+                                            <span className={cn(
+                                              'text-[9px] font-bold px-1.5 py-0.5 rounded-md',
+                                              slotColor.text, slotColor.indicator
+                                            )}>
+                                              {daysUntilExpiry}d left
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="relative z-10 flex flex-col items-center justify-center flex-1">
+                                          <div className={cn('p-1.5 rounded-lg mb-1', slotColor.indicator)}>
+                                            <Box className={cn('h-3 w-3', slotColor.text)} />
+                                          </div>
+                                          <p className={cn(
+                                            'text-[9px] font-bold uppercase tracking-wider text-center',
+                                            slotColor.text
+                                          )}>
+                                            Empty
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <Button
+                onClick={() => {
+                  setShowShelfView(false);
+                  setViewingShelfData(null);
+                  setHighlightedSlot(null);
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-700"
+              >
+                Close
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
