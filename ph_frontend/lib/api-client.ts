@@ -1,4 +1,4 @@
-import { API_BASE_URL, STORAGE_KEYS } from './constants';
+import { API_BASE_URL, STORAGE_KEYS, API_TIMEOUT } from './constants';
 import type { ApiResponse, PaginatedResponse } from './types';
 
 class ApiClient {
@@ -43,18 +43,32 @@ class ApiClient {
 
     const url = this.buildUrl(endpoint, params);
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
-    const data = await response.json();
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      throw new Error(data.message || 'An error occurred');
+      clearTimeout(timeoutId);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'An error occurred');
+      }
+
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timed out');
+      }
+      throw error;
     }
-
-    return data;
   }
 
   // GET request with optional query params
