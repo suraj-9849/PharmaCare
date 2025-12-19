@@ -2,6 +2,8 @@ import { Router, type Router as ExpressRouter } from 'express';
 import { smartShelfService } from '../services/smart-shelf.service';
 import { authenticate } from '../middleware/auth';
 import { AuthenticatedRequest } from '../types';
+import prisma from '../config/database';
+import { EmailService } from '../services/email.service';
 
 const router: ExpressRouter = Router();
 
@@ -399,6 +401,127 @@ router.post('/:shelfId/validate-pick', async (req: AuthenticatedRequest, res) =>
     return res.status(500).json({
       success: false,
       message: message || 'Failed to validate pick',
+    });
+  }
+});
+
+/**
+ * POST /api/smart-shelf/return-to-vendor
+ * Process return to vendor with email notification
+ */
+router.post('/return-to-vendor', async (req: AuthenticatedRequest, res) => {
+  try {
+    const { batchId, supplierId, collectionDays = 7 } = req.body;
+
+    if (!batchId || !supplierId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Batch ID and Supplier ID are required',
+      });
+    }
+
+    // Get batch with drug details
+    const batch = await prisma.inventoryBatch.findUnique({
+      where: { id: batchId },
+      include: {
+        drug: true,
+        supplier: true,
+      },
+    });
+
+    if (!batch) {
+      return res.status(404).json({
+        success: false,
+        message: 'Batch not found',
+      });
+    }
+
+    // Get supplier details
+    const supplier = await prisma.supplier.findUnique({
+      where: { id: supplierId },
+    });
+
+    if (!supplier) {
+      return res.status(404).json({
+        success: false,
+        message: 'Supplier not found',
+      });
+    }
+
+    // Calculate 80% return quantity
+    const returnQuantity = Math.ceil(batch.quantity * 0.8);
+    const returnId = `RTN-${Date.now().toString(36).toUpperCase()}`;
+
+    // Send email to supplier
+    const emailResult = await EmailService.sendReturnToVendorEmail(
+      supplier.email,
+      supplier.supplierName,
+      {
+        drugs: [
+          {
+            drugName: batch.drug.genericName,
+            brandName: batch.drug.brandName,
+            batchNumber: batch.batchNumber,
+            quantity: batch.quantity,
+            returnQuantity,
+            expiryDate: new Date(batch.expiryDate).toLocaleDateString('en-US', { dateStyle: 'medium' }),
+            reason: 'Near expiry / Expired product',
+          },
+        ],
+        collectionDays,
+        pharmacyName: process.env.APP_NAME || 'PharmaCare',
+        pharmacyAddress: '123 Pharmacy Street, Medical District',
+        returnId,
+      }
+    );
+
+    // Update batch quantity (reduce by returned amount)
+    const updatedBatch = await prisma.inventoryBatch.update({
+      where: { id: batchId },
+      data: {
+        quantity: batch.quantity - returnQuantity,
+      },
+    });
+
+    // Record expiry action - pass 0 quantity since we already updated the batch
+    await prisma.expiryAction_Record.create({
+      data: {
+        batchId,
+        action: 'RETURN_TO_VENDOR',
+        performedBy: req.user?.id,
+        quantity: returnQuantity,
+        reason: `Return to vendor: ${supplier.supplierName}. Return ID: ${returnId}`,
+        vendorReturn: true,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Return to vendor processed successfully',
+      data: {
+        returnId,
+        batchId,
+        supplierId,
+        supplierName: supplier.supplierName,
+        supplierEmail: supplier.email,
+        originalQuantity: batch.quantity,
+        returnQuantity,
+        remainingQuantity: updatedBatch.quantity,
+        collectionDays,
+        emailSent: emailResult.success,
+        drug: {
+          brandName: batch.drug.brandName,
+          genericName: batch.drug.genericName,
+          batchNumber: batch.batchNumber,
+        },
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Error processing return to vendor:', error);
+    return res.status(500).json({
+      success: false,
+      message: message || 'Failed to process return to vendor',
     });
   }
 });
