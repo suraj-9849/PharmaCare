@@ -27,12 +27,21 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.pool import NullPool
 import pandas as pd
 
-# Load environment variables
+
 load_dotenv()
 
-# Configure OpenRouter
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENROUTER_API_KEY")
-os.environ["OPENAI_API_BASE"] = "https://openrouter.ai/api/v1"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "gpt-oss-120b:free")
+OPENROUTER_MODEL_CREATIVE = os.getenv("OPENROUTER_MODEL_CREATIVE", OPENROUTER_MODEL)
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+OPENROUTER_MODEL_FALLBACK = os.getenv("OPENROUTER_MODEL_FALLBACK", "openai/gpt-4o-mini")
+OPENROUTER_MODEL_CREATIVE_FALLBACK = os.getenv("OPENROUTER_MODEL_CREATIVE_FALLBACK", OPENROUTER_MODEL_FALLBACK)
+
+if OPENROUTER_API_KEY:
+    os.environ["OPENAI_API_KEY"] = OPENROUTER_API_KEY
+if OPENROUTER_BASE_URL:
+    os.environ["OPENAI_API_BASE"] = OPENROUTER_BASE_URL
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Import Agent Tools
@@ -93,27 +102,23 @@ def get_db_engine():
 
 # ==================== LLM SETUP ====================
 
-llm = ChatOpenAI(
-    model="gpt-oss-120b:free",
-    temperature=0,
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    default_headers={
-        "HTTP-Referer": "http://localhost:8000",
-        "X-Title": "PharmaCare AI"
-    }
-)
+def build_llm(model_name: str, temperature: float = 0):
+    return ChatOpenAI(
+        model=model_name,
+        temperature=temperature,
+        base_url=OPENROUTER_BASE_URL,
+        api_key=OPENROUTER_API_KEY,
+        default_headers={
+            "HTTP-Referer": "http://localhost:8000",
+            "X-Title": "PharmaCare AI"
+        }
+    )
 
-llm_creative = ChatOpenAI(
-    model="gpt-oss-120b:free",
-    temperature=0.7,
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    default_headers={
-        "HTTP-Referer": "http://localhost:8000",
-        "X-Title": "PharmaCare AI"
-    }
-)
+
+llm = build_llm(OPENROUTER_MODEL, temperature=0)
+llm_creative = build_llm(OPENROUTER_MODEL_CREATIVE, temperature=0.7)
+llm_fallback = build_llm(OPENROUTER_MODEL_FALLBACK, temperature=0)
+llm_creative_fallback = build_llm(OPENROUTER_MODEL_CREATIVE_FALLBACK, temperature=0.7)
 
 # ==================== CHATBOT (Text-to-SQL) ====================
 
@@ -148,18 +153,35 @@ classification_chain = ChatPromptTemplate.from_messages([
     ("system", CLASSIFICATION_PROMPT), ("human", "{input}")
 ]) | llm
 
+classification_chain_fb = ChatPromptTemplate.from_messages([
+    ("system", CLASSIFICATION_PROMPT), ("human", "{input}")
+]) | llm_fallback
+
 sql_chain = ChatPromptTemplate.from_messages([
     ("system", SQL_SYSTEM_PROMPT), MessagesPlaceholder(variable_name="chat_history"), ("human", "{input}")
 ]) | llm
+
+sql_chain_fb = ChatPromptTemplate.from_messages([
+    ("system", SQL_SYSTEM_PROMPT), MessagesPlaceholder(variable_name="chat_history"), ("human", "{input}")
+]) | llm_fallback
 
 response_chain = ChatPromptTemplate.from_messages([
     ("system", RESPONSE_SYSTEM_PROMPT),
     ("human", "Question: {question}\nSQL: {sql}\nResults: {results}\nSummarize:")
 ]) | llm
 
+response_chain_fb = ChatPromptTemplate.from_messages([
+    ("system", RESPONSE_SYSTEM_PROMPT),
+    ("human", "Question: {question}\nSQL: {sql}\nResults: {results}\nSummarize:")
+]) | llm_fallback
+
 general_chain = ChatPromptTemplate.from_messages([
     ("system", GENERAL_SYSTEM_PROMPT), MessagesPlaceholder(variable_name="chat_history"), ("human", "{input}")
 ]) | llm_creative
+
+general_chain_fb = ChatPromptTemplate.from_messages([
+    ("system", GENERAL_SYSTEM_PROMPT), MessagesPlaceholder(variable_name="chat_history"), ("human", "{input}")
+]) | llm_creative_fallback
 
 # ==================== AGENT SETUP ====================
 
@@ -201,6 +223,7 @@ agent_tools = [
 
 # Create agent using langgraph
 agent_executor = create_react_agent(llm, agent_tools, prompt=AGENT_SYSTEM_PROMPT)
+agent_executor_fb = create_react_agent(llm_fallback, agent_tools, prompt=AGENT_SYSTEM_PROMPT)
 
 # ==================== REFINED AGENT SETUP ====================
 
@@ -244,6 +267,7 @@ agent_tools_v2 = [
 ]
 
 agent_executor_v2 = create_react_agent(llm, agent_tools_v2, prompt=AGENT_SYSTEM_PROMPT_V2)
+agent_executor_v2_fb = create_react_agent(llm_fallback, agent_tools_v2, prompt=AGENT_SYSTEM_PROMPT_V2)
 
 # ==================== PYDANTIC MODELS ====================
 
@@ -308,10 +332,20 @@ def convert_history(history: List[ChatMessage]):
         for m in history
     ]
 
+
+def invoke_with_fallback(primary_chain, fallback_chain, payload):
+    """Invoke a chain and fall back on data-policy/model errors."""
+    try:
+        return primary_chain.invoke(payload)
+    except Exception as e:
+        if "No endpoints found matching your data policy" in str(e) or "404" in str(e):
+            return fallback_chain.invoke(payload)
+        raise
+
 def classify_question(question: str) -> str:
     """Classify question type"""
     try:
-        result = classification_chain.invoke({"input": question})
+        result = invoke_with_fallback(classification_chain, classification_chain_fb, {"input": question})
         return "database" if "DATABASE" in result.content.upper() else "general"
     except:
         return "database"
@@ -338,14 +372,14 @@ async def chat(request: ChatRequest):
         query_type = classify_question(request.message)
 
         if query_type == "general":
-            response = general_chain.invoke({"chat_history": history, "input": request.message})
+            response = invoke_with_fallback(general_chain, general_chain_fb, {"chat_history": history, "input": request.message})
             return ChatResponse(response=response.content, query_type="general")
 
-        sql_response = sql_chain.invoke({"chat_history": history, "input": request.message})
+        sql_response = invoke_with_fallback(sql_chain, sql_chain_fb, {"chat_history": history, "input": request.message})
         sql_query = extract_sql(sql_response.content)
 
         if not sql_query:
-            response = general_chain.invoke({"chat_history": history, "input": request.message})
+            response = invoke_with_fallback(general_chain, general_chain_fb, {"chat_history": history, "input": request.message})
             return ChatResponse(response=response.content, query_type="general")
 
         df, error = execute_query(sql_query)
@@ -356,7 +390,7 @@ async def chat(request: ChatRequest):
             )
 
         results_str = df.to_string() if not df.empty else "No results"
-        final = response_chain.invoke({"question": request.message, "sql": sql_query, "results": results_str})
+        final = invoke_with_fallback(response_chain, response_chain_fb, {"question": request.message, "sql": sql_query, "results": results_str})
 
         return ChatResponse(
             response=final.content,
@@ -396,7 +430,7 @@ async def agent_chat(request: ChatRequest):
         messages = history + [HumanMessage(content=user_input)]
 
         # Invoke agent
-        result = agent_executor.invoke({"messages": messages})
+        result = invoke_with_fallback(agent_executor, agent_executor_fb, {"messages": messages})
 
         # Extract response and tools used
         tools_used = []
@@ -465,7 +499,7 @@ async def agent_chat_refined(request: ChatRequest):
         messages = history + [HumanMessage(content=user_input)]
 
         # Invoke refined agent
-        result = agent_executor_v2.invoke({"messages": messages})
+        result = invoke_with_fallback(agent_executor_v2, agent_executor_v2_fb, {"messages": messages})
 
         # Extract response and tools used
         tools_used = []
