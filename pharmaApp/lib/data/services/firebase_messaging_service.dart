@@ -96,8 +96,8 @@ class FirebaseMessagingService {
 
     // Create notification channels for Android
     const androidChannel = AndroidNotificationChannel(
-      'DrugDesk_alerts',
-      'DrugDesk Alerts',
+      'pharmacare_alerts',
+      'pharmacare Alerts',
       description: 'Inventory and expiry alerts',
       importance: Importance.high,
       enableVibration: true,
@@ -132,7 +132,7 @@ class FirebaseMessagingService {
 
       // Register with Firebase Cloud Function
       // Replace YOUR_REGION and YOUR_PROJECT with actual values
-      const functionUrl = 'https://us-central1-DrugDesk-app.cloudfunctions.net/registerDevice';
+      const functionUrl = 'https://us-central1-pharmacare-app.cloudfunctions.net/registerDevice';
 
       final response = await _apiService.dio.post(
         functionUrl,
@@ -198,8 +198,8 @@ class FirebaseMessagingService {
   /// Show local notification
   Future<void> _showLocalNotification(RemoteMessage message) async {
     const androidDetails = AndroidNotificationDetails(
-      'DrugDesk_alerts',
-      'DrugDesk Alerts',
+      'pharmacare_alerts',
+      'pharmacare Alerts',
       channelDescription: 'Inventory and expiry alerts',
       importance: Importance.high,
       priority: Priority.high,
@@ -221,7 +221,7 @@ class FirebaseMessagingService {
 
     await _localNotifications.show(
       message.hashCode,
-      message.notification?.title ?? 'DrugDesk Alert',
+      message.notification?.title ?? 'pharmacare Alert',
       message.notification?.body ?? 'New notification',
       notificationDetails,
       payload: message.data['type'],
@@ -260,7 +260,7 @@ class FirebaseMessagingService {
       if (token == null) return;
 
       // Call Firebase Cloud Function
-      const functionUrl = 'https://us-central1-DrugDesk-app.cloudfunctions.net/unregisterDevice';
+      const functionUrl = 'https://us-central1-pharmacare-app.cloudfunctions.net/unregisterDevice';
 
       await _apiService.dio.post(
         functionUrl,
@@ -276,7 +276,7 @@ class FirebaseMessagingService {
   /// Get all alerts from Firebase Cloud Functions
   Future<List<Map<String, dynamic>>> getAlerts({bool unreadOnly = false}) async {
     try {
-      const functionUrl = 'https://us-central1-DrugDesk-app.cloudfunctions.net/getAlerts';
+      const functionUrl = 'https://us-central1-pharmacare-app.cloudfunctions.net/getAlerts';
 
       final response = await _apiService.dio.get(
         '$functionUrl?unreadOnly=$unreadOnly',
@@ -296,7 +296,7 @@ class FirebaseMessagingService {
   /// Mark alert as read
   Future<bool> markAlertRead(String alertId) async {
     try {
-      const functionUrl = 'https://us-central1-DrugDesk-app.cloudfunctions.net/markAlertRead';
+      const functionUrl = 'https://us-central1-pharmacare-app.cloudfunctions.net/markAlertRead';
 
       final response = await _apiService.dio.post(
         functionUrl,
@@ -313,7 +313,7 @@ class FirebaseMessagingService {
   /// Mark all alerts as read
   Future<bool> markAllAlertsRead() async {
     try {
-      const functionUrl = 'https://us-central1-DrugDesk-app.cloudfunctions.net/markAllAlertsRead';
+      const functionUrl = 'https://us-central1-pharmacare-app.cloudfunctions.net/markAllAlertsRead';
 
       final response = await _apiService.dio.post(functionUrl);
 

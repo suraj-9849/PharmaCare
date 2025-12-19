@@ -1,4 +1,4 @@
-# DrugDesk Backend Deployment Guide
+# pharmacare Backend Deployment Guide
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ The deployment creates:
 
 Navigate to the backend directory:
 
-cd /home/suraj/Documents/data/DrugDesk/ph_backend
+cd /home/suraj/Documents/data/pharmacare/ph_backend
 
 Build the Docker image:
 
@@ -53,12 +53,12 @@ docker push 301691475000.dkr.ecr.ap-southeast-2.amazonaws.com/backend:latest
 
 Navigate to project root:
 
-cd /home/suraj/Documents/data/DrugDesk
+cd /home/suraj/Documents/data/pharmacare
 
 Create the CloudFormation stack:
 
 aws cloudformation create-stack \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --template-body file://cloudformation-minimal.yaml \
   --region ap-southeast-2 \
   --capabilities CAPABILITY_IAM \
@@ -69,7 +69,7 @@ aws cloudformation create-stack \
 Check stack status:
 
 aws cloudformation describe-stacks \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --region ap-southeast-2 \
   --query 'Stacks[0].StackStatus' \
   --output text
@@ -79,7 +79,7 @@ Wait for status to show: CREATE_COMPLETE
 Monitor detailed events:
 
 aws cloudformation describe-stack-events \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --region ap-southeast-2 \
   --query 'StackEvents[0:10]' \
   --output table
@@ -89,7 +89,7 @@ aws cloudformation describe-stack-events \
 Retrieve the Load Balancer URL:
 
 aws cloudformation describe-stacks \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --region ap-southeast-2 \
   --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerURL`].OutputValue' \
   --output text
@@ -120,7 +120,7 @@ After making code changes, rebuild and redeploy:
 
 ### 1. Rebuild Docker Image
 
-cd /home/suraj/Documents/data/DrugDesk/ph_backend
+cd /home/suraj/Documents/data/pharmacare/ph_backend
 docker build -t backend .
 
 ### 2. Tag and Push
@@ -130,10 +130,10 @@ docker push 301691475000.dkr.ecr.ap-southeast-2.amazonaws.com/backend:latest
 
 ### 3. Update CloudFormation Stack
 
-cd /home/suraj/Documents/data/DrugDesk
+cd /home/suraj/Documents/data/pharmacare
 
 aws cloudformation update-stack \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --template-body file://cloudformation-minimal.yaml \
   --region ap-southeast-2 \
   --capabilities CAPABILITY_IAM \
@@ -142,7 +142,7 @@ aws cloudformation update-stack \
 Monitor update progress:
 
 aws cloudformation describe-stacks \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --region ap-southeast-2 \
   --query 'Stacks[0].StackStatus' \
   --output text
@@ -156,27 +156,27 @@ Wait for: UPDATE_COMPLETE
 Get log group name:
 
 aws cloudformation describe-stacks \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --region ap-southeast-2 \
   --query 'Stacks[0].Outputs[?OutputKey==`ECSTaskLogGroup`].OutputValue' \
   --output text
 
 Tail logs in real-time:
 
-aws logs tail /ecs/DrugDesk-backend --region ap-southeast-2 --follow
+aws logs tail /ecs/pharmacare-backend --region ap-southeast-2 --follow
 
 ### View Recent Logs
 
 Get last 50 log events:
 
-aws logs tail /ecs/DrugDesk-backend --region ap-southeast-2 --max-items 50
+aws logs tail /ecs/pharmacare-backend --region ap-southeast-2 --max-items 50
 
 ### Get Stack Outputs
 
 View all stack outputs:
 
 aws cloudformation describe-stacks \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --region ap-southeast-2 \
   --query 'Stacks[0].Outputs' \
   --output table
@@ -186,13 +186,13 @@ aws cloudformation describe-stacks \
 To delete the entire infrastructure:
 
 aws cloudformation delete-stack \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --region ap-southeast-2
 
 Monitor deletion:
 
 aws cloudformation describe-stacks \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --region ap-southeast-2 \
   --query 'Stacks[0].StackStatus' \
   --output text
@@ -204,7 +204,7 @@ Wait for: DELETE_COMPLETE (or stack not found)
 Check CloudFormation events:
 
 aws cloudformation describe-stack-events \
-  --stack-name DrugDesk-minimal \
+  --stack-name pharmacare-minimal \
   --region ap-southeast-2 \
   --query 'StackEvents[?ResourceStatus==`CREATE_FAILED`]' \
   --output table
@@ -228,23 +228,23 @@ Total estimated cost: Minimal (primarily ALB charges)
 ## Quick Reference Commands
 
 Create stack:
-aws cloudformation create-stack --stack-name DrugDesk-minimal --template-body file://cloudformation-minimal.yaml --region ap-southeast-2 --capabilities CAPABILITY_IAM --parameters ParameterKey=ImageUri,ParameterValue=301691475000.dkr.ecr.ap-southeast-2.amazonaws.com/backend:latest
+aws cloudformation create-stack --stack-name pharmacare-minimal --template-body file://cloudformation-minimal.yaml --region ap-southeast-2 --capabilities CAPABILITY_IAM --parameters ParameterKey=ImageUri,ParameterValue=301691475000.dkr.ecr.ap-southeast-2.amazonaws.com/backend:latest
 
 Update stack:
-aws cloudformation update-stack --stack-name DrugDesk-minimal --template-body file://cloudformation-minimal.yaml --region ap-southeast-2 --capabilities CAPABILITY_IAM --parameters ParameterKey=ImageUri,ParameterValue=301691475000.dkr.ecr.ap-southeast-2.amazonaws.com/backend:latest
+aws cloudformation update-stack --stack-name pharmacare-minimal --template-body file://cloudformation-minimal.yaml --region ap-southeast-2 --capabilities CAPABILITY_IAM --parameters ParameterKey=ImageUri,ParameterValue=301691475000.dkr.ecr.ap-southeast-2.amazonaws.com/backend:latest
 
 Get URL:
-aws cloudformation describe-stacks --stack-name DrugDesk-minimal --region ap-southeast-2 --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerURL`].OutputValue' --output text
+aws cloudformation describe-stacks --stack-name pharmacare-minimal --region ap-southeast-2 --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerURL`].OutputValue' --output text
 
 View logs:
-aws logs tail /ecs/DrugDesk-backend --region ap-southeast-2 --follow
+aws logs tail /ecs/pharmacare-backend --region ap-southeast-2 --follow
 
 Delete stack:
-aws cloudformation delete-stack --stack-name DrugDesk-minimal --region ap-southeast-2
+aws cloudformation delete-stack --stack-name pharmacare-minimal --region ap-southeast-2
 
 
 for i in {1..30}; do 
-  STATUS=$(aws cloudformation describe-stacks --stack-name DrugDesk-minimal --region ap-southeast-2 --query 'Stacks[0].StackStatus' --output text 2>/dev/null)
+  STATUS=$(aws cloudformation describe-stacks --stack-name pharmacare-minimal --region ap-southeast-2 --query 'Stacks[0].StackStatus' --output text 2>/dev/null)
   TIME=$(date +'%H:%M:%S')
   echo "[$TIME] Status: $STATUS"
   if [[ "$STATUS" == "UPDATE_COMPLETE" ]]; then
@@ -253,7 +253,7 @@ for i in {1..30}; do
     echo ""
     sleep 30
     echo "Testing backend..."
-    curl -s http://DrugDesk-alb-809690050.ap-southeast-2.elb.amazonaws.com/health | jq .
+    curl -s http://pharmacare-alb-809690050.ap-southeast-2.elb.amazonaws.com/health | jq .
     break
   elif [[ "$STATUS" == *"FAILED"* ]]; then
     echo " UPDATE FAILED!"
