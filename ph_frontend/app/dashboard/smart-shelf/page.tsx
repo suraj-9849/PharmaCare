@@ -1421,14 +1421,14 @@ export default function SmartShelfPage() {
         {/* View Shelf Details Sheet */}
         <Sheet open={showViewShelfDialog} onOpenChange={setShowViewShelfDialog}>
           <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto p-0">
-            <SheetHeader className="px-6 pb-4 border-b">
+            {/* <SheetHeader className="px-6 pb-4 border-b">
               <SheetTitle className="text-2xl">Shelf Details</SheetTitle>
               <SheetDescription>
                 View and manage inventory layout for this shelf location
               </SheetDescription>
-            </SheetHeader>
+            </SheetHeader> */}
             {viewingShelf && (
-              <ScrollArea className="h-[calc(100vh-140px)]">
+              <ScrollArea className="">
                 <div className="p-6 space-y-6">
                   {/* Shelf Info Card */}
                   <Card>
