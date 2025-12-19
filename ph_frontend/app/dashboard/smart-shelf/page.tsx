@@ -18,6 +18,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -51,6 +54,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // Icons
 import {
@@ -72,6 +81,14 @@ import {
   Box,
   Loader2,
   Pill,
+  BarChart3,
+  Activity,
+  Info,
+  Search,
+  Filter,
+  Download,
+  RefreshCw,
+  Settings,
 } from 'lucide-react';
 
 export default function SmartShelfPage() {
@@ -701,548 +718,419 @@ export default function SmartShelfPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/20">
-      <div className="max-w-[1600px] mx-auto px-6  space-y-8">
-        {/* Header Section */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/8 via-indigo-600/8 to-violet-600/8 rounded-3xl blur-xl" />
-          <div className="relative bg-white rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/50">
-            <div className="flex items-center justify-between p-8">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-10 w-1 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full" />
-                  <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-                    Intelligent Shelf Management
-                  </h1>
-                </div>
-                <p className="text-sm text-slate-600 font-medium ml-[52px]">
-                  Enterprise-grade inventory tracking with real-time analytics and FEFO compliance
-                </p>
-              </div>
-              <Button
-                onClick={() => setShowAddShelfDialog(true)}
-                size="lg"
-                className="gap-2 h-12 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/35 hover:scale-105"
-              >
-                <Plus className="h-5 w-5" />
-                Add New Shelf
-              </Button>
-            </div>
-          </div>
+    <div className="space-y-6 p-6">
+      {/* Header Section */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Smart Shelf Management</h1>
+          <p className="text-muted-foreground mt-1">
+            Intelligent inventory tracking with real-time analytics and FEFO compliance
+          </p>
         </div>
+        <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={() => window.location.reload()}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh data</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <Button onClick={() => setShowAddShelfDialog(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Shelf
+          </Button>
+        </div>
+      </div>
 
-        {/* Analytics Dashboard */}
-        {analytics && (
-          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-lg shadow-slate-200/30 p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-8 w-1 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full" />
-              <h2 className="text-lg font-bold text-slate-900">Performance Metrics</h2>
-            </div>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-              <Card className="group relative overflow-hidden border-slate-200/60 bg-gradient-to-br from-white via-slate-50/30 to-blue-50/30 hover:shadow-xl hover:border-blue-300/60 transition-all duration-300 hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/[0.03] to-transparent" />
-                <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
-                  <CardTitle className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                    Total Shelves
-                  </CardTitle>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 group-hover:from-blue-200 group-hover:to-blue-100 transition-all shadow-sm">
-                    <Package className="h-5 w-5 text-blue-700" />
-                  </div>
-                </CardHeader>
-                <CardContent className="relative">
-                  <div className="text-3xl font-bold text-slate-900 mb-1">
-                    {analytics.totalShelves}
-                  </div>
-                  <p className="text-xs text-slate-600 font-semibold">
-                    {analytics.activeShelves} active locations
-                  </p>
-                </CardContent>
-              </Card>
+      {/* Analytics Dashboard */}
+      {analytics && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Shelves</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.totalShelves}</div>
+              <p className="text-xs text-muted-foreground">
+                {analytics.activeShelves} active
+              </p>
+            </CardContent>
+          </Card>
 
-              <Card className="group relative overflow-hidden border-slate-200/60 bg-gradient-to-br from-white via-slate-50/30 to-indigo-50/30 hover:shadow-xl hover:border-indigo-300/60 transition-all duration-300 hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/[0.03] to-transparent" />
-                <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
-                  <CardTitle className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                    Active Batches
-                  </CardTitle>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-50 group-hover:from-indigo-200 group-hover:to-indigo-100 transition-all shadow-sm">
-                    <Archive className="h-5 w-5 text-indigo-700" />
-                  </div>
-                </CardHeader>
-                <CardContent className="relative">
-                  <div className="text-3xl font-bold text-slate-900 mb-1">
-                    {analytics.totalBatchesOnShelf}
-                  </div>
-                  <p className="text-xs text-slate-600 font-semibold">Across all shelves</p>
-                </CardContent>
-              </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Batches</CardTitle>
+              <Archive className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics.totalBatchesOnShelf}</div>
+              <p className="text-xs text-muted-foreground">
+                Across all locations
+              </p>
+            </CardContent>
+          </Card>
 
-              <Card className="group relative overflow-hidden border-slate-200/60 bg-gradient-to-br from-white via-orange-50/20 to-orange-50/40 hover:shadow-xl hover:border-orange-300/60 transition-all duration-300 hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-600/[0.03] to-transparent" />
-                <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
-                  <CardTitle className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                    Expiring Soon
-                  </CardTitle>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-orange-100 to-orange-50 group-hover:from-orange-200 group-hover:to-orange-100 transition-all shadow-sm">
-                    <Clock className="h-5 w-5 text-orange-700" />
-                  </div>
-                </CardHeader>
-                <CardContent className="relative">
-                  <div className="text-3xl font-bold text-orange-700 mb-1">
-                    {analytics.expiringCount}
-                  </div>
-                  <p className="text-xs text-slate-600 font-semibold">Within 30 days</p>
-                </CardContent>
-              </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{analytics.expiringCount}</div>
+              <p className="text-xs text-muted-foreground">
+                Within 30 days
+              </p>
+            </CardContent>
+          </Card>
 
-              <Card className="group relative overflow-hidden border-slate-200/60 bg-gradient-to-br from-white via-red-50/20 to-red-50/40 hover:shadow-xl hover:border-red-300/60 transition-all duration-300 hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-red-600/[0.03] to-transparent" />
-                <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
-                  <CardTitle className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                    FEFO Alerts
-                  </CardTitle>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-red-100 to-red-50 group-hover:from-red-200 group-hover:to-red-100 transition-all shadow-sm">
-                    <AlertTriangle className="h-5 w-5 text-red-700" />
-                  </div>
-                </CardHeader>
-                <CardContent className="relative">
-                  <div className="text-3xl font-bold text-red-700 mb-1">
-                    {analytics.incorrectPickCount}
-                  </div>
-                  <p className="text-xs text-slate-600 font-semibold">Violations pending</p>
-                </CardContent>
-              </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">FEFO Alerts</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{analytics.incorrectPickCount}</div>
+              <p className="text-xs text-muted-foreground">
+                Violations pending
+              </p>
+            </CardContent>
+          </Card>
 
-              <Card className="group relative overflow-hidden border-slate-200/60 bg-gradient-to-br from-white via-emerald-50/20 to-emerald-50/40 hover:shadow-xl hover:border-emerald-300/60 transition-all duration-300 hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/[0.03] to-transparent" />
-                <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-4">
-                  <CardTitle className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                    Utilization
-                  </CardTitle>
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 group-hover:from-emerald-200 group-hover:to-emerald-100 transition-all shadow-sm">
-                    <TrendingUp className="h-5 w-5 text-emerald-700" />
-                  </div>
-                </CardHeader>
-                <CardContent className="relative">
-                  <div className="text-3xl font-bold text-emerald-700 mb-1">
-                    {analytics.topUtilizedShelves?.[0]?.utilizationPercentage?.toFixed(0) || 0}%
-                  </div>
-                  <p className="text-xs text-slate-600 font-semibold">
-                    {analytics.topUtilizedShelves?.[0]?.shelfCode || 'No data'}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {/* Main Content Section */}
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-lg shadow-slate-200/30 overflow-hidden">
-          <Tabs defaultValue="shelves" className="w-full">
-            <div className="border-b border-slate-200/80 bg-gradient-to-b from-slate-50/50 to-white px-8 pt-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-8 w-1 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full" />
-                <h2 className="text-lg font-bold text-slate-900">Inventory Overview</h2>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Utilization</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {analytics.topUtilizedShelves?.[0]?.utilizationPercentage?.toFixed(0) || 0}%
               </div>
-              <TabsList className="grid w-full max-w-xl grid-cols-3 bg-slate-100/80 p-1.5 rounded-xl mb-6">
-                <TabsTrigger
-                  value="shelves"
-                  className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md font-semibold"
-                >
-                  <Grid3x3 className="h-4 w-4" />
-                  All Shelves
-                </TabsTrigger>
-                <TabsTrigger
-                  value="swipe"
-                  className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md font-semibold"
-                >
-                  <Zap className="h-4 w-4" />
-                  Expiring Items
-                </TabsTrigger>
-                <TabsTrigger
-                  value="alerts"
-                  className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md font-semibold"
-                >
-                  <AlertTriangle className="h-4 w-4" />
-                  FEFO Alerts
-                  {alerts.length > 0 && (
-                    <Badge
-                      variant="destructive"
-                      className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-                    >
-                      {alerts.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
+              <p className="text-xs text-muted-foreground">
+                {analytics.topUtilizedShelves?.[0]?.shelfCode || 'No data'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Main Content Section */}
+      <Tabs defaultValue="shelves" className="space-y-6 mt-12">
+        <TabsList className='gap-2'>
+          <TabsTrigger value="shelves" className="gap-2">
+            <Grid3x3 className="h-4 w-4" />
+            All Shelves
+          </TabsTrigger>
+          <TabsTrigger value="swipe" className="gap-2">
+            <Zap className="h-4 w-4" />
+            Expiring Items
+            {expiringBatches.length > 0 && (
+              <Badge variant="destructive" className="ml-1">
+                {expiringBatches.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="alerts" className="gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            FEFO Alerts
+            {alerts.length > 0 && (
+              <Badge variant="destructive" className="ml-1">
+                {alerts.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Shelves Tab */}
+        <TabsContent value="shelves" className="space-y-4">
+          {shelves.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <Grid3x3 className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No Shelves Created Yet</h3>
+                <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
+                  Create your first shelf location to start tracking inventory with intelligent organization
+                </p>
+                <Button onClick={() => setShowAddShelfDialog(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create First Shelf
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {shelves.map((shelf) => {
+                const util = Math.round(shelf.utilizationPercentage || 0);
+                const filledSlots = shelf.currentStock || 0;
+                const totalSlots = shelf.capacity || 0;
+                const availableSlots = totalSlots - filledSlots;
+
+                return (
+                  <Card
+                    key={shelf.id}
+                    className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-primary/50"
+                    onClick={() => openShelfDetails(shelf)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="text-base">{shelf.shelfName}</CardTitle>
+                          <CardDescription className="text-xs">
+                            {shelf.shelfCode} • {shelf.row}×{shelf.column}
+                          </CardDescription>
+                        </div>
+                        {shelf.status === 'ACTIVE' && (
+                          <Badge className="gap-1">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                            </span>
+                            Active
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-bold">{util}%</span>
+                          <span className="text-sm text-muted-foreground">capacity</span>
+                        </div>
+                        <Progress value={util} className="h-2" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Occupied</p>
+                          <p className="text-2xl font-bold">{filledSlots}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Available</p>
+                          <p className="text-2xl font-bold text-primary">{availableSlots}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
+          )}
+        </TabsContent>
 
-            {/* Shelves Tab */}
-            <TabsContent value="shelves" className="p-8 pt-6">
-              {shelves.length === 0 ? (
-                <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 hover:border-blue-300 transition-colors">
-                  <CardContent className="flex flex-col items-center justify-center py-20">
-                    <div className="p-5 rounded-2xl bg-slate-100 mb-5">
-                      <Grid3x3 className="h-12 w-12 text-slate-400" />
+        {/* Expiring Items Tab */}
+        <TabsContent value="swipe" className="space-y-4">
+          {expiringBatches.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <div className="rounded-full bg-emerald-100 p-4 mb-4">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">All Clear</h3>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  No items require attention. All inventory is within safe expiry range.
+                </p>
+              </CardContent>
+            </Card>
+          ) : currentBatch ? (
+            <div className="space-y-4">
+              {/* Progress Bar */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-muted-foreground">Review Progress</span>
+                    <span className="font-semibold">
+                      {currentSwipeBatchIndex + 1} / {expiringBatches.length}
+                    </span>
+                  </div>
+                  <Progress
+                    value={((currentSwipeBatchIndex + 1) / expiringBatches.length) * 100}
+                    className="h-2"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      setCurrentSwipeBatchIndex(Math.max(0, currentSwipeBatchIndex - 1))
+                    }
+                    disabled={currentSwipeBatchIndex === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      setCurrentSwipeBatchIndex(
+                        Math.min(expiringBatches.length - 1, currentSwipeBatchIndex + 1)
+                      )
+                    }
+                    disabled={currentSwipeBatchIndex === expiringBatches.length - 1}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Batch Details Card */}
+              <Card>
+                <CardHeader className="pb-3 border-b">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-xl">
+                        {currentBatch.drug?.brandName || 'Unknown Drug'}
+                      </CardTitle>
+                      <CardDescription>{currentBatch.drug?.genericName}</CardDescription>
+                      <div className="flex items-center gap-2 pt-2">
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {currentBatch.batchNumber}
+                        </Badge>
+                        {currentBatch.shelfLocation && (
+                          <Badge variant="secondary" className="text-xs">
+                            {currentBatch.shelfLocation.shelfCode} • Slot{' '}
+                            {currentBatch.slotPosition}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">
-                      No Shelves Created Yet
-                    </h3>
-                    <p className="text-sm text-slate-600 mb-6 max-w-md text-center">
-                      Create your first shelf location to start tracking inventory with intelligent
-                      organization
-                    </p>
-                    <Button
-                      onClick={() => setShowAddShelfDialog(true)}
-                      size="lg"
-                      className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-600/30"
-                    >
-                      <Plus className="h-5 w-5" />
-                      Create First Shelf
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {shelves.map((shelf) => {
-                    const util = Math.round(shelf.utilizationPercentage || 0);
-                    const filledSlots = shelf.currentStock || 0;
-                    const totalSlots = shelf.capacity || 0;
-                    const availableSlots = totalSlots - filledSlots;
+                    <div className="text-right">
+                      {getExpiryStatusBadge(currentBatch.daysUntilExpiry ?? 0)}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {(currentBatch.daysUntilExpiry ?? 0) < 0
+                          ? `Expired ${Math.abs(currentBatch.daysUntilExpiry ?? 0)} days ago`
+                          : `Expires in ${currentBatch.daysUntilExpiry ?? 0} days`}
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Quantity</p>
+                      <p className="text-2xl font-bold">{currentBatch.quantity}</p>
+                      <p className="text-xs text-muted-foreground">units</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Unit Price</p>
+                      <p className="text-2xl font-bold">{formatCurrency(currentBatch.sellPrice)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Total Value</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {formatCurrency(currentBatch.sellPrice * currentBatch.quantity)}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Expiry Date</p>
+                      <p className="text-lg font-bold">
+                        {formatDate(new Date(currentBatch.expiryDate))}
+                      </p>
+                    </div>
+                  </div>
 
-                    return (
-                      <Card
-                        key={shelf.id}
-                        className="cursor-pointer hover:shadow-lg transition-shadow duration-300 flex flex-col"
-                        onClick={() => openShelfDetails(shelf)}
+                  <Separator className="my-6" />
+
+                  {/* Action Buttons */}
+                  <div>
+                    <p className="text-sm font-medium mb-4">Take Action</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Button
+                        onClick={() => handleSwipe('RETURN_TO_VENDOR')}
+                        disabled={isProcessingAction}
+                        variant="outline"
+                        className="h-auto py-4 flex-col gap-2"
                       >
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <CardTitle className="text-base truncate">
-                                {shelf.shelfName}
-                              </CardTitle>
-                              <CardDescription className="text-xs mt-0.5">
-                                {shelf.shelfCode} • {shelf.row}×{shelf.column}
-                              </CardDescription>
-                            </div>
-                            {shelf.status === 'ACTIVE' && (
-                              <Badge
-                                variant="default"
-                                className="bg-emerald-600 text-xs flex-shrink-0"
-                              >
-                                <span className="relative flex h-1.5 w-1.5 rounded-full bg-emerald-300 mr-1.5">
-                                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-300 animate-pulse"></span>
-                                </span>
-                                Active
-                              </Badge>
-                            )}
-                          </div>
-                        </CardHeader>
+                        <ArrowRight className="h-5 w-5" />
+                        <span className="font-semibold">Return to Vendor</span>
+                        <span className="text-xs text-muted-foreground">Get refund or credit</span>
+                      </Button>
+                      <Button
+                        onClick={() => handleSwipe('DISCOUNT')}
+                        disabled={isProcessingAction}
+                        variant="outline"
+                        className="h-auto py-4 flex-col gap-2"
+                      >
+                        <Percent className="h-5 w-5" />
+                        <span className="font-semibold">Discount & Push</span>
+                        <span className="text-xs text-muted-foreground">Reduce price to sell</span>
+                      </Button>
+                      <Button
+                        onClick={() => handleSwipe('DISPOSE')}
+                        disabled={isProcessingAction}
+                        variant="outline"
+                        className="h-auto py-4 flex-col gap-2"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                        <span className="font-semibold">Dispose</span>
+                        <span className="text-xs text-muted-foreground">Remove permanently</span>
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-                        <CardContent className="flex-1 flex flex-col gap-3 pt-0">
-                          {/* Main Utilization */}
-                          <div>
-                            <div className="flex items-baseline gap-1 mb-1">
-                              <span className="text-4xl font-bold">{util}</span>
-                              <span className="text-sm text-muted-foreground">%</span>
-                            </div>
-                            <p className="text-xs font-medium text-muted-foreground uppercase">
-                              Capacity
+              {/* Queue Preview */}
+              {expiringBatches.length > 1 && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Up Next</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {expiringBatches
+                      .slice(currentSwipeBatchIndex + 1, currentSwipeBatchIndex + 7)
+                      .map((batch, idx) => (
+                        <Card
+                          key={batch.id}
+                          className="cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => setCurrentSwipeBatchIndex(currentSwipeBatchIndex + idx + 1)}
+                        >
+                          <CardContent className="p-3 space-y-2">
+                            <p className="text-sm font-medium truncate">
+                              {batch.drug?.brandName || 'Unknown'}
                             </p>
-                          </div>
-
-                          {/* Progress Bar */}
-                          <div className="h-1.5 w-full rounded-full overflow-hidden bg-secondary">
-                            <div
-                              className="h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-500"
-                              style={{ width: `${util}%` }}
-                            />
-                          </div>
-
-                          {/* Stats */}
-                          <div className="grid grid-cols-2 gap-2 pt-1">
-                            <div className="p-2 rounded bg-slate-50">
-                              <p className="text-xs font-medium text-muted-foreground uppercase">
-                                Occupied
-                              </p>
-                              <p className="text-2xl font-bold leading-tight mt-0.5">
-                                {filledSlots}
-                              </p>
-                            </div>
-                            <div className="p-2 rounded bg-blue-50">
-                              <p className="text-xs font-medium text-muted-foreground uppercase">
-                                Available
-                              </p>
-                              <p className="text-2xl font-bold text-blue-600 leading-tight mt-0.5">
-                                {availableSlots}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                            <p className="text-xs text-muted-foreground truncate">
+                              {batch.batchNumber}
+                            </p>
+                            {getExpiryStatusBadge(batch.daysUntilExpiry)}
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
                 </div>
               )}
-            </TabsContent>
+            </div>
+          ) : null}
+        </TabsContent>
 
-            {/* Expiring Items Tab */}
-            <TabsContent value="swipe" className="p-6">
-              {expiringBatches.length === 0 ? (
-                <Card className="border border-slate-200">
-                  <CardContent className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-                      <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-slate-900">All Clear</h3>
-                    <p className="text-sm text-muted-foreground mt-2 max-w-sm">
-                      No items require attention. All inventory is within safe expiry range.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : currentBatch ? (
-                <div className="space-y-6">
-                  {/* Top Bar - Progress & Stats */}
-                  <div className="flex items-center justify-between gap-6">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-slate-600">Review Progress</span>
-                        <span className="text-sm font-semibold text-slate-900">
-                          {currentSwipeBatchIndex + 1} / {expiringBatches.length}
-                        </span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
-                        <div
-                          className="h-full bg-slate-900 transition-all duration-500"
-                          style={{
-                            width: `${((currentSwipeBatchIndex + 1) / expiringBatches.length) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() =>
-                          setCurrentSwipeBatchIndex(Math.max(0, currentSwipeBatchIndex - 1))
-                        }
-                        disabled={currentSwipeBatchIndex === 0}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() =>
-                          setCurrentSwipeBatchIndex(
-                            Math.min(expiringBatches.length - 1, currentSwipeBatchIndex + 1)
-                          )
-                        }
-                        disabled={currentSwipeBatchIndex === expiringBatches.length - 1}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Main Content */}
-                  <Card className="border border-slate-200 overflow-hidden">
-                    {/* Header with Drug Info */}
-                    <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h2 className="text-2xl font-bold text-slate-900">
-                            {currentBatch.drug?.brandName || 'Unknown Drug'}
-                          </h2>
-                          <p className="text-sm text-slate-500 mt-1">
-                            {currentBatch.drug?.genericName}
-                          </p>
-                          <div className="flex items-center gap-2 mt-3">
-                            <Badge variant="outline" className="font-mono">
-                              {currentBatch.batchNumber}
-                            </Badge>
-                            {currentBatch.shelfLocation && (
-                              <Badge variant="secondary">
-                                {currentBatch.shelfLocation.shelfCode} • Slot{' '}
-                                {currentBatch.slotPosition}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          {getExpiryStatusBadge(currentBatch.daysUntilExpiry ?? 0)}
-                          <p className="text-xs text-slate-500 mt-2">
-                            {(currentBatch.daysUntilExpiry ?? 0) < 0
-                              ? `Expired ${Math.abs(currentBatch.daysUntilExpiry ?? 0)} days ago`
-                              : `Expires in ${currentBatch.daysUntilExpiry ?? 0} days`}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Info Grid */}
-                    <div className="p-6">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Quantity
-                          </p>
-                          <p className="text-2xl font-bold text-slate-900 mt-1">
-                            {currentBatch.quantity}
-                          </p>
-                          <p className="text-xs text-slate-500">units</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Unit Price
-                          </p>
-                          <p className="text-2xl font-bold text-slate-900 mt-1">
-                            {formatCurrency(currentBatch.sellPrice)}
-                          </p>
-                          <p className="text-xs text-slate-500">per unit</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Total Value
-                          </p>
-                          <p className="text-2xl font-bold text-slate-900 mt-1">
-                            {formatCurrency(currentBatch.sellPrice * currentBatch.quantity)}
-                          </p>
-                          <p className="text-xs text-slate-500">at risk</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Expiry Date
-                          </p>
-                          <p className="text-2xl font-bold text-slate-900 mt-1">
-                            {formatDate(new Date(currentBatch.expiryDate))}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {currentBatch.shelfLocation?.shelfName || 'Unknown shelf'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Supplier Info */}
-                      {currentBatch.supplier && (
-                        <div className="mt-6 pt-6 border-t border-slate-100">
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                            Supplier
-                          </p>
-                          <p className="text-sm font-medium text-slate-900">
-                            {currentBatch.supplier.name}
-                          </p>
-                          {(currentBatch.supplier as Supplier).email && (
-                            <p className="text-xs text-slate-500">
-                              {(currentBatch.supplier as Supplier).email}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="p-6 bg-slate-50 border-t border-slate-100">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-4">
-                        Take Action
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <Button
-                          onClick={() => handleSwipe('RETURN_TO_VENDOR')}
-                          disabled={isProcessingAction}
-                          variant="outline"
-                          className="h-auto py-4 flex-col gap-2 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700"
-                        >
-                          <ArrowRight className="h-5 w-5" />
-                          <span className="font-semibold">Return to Vendor</span>
-                          <span className="text-xs text-muted-foreground">
-                            Get refund or credit
-                          </span>
-                        </Button>
-
-                        <Button
-                          onClick={() => handleSwipe('DISCOUNT')}
-                          disabled={isProcessingAction}
-                          variant="outline"
-                          className="h-auto py-4 flex-col gap-2 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700"
-                        >
-                          <Percent className="h-5 w-5" />
-                          <span className="font-semibold">Discount & Push</span>
-                          <span className="text-xs text-muted-foreground">
-                            Reduce price to sell
-                          </span>
-                        </Button>
-
-                        <Button
-                          onClick={() => handleSwipe('DISPOSE')}
-                          disabled={isProcessingAction}
-                          variant="outline"
-                          className="h-auto py-4 flex-col gap-2 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                          <span className="font-semibold">Dispose</span>
-                          <span className="text-xs text-muted-foreground">Remove permanently</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* Queue Preview */}
-                  {expiringBatches.length > 1 && (
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">
-                        Up Next
-                      </p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                        {expiringBatches
-                          .slice(currentSwipeBatchIndex + 1, currentSwipeBatchIndex + 7)
-                          .map((batch, idx) => (
-                            <Card
-                              key={batch.id}
-                              className="p-3 cursor-pointer hover:border-slate-300 transition-colors"
-                              onClick={() =>
-                                setCurrentSwipeBatchIndex(currentSwipeBatchIndex + idx + 1)
-                              }
-                            >
-                              <p className="text-sm font-medium text-slate-900 truncate">
-                                {batch.drug?.brandName || 'Unknown'}
-                              </p>
-                              <p className="text-xs text-slate-500 truncate">{batch.batchNumber}</p>
-                              <div className="mt-2">
-                                {getExpiryStatusBadge(batch.daysUntilExpiry)}
-                              </div>
-                            </Card>
-                          ))}
-                      </div>
-                    </div>
-                  )}
+        {/* Alerts Tab */}
+        <TabsContent value="alerts" className="space-y-4">
+          {alerts.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <div className="rounded-full bg-emerald-100 p-4 mb-4">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-600" />
                 </div>
-              ) : null}
-            </TabsContent>
-
-            {/* Alerts Tab */}
-            <TabsContent value="alerts" className="p-8 pt-6">
-              {alerts.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <CheckCircle2 className="mb-4 h-16 w-16 text-emerald-500" />
-                    <h3 className="text-lg font-semibold">No Incorrect Pick Alerts</h3>
-                    <p className="text-sm text-muted-foreground">All picks are correct</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                alerts.map((alert) => (
-                  <Card key={alert.id} className="border-l-4 border-l-red-500">
-                    <CardContent className="flex items-start justify-between p-6">
+                <h3 className="text-lg font-semibold mb-2">No Incorrect Pick Alerts</h3>
+                <p className="text-sm text-muted-foreground">All picks are following FEFO correctly</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {alerts.map((alert) => (
+                <Card key={alert.id} className="border-l-4 border-l-destructive">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
-                        <AlertTriangle className="mt-1 h-5 w-5 text-red-500" />
-                        <div>
+                        <div className="rounded-full bg-destructive/10 p-2">
+                          <AlertTriangle className="h-5 w-5 text-destructive" />
+                        </div>
+                        <div className="space-y-1">
                           <h4 className="font-semibold">Incorrect Pick Detected</h4>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Shelf:{' '}
-                            <span className="font-medium">{alert.shelfLocation?.shelfCode}</span>
+                          <p className="text-sm text-muted-foreground">
+                            Shelf: <span className="font-medium text-foreground">{alert.shelfLocation?.shelfCode}</span>
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {formatDate(new Date(alert.createdAt))}
@@ -1250,22 +1138,23 @@ export default function SmartShelfPage() {
                         </div>
                       </div>
                       <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => {
                           setCurrentAlert(alert);
                           setShowAlertModal(true);
                         }}
-                        variant="outline"
-                        size="sm"
                       >
                         Review
                       </Button>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
         {/* Add Shelf Dialog */}
         <Dialog open={showAddShelfDialog} onOpenChange={setShowAddShelfDialog}>
@@ -1531,49 +1420,45 @@ export default function SmartShelfPage() {
 
         {/* View Shelf Details Sheet */}
         <Sheet open={showViewShelfDialog} onOpenChange={setShowViewShelfDialog}>
-          <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
-            <SheetHeader className="px-6">
-              <SheetTitle>Shelf Details</SheetTitle>
+          <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto p-0">
+            <SheetHeader className="px-6  pb-4 border-b">
+              {/* <SheetTitle className="text-2xl">Shelf Details</SheetTitle>
               <SheetDescription>
                 View and manage inventory layout for this shelf location
-              </SheetDescription>
+              </SheetDescription> */}
             </SheetHeader>
             {viewingShelf && (
-              <div className="space-y-6">
-                {/* Header */}
-                {/* <div className="px-6">
-                <div className="relative bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50 rounded-2xl p-6 border border-slate-200/60">
-                  <div className="flex items-center gap-5">
-                    <div className="relative">
-                      <div className="h-20 w-20 flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold text-2xl shadow-2xl shadow-blue-600/40">
-                        {viewingShelf.shelfCode}
-                      </div>
-                      {viewingShelf.status === 'ACTIVE' && (
-                        <div className="absolute -top-2 -right-2">
-                          <div className="relative">
-                            <div className="h-5 w-5 rounded-full bg-emerald-500 border-2 border-white shadow-lg"></div>
-                            <div className="absolute inset-0 h-5 w-5 rounded-full bg-emerald-400 animate-ping"></div>
-                          </div>
+              <ScrollArea className="h-[calc(100vh-140px)]">
+                <div className="p-6 space-y-6">
+                  {/* Shelf Info Card */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="text-xl">{viewingShelf.shelfName}</CardTitle>
+                          <CardDescription className="flex items-center gap-2">
+                            <Badge variant="outline">{viewingShelf.shelfCode}</Badge>
+                            <span>•</span>
+                            <span>{viewingShelf.row} × {viewingShelf.column} Configuration</span>
+                            <span>•</span>
+                            <span>{viewingShelf.capacity} Total Slots</span>
+                          </CardDescription>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-2xl font-bold text-slate-900 mb-1">{viewingShelf.shelfName}</h2>
-                      <div className="flex items-center gap-3 text-sm text-slate-600">
-                        <div className="flex items-center gap-1.5 font-semibold">
-                          <Grid3x3 className="h-4 w-4" />
-                          <span>{viewingShelf.row} × {viewingShelf.column} Configuration</span>
-                        </div>
-                        <span className="text-slate-400">•</span>
-                        <span className="font-semibold">{viewingShelf.capacity} Total Slots</span>
+                        {viewingShelf.status === 'ACTIVE' && (
+                          <Badge className="gap-1">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                            </span>
+                            Active
+                          </Badge>
+                        )}
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div> */}
+                    </CardHeader>
+                  </Card>
 
-                {/* Shelf Layout */}
-                {viewingShelf.row && viewingShelf.column && (
+                  {/* Shelf Layout */}
+                 {viewingShelf.row && viewingShelf.column && (
                   <div className="mx-6">
                     <div className="bg-white rounded-2xl border border-slate-200/60 shadow-lg overflow-hidden">
                       <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200/60 px-6 py-4">
@@ -1819,35 +1704,34 @@ export default function SmartShelfPage() {
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="mx-6 grid grid-cols-2 gap-4">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-14 border-2 border-slate-300 hover:border-blue-400 hover:bg-blue-50 font-semibold transition-all duration-300 shadow-sm hover:shadow-md"
-                    onClick={() => {
-                      openEditShelf(viewingShelf);
-                      setShowViewShelfDialog(false);
-                    }}
-                  >
-                    <Edit className="mr-2 h-5 w-5" />
-                    Edit Shelf Configuration
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="destructive"
-                    className="h-14 font-semibold shadow-lg shadow-red-600/30 hover:shadow-xl hover:shadow-red-600/40 transition-all duration-300"
-                    onClick={() => {
-                      setShelfToDelete(viewingShelf);
-                      setShowDeleteConfirm(true);
-                      setShowViewShelfDialog(false);
-                    }}
-                  >
-                    <Trash2 className="mr-2 h-5 w-5" />
-                    Delete Shelf
-                  </Button>
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      className="flex-1 gap-2"
+                      onClick={() => {
+                        openEditShelf(viewingShelf);
+                        setShowViewShelfDialog(false);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit Shelf
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1 gap-2"
+                      onClick={() => {
+                        setShelfToDelete(viewingShelf);
+                        setShowDeleteConfirm(true);
+                        setShowViewShelfDialog(false);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Shelf
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              </ScrollArea>
             )}
           </SheetContent>
         </Sheet>
@@ -2592,13 +2476,12 @@ export default function SmartShelfPage() {
 
         {/* Toast Notification */}
         {toast.visible && (
-          <div
-            className={`fixed bottom-6 right-6 z-[100] px-5 py-3 rounded-xl shadow-2xl text-white transition-all duration-300 flex items-center gap-3 ${
-              toast.type === 'error'
-                ? 'bg-gradient-to-r from-red-500 to-red-600'
-                : 'bg-gradient-to-r from-emerald-500 to-emerald-600'
-            }`}
-          >
+          <div className={cn(
+            "fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg transition-all",
+            toast.type === 'error' 
+              ? 'bg-destructive text-destructive-foreground' 
+              : 'bg-primary text-primary-foreground'
+          )}>
             {toast.type === 'success' ? (
               <CheckCircle2 className="h-5 w-5" />
             ) : (
@@ -2607,7 +2490,6 @@ export default function SmartShelfPage() {
             <span className="font-medium">{toast.message}</span>
           </div>
         )}
-      </div>
     </div>
   );
 }
