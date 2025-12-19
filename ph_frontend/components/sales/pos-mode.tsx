@@ -9,6 +9,15 @@ import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Search,
   X,
   AlertCircle,
@@ -29,6 +38,7 @@ import {
   Mail,
   MapPin,
   Check,
+  ShieldAlert,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import type { InventoryBatch, Customer } from '@/lib/types';
@@ -84,6 +94,14 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
   // Cash payment state
   const [cashReceived, setCashReceived] = useState(0);
   const [showCashInput, setShowCashInput] = useState(false);
+
+  // FEFO Alert state
+  const [showFefoAlert, setShowFefoAlert] = useState(false);
+  const [fefoAlertData, setFefoAlertData] = useState<{
+    batchNumber: string;
+    expiryDate: string;
+    remainingQty: number;
+  } | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const customerSearchRef = useRef<HTMLInputElement>(null);
@@ -247,6 +265,29 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
       return;
     }
 
+    // FEFO Check: Ensure first-expiring batch is selected
+    const firstExpiringBatch = getFirstExpiringBatchForDrug(batch.drugId);
+    if (firstExpiringBatch && firstExpiringBatch.id !== batch.id) {
+      // Check if the first-expiring batch is already fully added to cart
+      const firstBatchInCart = cart.find((i) => i.batchId === firstExpiringBatch.id);
+      const remainingFirstBatchQty = firstExpiringBatch.quantity - (firstBatchInCart?.quantity || 0);
+      
+      if (remainingFirstBatchQty > 0) {
+        // Show FEFO Alert Dialog
+        setFefoAlertData({
+          batchNumber: firstExpiringBatch.batchNumber,
+          expiryDate: new Date(firstExpiringBatch.expiryDate).toLocaleDateString('en-IN', { 
+            day: '2-digit', 
+            month: 'short', 
+            year: 'numeric' 
+          }),
+          remainingQty: remainingFirstBatchQty,
+        });
+        setShowFefoAlert(true);
+        return;
+      }
+    }
+
     const existingItem = cart.find((i) => i.batchId === batch.id);
     if (existingItem) {
       if (existingItem.quantity + quantity > batch.quantity) {
@@ -317,6 +358,20 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
+  };
+
+  // FEFO: Get the first-expiring batch for a given drug (excluding expired batches)
+  const getFirstExpiringBatchForDrug = (drugId: string): InventoryBatch | null => {
+    const drugBatches = batches
+      .filter((b) => b.drugId === drugId && b.quantity > 0 && getDaysUntilExpiry(b.expiryDate) > 0)
+      .sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
+    return drugBatches.length > 0 ? drugBatches[0] : null;
+  };
+
+  // Check if a batch is the first-expiring batch for its drug
+  const isFirstExpiringBatch = (batch: InventoryBatch): boolean => {
+    const firstExpiring = getFirstExpiringBatchForDrug(batch.drugId);
+    return firstExpiring?.id === batch.id;
   };
 
   const handleSelectCustomer = (customer: Customer) => {
@@ -622,19 +677,57 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
                   const daysUntilExpiry = getDaysUntilExpiry(batch.expiryDate);
                   const isExpiringSoon = daysUntilExpiry <= 90 && daysUntilExpiry > 0;
                   const isExpired = daysUntilExpiry <= 0;
+                  const isFirstExpiring = isFirstExpiringBatch(batch);
+                  
+                  // Check if this batch can be selected (FEFO compliance)
+                  const firstExpiringBatch = getFirstExpiringBatchForDrug(batch.drugId);
+                  const firstBatchInCart = firstExpiringBatch ? cart.find((i) => i.batchId === firstExpiringBatch.id) : null;
+                  const remainingFirstBatchQty = firstExpiringBatch ? firstExpiringBatch.quantity - (firstBatchInCart?.quantity || 0) : 0;
+                  const canSelect = isFirstExpiring || remainingFirstBatchQty <= 0;
 
                   return (
                     <button
                       key={batch.id}
                       onClick={() => addToCart(batch, 1)}
-                      className="bg-white border-2 border-gray-200 rounded-xl p-5 text-left hover:border-emerald-500 hover:shadow-xl transition-all group relative overflow-hidden"
+                      className={cn(
+                        "bg-white border-2 rounded-xl p-5 text-left transition-all group relative overflow-hidden",
+                        isFirstExpiring 
+                          ? "border-emerald-400 ring-2 ring-emerald-100 hover:border-emerald-500 hover:shadow-xl" 
+                          : canSelect
+                            ? "border-gray-200 hover:border-emerald-500 hover:shadow-xl"
+                            : "border-gray-200 opacity-60 cursor-not-allowed"
+                      )}
                     >
                       {/* Hover Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className={cn(
+                        "absolute inset-0 bg-gradient-to-br to-transparent opacity-0 transition-opacity",
+                        canSelect ? "from-emerald-50 group-hover:opacity-100" : "from-gray-50"
+                      )} />
+
+                      {/* FEFO Badge */}
+                      {isFirstExpiring && !isExpired && (
+                        <div className="absolute -top-1 -right-1 z-10">
+                          <Badge className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 shadow-md">
+                            SELL FIRST
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {/* Locked Badge for non-first batches */}
+                      {!isFirstExpiring && !canSelect && (
+                        <div className="absolute -top-1 -right-1 z-10">
+                          <Badge variant="secondary" className="bg-gray-400 text-white text-[10px] px-2 py-0.5 shadow-md">
+                            FEFO LOCKED
+                          </Badge>
+                        </div>
+                      )}
 
                       <div className="relative">
                         <div className="flex justify-between items-start mb-3">
-                          <h3 className="font-bold text-gray-900 group-hover:text-emerald-700 line-clamp-2 text-base leading-tight">
+                          <h3 className={cn(
+                            "font-bold line-clamp-2 text-base leading-tight",
+                            canSelect ? "text-gray-900 group-hover:text-emerald-700" : "text-gray-500"
+                          )}>
                             {batch.drug?.brandName || 'Unknown'}
                           </h3>
                           {(isExpiringSoon || isExpired) && (
@@ -1036,26 +1129,26 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
                 <Button
                   onClick={() => handleQuickPay('CASH')}
                   disabled={cart.length === 0 || isSubmitting || paymentProcessing}
-                  className="h-20 flex flex-col items-center justify-center bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg hover:shadow-xl transition-all"
+                  className="h-24 flex flex-col items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-700 shadow-md hover:shadow-lg transition-all border border-blue-200"
                 >
-                  <Banknote className="h-7 w-7 mb-1.5" />
-                  <span className="text-sm font-bold">Cash</span>
+                  <Banknote className="h-10 w-10 mb-2 stroke-[2.5]" />
+                  <span className="text-2xl font-bold">Cash</span>
                 </Button>
                 <Button
                   onClick={() => handleQuickPay('UPI')}
                   disabled={cart.length === 0 || isSubmitting || paymentProcessing}
-                  className="h-20 flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all"
+                  className="h-24 flex flex-col items-center justify-center bg-green-100 hover:bg-green-200 text-green-700 shadow-md hover:shadow-lg transition-all border border-green-200"
                 >
-                  <Smartphone className="h-7 w-7 mb-1.5" />
-                  <span className="text-sm font-bold">UPI</span>
+                  <Smartphone className="h-6xl w-6xl mb-2 stroke-[2.5]" />
+                  <span className="text-2xl font-bold">UPI</span>
                 </Button>
                 <Button
                   onClick={() => handleQuickPay('CARD')}
                   disabled={cart.length === 0 || isSubmitting || paymentProcessing}
-                  className="h-20 flex flex-col items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all"
+                  className="h-24 flex flex-col items-center justify-center bg-purple-100 hover:bg-purple-200 text-purple-700 shadow-md hover:shadow-lg transition-all border border-purple-200"
                 >
-                  <CreditCard className="h-7 w-7 mb-1.5" />
-                  <span className="text-sm font-bold">Card</span>
+                  <CreditCard className="h-10 w-10 mb-2 stroke-[2.5]" />
+                  <span className="text-2xl font-bold">Card</span>
                 </Button>
               </div>
             ) : (
@@ -1097,6 +1190,58 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
           </div>
         </div>
       </div>
+
+      {/* FEFO Compliance Alert Dialog */}
+      <AlertDialog open={showFefoAlert} onOpenChange={setShowFefoAlert}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100">
+                <ShieldAlert className="h-6 w-6 text-amber-600" />
+              </div>
+              <AlertDialogTitle className="text-xl font-bold text-gray-900">
+                FEFO Compliance Required
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-left">
+                <p className="text-gray-600">
+                  To maintain proper inventory rotation and regulatory compliance, you must sell the earliest expiring batch first.
+                </p>
+                
+                {fefoAlertData && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Required Batch:</span>
+                      <span className="font-bold text-gray-900">{fefoAlertData.batchNumber}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Expiry Date:</span>
+                      <span className="font-bold text-amber-700">{fefoAlertData.expiryDate}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Available Quantity:</span>
+                      <span className="font-bold text-emerald-600">{fefoAlertData.remainingQty} units</span>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-sm text-gray-500 italic">
+                  Please select the batch marked &quot;SELL FIRST&quot; before selecting other batches of the same product.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction 
+              onClick={() => setShowFefoAlert(false)}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+            >
+              I Understand
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
