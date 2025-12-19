@@ -54,12 +54,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Icons
 import {
@@ -722,7 +717,9 @@ export default function SmartShelfPage() {
       {/* Header Section */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Smart Shelf Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            Smart Shelf Management
+          </h1>
           <p className="text-muted-foreground mt-1">
             Intelligent inventory tracking with real-time analytics and FEFO compliance
           </p>
@@ -755,9 +752,7 @@ export default function SmartShelfPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{analytics.totalShelves}</div>
-              <p className="text-xs text-muted-foreground">
-                {analytics.activeShelves} active
-              </p>
+              <p className="text-xs text-muted-foreground">{analytics.activeShelves} active</p>
             </CardContent>
           </Card>
 
@@ -768,9 +763,7 @@ export default function SmartShelfPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{analytics.totalBatchesOnShelf}</div>
-              <p className="text-xs text-muted-foreground">
-                Across all locations
-              </p>
+              <p className="text-xs text-muted-foreground">Across all locations</p>
             </CardContent>
           </Card>
 
@@ -781,9 +774,7 @@ export default function SmartShelfPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">{analytics.expiringCount}</div>
-              <p className="text-xs text-muted-foreground">
-                Within 30 days
-              </p>
+              <p className="text-xs text-muted-foreground">Within 30 days</p>
             </CardContent>
           </Card>
 
@@ -794,9 +785,7 @@ export default function SmartShelfPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{analytics.incorrectPickCount}</div>
-              <p className="text-xs text-muted-foreground">
-                Violations pending
-              </p>
+              <p className="text-xs text-muted-foreground">Violations pending</p>
             </CardContent>
           </Card>
 
@@ -819,7 +808,7 @@ export default function SmartShelfPage() {
 
       {/* Main Content Section */}
       <Tabs defaultValue="shelves" className="space-y-6 mt-12">
-        <TabsList className='gap-2'>
+        <TabsList className="gap-2">
           <TabsTrigger value="shelves" className="gap-2">
             <Grid3x3 className="h-4 w-4" />
             All Shelves
@@ -854,7 +843,8 @@ export default function SmartShelfPage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">No Shelves Created Yet</h3>
                 <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
-                  Create your first shelf location to start tracking inventory with intelligent organization
+                  Create your first shelf location to start tracking inventory with intelligent
+                  organization
                 </p>
                 <Button onClick={() => setShowAddShelfDialog(true)} className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -1085,7 +1075,9 @@ export default function SmartShelfPage() {
                         <Card
                           key={batch.id}
                           className="cursor-pointer hover:border-primary transition-colors"
-                          onClick={() => setCurrentSwipeBatchIndex(currentSwipeBatchIndex + idx + 1)}
+                          onClick={() =>
+                            setCurrentSwipeBatchIndex(currentSwipeBatchIndex + idx + 1)
+                          }
                         >
                           <CardContent className="p-3 space-y-2">
                             <p className="text-sm font-medium truncate">
@@ -1114,7 +1106,9 @@ export default function SmartShelfPage() {
                   <CheckCircle2 className="h-8 w-8 text-emerald-600" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">No Incorrect Pick Alerts</h3>
-                <p className="text-sm text-muted-foreground">All picks are following FEFO correctly</p>
+                <p className="text-sm text-muted-foreground">
+                  All picks are following FEFO correctly
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -1130,7 +1124,10 @@ export default function SmartShelfPage() {
                         <div className="space-y-1">
                           <h4 className="font-semibold">Incorrect Pick Detected</h4>
                           <p className="text-sm text-muted-foreground">
-                            Shelf: <span className="font-medium text-foreground">{alert.shelfLocation?.shelfCode}</span>
+                            Shelf:{' '}
+                            <span className="font-medium text-foreground">
+                              {alert.shelfLocation?.shelfCode}
+                            </span>
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {formatDate(new Date(alert.createdAt))}
@@ -1156,309 +1153,311 @@ export default function SmartShelfPage() {
         </TabsContent>
       </Tabs>
 
-        {/* Add Shelf Dialog */}
-        <Dialog open={showAddShelfDialog} onOpenChange={setShowAddShelfDialog}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add New Shelf</DialogTitle>
-              <DialogDescription>
-                Create a new shelf location with capacity and zone information
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="shelfCode">Shelf Code*</Label>
-                  <Input
-                    id="shelfCode"
-                    placeholder="e.g., A1"
-                    value={formData.shelfCode}
-                    onChange={(e) => setFormData({ ...formData, shelfCode: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shelfName">Shelf Name*</Label>
-                  <Input
-                    id="shelfName"
-                    placeholder="e.g., Main Storage"
-                    value={formData.shelfName}
-                    onChange={(e) => setFormData({ ...formData, shelfName: e.target.value })}
-                  />
-                </div>
-              </div>
-
+      {/* Add Shelf Dialog */}
+      <Dialog open={showAddShelfDialog} onOpenChange={setShowAddShelfDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add New Shelf</DialogTitle>
+            <DialogDescription>
+              Create a new shelf location with capacity and zone information
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="zone">Zone</Label>
-                <Select
-                  value={formData.zone}
-                  onValueChange={(value) => setFormData({ ...formData, zone: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="General">General</SelectItem>
-                    <SelectItem value="Refrigerated">Refrigerated</SelectItem>
-                    <SelectItem value="Controlled">Controlled Substances</SelectItem>
-                    <SelectItem value="Hazardous">Hazardous Materials</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="shelfCode">Shelf Code*</Label>
+                <Input
+                  id="shelfCode"
+                  placeholder="e.g., A1"
+                  value={formData.shelfCode}
+                  onChange={(e) => setFormData({ ...formData, shelfCode: e.target.value })}
+                />
               </div>
-
-              {formData.zone === 'Refrigerated' && (
-                <div className="space-y-2">
-                  <Label htmlFor="temperature">Temperature (e.g., 2-8°C)</Label>
-                  <Input
-                    id="temperature"
-                    placeholder="e.g., 4°C"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="rows">Rows</Label>
-                  <Input
-                    id="rows"
-                    type="number"
-                    min="1"
-                    value={formData.rows}
-                    onChange={(e) =>
-                      setFormData({ ...formData, rows: parseInt(e.target.value) || 1 })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="columns">Columns</Label>
-                  <Input
-                    id="columns"
-                    type="number"
-                    min="1"
-                    value={formData.columns}
-                    onChange={(e) =>
-                      setFormData({ ...formData, columns: parseInt(e.target.value) || 1 })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="capacity">Total Capacity</Label>
-                  <Input
-                    id="capacity"
-                    type="number"
-                    min="1"
-                    value={formData.capacity}
-                    onChange={(e) =>
-                      setFormData({ ...formData, capacity: parseInt(e.target.value) || 1 })
-                    }
-                  />
-                </div>
-              </div>
-
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="INACTIVE">Inactive</SelectItem>
-                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="shelfName">Shelf Name*</Label>
+                <Input
+                  id="shelfName"
+                  placeholder="e.g., Main Storage"
+                  value={formData.shelfName}
+                  onChange={(e) => setFormData({ ...formData, shelfName: e.target.value })}
+                />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddShelfDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateShelf} disabled={isSaving}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Shelf
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
-        {/* Edit Shelf Dialog */}
-        <Dialog open={showEditShelfDialog} onOpenChange={setShowEditShelfDialog}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Edit Shelf</DialogTitle>
-              <DialogDescription>Update shelf location information and settings</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-shelfCode">Shelf Code*</Label>
-                  <Input
-                    id="edit-shelfCode"
-                    placeholder="e.g., A1"
-                    value={formData.shelfCode}
-                    onChange={(e) => setFormData({ ...formData, shelfCode: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-shelfName">Shelf Name*</Label>
-                  <Input
-                    id="edit-shelfName"
-                    placeholder="e.g., Main Storage"
-                    value={formData.shelfName}
-                    onChange={(e) => setFormData({ ...formData, shelfName: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-zone">Zone</Label>
-                <Select
-                  value={formData.zone}
-                  onValueChange={(value) => setFormData({ ...formData, zone: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="General">General</SelectItem>
-                    <SelectItem value="Refrigerated">Refrigerated</SelectItem>
-                    <SelectItem value="Controlled">Controlled Substances</SelectItem>
-                    <SelectItem value="Hazardous">Hazardous Materials</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {formData.zone === 'Refrigerated' && (
-                <div className="space-y-2">
-                  <Label htmlFor="edit-temperature">Temperature (e.g., 2-8°C)</Label>
-                  <Input
-                    id="edit-temperature"
-                    placeholder="e.g., 4°C"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-rows">Rows</Label>
-                  <Input
-                    id="edit-rows"
-                    type="number"
-                    min="1"
-                    value={formData.rows}
-                    onChange={(e) =>
-                      setFormData({ ...formData, rows: parseInt(e.target.value) || 1 })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-columns">Columns</Label>
-                  <Input
-                    id="edit-columns"
-                    type="number"
-                    min="1"
-                    value={formData.columns}
-                    onChange={(e) =>
-                      setFormData({ ...formData, columns: parseInt(e.target.value) || 1 })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-capacity">Total Capacity</Label>
-                  <Input
-                    id="edit-capacity"
-                    type="number"
-                    min="1"
-                    value={formData.capacity}
-                    onChange={(e) =>
-                      setFormData({ ...formData, capacity: parseInt(e.target.value) || 1 })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="INACTIVE">Inactive</SelectItem>
-                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowEditShelfDialog(false);
-                  resetForm();
-                }}
+            <div className="space-y-2">
+              <Label htmlFor="zone">Zone</Label>
+              <Select
+                value={formData.zone}
+                onValueChange={(value) => setFormData({ ...formData, zone: value })}
               >
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateShelf} disabled={isSaving}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Update Shelf
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="General">General</SelectItem>
+                  <SelectItem value="Refrigerated">Refrigerated</SelectItem>
+                  <SelectItem value="Controlled">Controlled Substances</SelectItem>
+                  <SelectItem value="Hazardous">Hazardous Materials</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* View Shelf Details Sheet */}
-        <Sheet open={showViewShelfDialog} onOpenChange={setShowViewShelfDialog}>
-          <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto p-0">
-            <SheetHeader className="px-6 pb-4 border-b">
-              <SheetTitle className="text-2xl">Shelf Details</SheetTitle>
-              <SheetDescription>
-                View and manage inventory layout for this shelf location
-              </SheetDescription>
-            </SheetHeader>
-            {viewingShelf && (
-              <ScrollArea className="h-[calc(100vh-140px)]">
-                <div className="p-6 space-y-6">
-                  {/* Shelf Info Card */}
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <CardTitle className="text-xl">{viewingShelf.shelfName}</CardTitle>
-                          <CardDescription className="flex items-center gap-2">
-                            <Badge variant="outline">{viewingShelf.shelfCode}</Badge>
-                            <span>•</span>
-                            <span>{viewingShelf.row} × {viewingShelf.column} Configuration</span>
-                            <span>•</span>
-                            <span>{viewingShelf.capacity} Total Slots</span>
-                          </CardDescription>
-                        </div>
-                        {viewingShelf.status === 'ACTIVE' && (
-                          <Badge className="gap-1">
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                            </span>
-                            Active
-                          </Badge>
-                        )}
+            {formData.zone === 'Refrigerated' && (
+              <div className="space-y-2">
+                <Label htmlFor="temperature">Temperature (e.g., 2-8°C)</Label>
+                <Input
+                  id="temperature"
+                  placeholder="e.g., 4°C"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="rows">Rows</Label>
+                <Input
+                  id="rows"
+                  type="number"
+                  min="1"
+                  value={formData.rows}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rows: parseInt(e.target.value) || 1 })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="columns">Columns</Label>
+                <Input
+                  id="columns"
+                  type="number"
+                  min="1"
+                  value={formData.columns}
+                  onChange={(e) =>
+                    setFormData({ ...formData, columns: parseInt(e.target.value) || 1 })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Total Capacity</Label>
+                <Input
+                  id="capacity"
+                  type="number"
+                  min="1"
+                  value={formData.capacity}
+                  onChange={(e) =>
+                    setFormData({ ...formData, capacity: parseInt(e.target.value) || 1 })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddShelfDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateShelf} disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Shelf
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Shelf Dialog */}
+      <Dialog open={showEditShelfDialog} onOpenChange={setShowEditShelfDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Shelf</DialogTitle>
+            <DialogDescription>Update shelf location information and settings</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-shelfCode">Shelf Code*</Label>
+                <Input
+                  id="edit-shelfCode"
+                  placeholder="e.g., A1"
+                  value={formData.shelfCode}
+                  onChange={(e) => setFormData({ ...formData, shelfCode: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-shelfName">Shelf Name*</Label>
+                <Input
+                  id="edit-shelfName"
+                  placeholder="e.g., Main Storage"
+                  value={formData.shelfName}
+                  onChange={(e) => setFormData({ ...formData, shelfName: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-zone">Zone</Label>
+              <Select
+                value={formData.zone}
+                onValueChange={(value) => setFormData({ ...formData, zone: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="General">General</SelectItem>
+                  <SelectItem value="Refrigerated">Refrigerated</SelectItem>
+                  <SelectItem value="Controlled">Controlled Substances</SelectItem>
+                  <SelectItem value="Hazardous">Hazardous Materials</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.zone === 'Refrigerated' && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-temperature">Temperature (e.g., 2-8°C)</Label>
+                <Input
+                  id="edit-temperature"
+                  placeholder="e.g., 4°C"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-rows">Rows</Label>
+                <Input
+                  id="edit-rows"
+                  type="number"
+                  min="1"
+                  value={formData.rows}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rows: parseInt(e.target.value) || 1 })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-columns">Columns</Label>
+                <Input
+                  id="edit-columns"
+                  type="number"
+                  min="1"
+                  value={formData.columns}
+                  onChange={(e) =>
+                    setFormData({ ...formData, columns: parseInt(e.target.value) || 1 })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-capacity">Total Capacity</Label>
+                <Input
+                  id="edit-capacity"
+                  type="number"
+                  min="1"
+                  value={formData.capacity}
+                  onChange={(e) =>
+                    setFormData({ ...formData, capacity: parseInt(e.target.value) || 1 })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditShelfDialog(false);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateShelf} disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Update Shelf
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Shelf Details Sheet */}
+      <Sheet open={showViewShelfDialog} onOpenChange={setShowViewShelfDialog}>
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto p-0">
+          <SheetHeader className="px-6 pb-4 border-b">
+            <SheetTitle className="text-2xl">Shelf Details</SheetTitle>
+            <SheetDescription>
+              View and manage inventory layout for this shelf location
+            </SheetDescription>
+          </SheetHeader>
+          {viewingShelf && (
+            <ScrollArea className="h-[calc(100vh-140px)]">
+              <div className="p-6 space-y-6">
+                {/* Shelf Info Card */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-xl">{viewingShelf.shelfName}</CardTitle>
+                        <CardDescription className="flex items-center gap-2">
+                          <Badge variant="outline">{viewingShelf.shelfCode}</Badge>
+                          <span>•</span>
+                          <span>
+                            {viewingShelf.row} × {viewingShelf.column} Configuration
+                          </span>
+                          <span>•</span>
+                          <span>{viewingShelf.capacity} Total Slots</span>
+                        </CardDescription>
                       </div>
-                    </CardHeader>
-                  </Card>
+                      {viewingShelf.status === 'ACTIVE' && (
+                        <Badge className="gap-1">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                          </span>
+                          Active
+                        </Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                </Card>
 
-                  {/* Shelf Layout */}
-                 {viewingShelf.row && viewingShelf.column && (
+                {/* Shelf Layout */}
+                {viewingShelf.row && viewingShelf.column && (
                   <div className="mx-6">
                     <div className="bg-white rounded-2xl border border-slate-200/60 shadow-lg overflow-hidden">
                       <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200/60 px-6 py-4">
@@ -1704,792 +1703,787 @@ export default function SmartShelfPage() {
                   </div>
                 )}
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={() => {
-                        openEditShelf(viewingShelf);
-                        setShowViewShelfDialog(false);
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                      Edit Shelf
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      className="flex-1 gap-2"
-                      onClick={() => {
-                        setShelfToDelete(viewingShelf);
-                        setShowDeleteConfirm(true);
-                        setShowViewShelfDialog(false);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete Shelf
-                    </Button>
-                  </div>
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={() => {
+                      openEditShelf(viewingShelf);
+                      setShowViewShelfDialog(false);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit Shelf
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1 gap-2"
+                    onClick={() => {
+                      setShelfToDelete(viewingShelf);
+                      setShowDeleteConfirm(true);
+                      setShowViewShelfDialog(false);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Shelf
+                  </Button>
                 </div>
-              </ScrollArea>
-            )}
-          </SheetContent>
-        </Sheet>
+              </div>
+            </ScrollArea>
+          )}
+        </SheetContent>
+      </Sheet>
 
-        {/* Delete Confirmation */}
-        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Shelf</AlertDialogTitle>
-              <AlertDialogDescription asChild>
-                <div className="space-y-3">
-                  <p>
-                    Are you sure you want to delete shelf{' '}
-                    <span className="font-semibold">&quot;{shelfToDelete?.shelfCode}&quot;</span>?
-                  </p>
-                  {shelfToDelete && (shelfToDelete.currentStock || 0) > 0 && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-amber-800 text-sm font-medium">
-                        ⚠️ This shelf contains{' '}
-                        <span className="font-bold">{shelfToDelete.currentStock} batch(es)</span>.
-                      </p>
-                      <p className="text-amber-700 text-xs mt-1">
-                        You can either move the batches first, or force delete to remove everything.
-                      </p>
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
-                </div>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="gap-2">
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              {shelfToDelete && (shelfToDelete.currentStock || 0) > 0 ? (
-                <AlertDialogAction
-                  onClick={() => handleDeleteShelf(true)}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Force Delete All
-                </AlertDialogAction>
-              ) : (
-                <AlertDialogAction
-                  onClick={() => handleDeleteShelf(false)}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
-              )}
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* Alert Modal */}
-        <AlertDialog open={showAlertModal} onOpenChange={setShowAlertModal}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Incorrect Pick Alert</AlertDialogTitle>
-              <AlertDialogDescription>
-                {currentAlert && (
-                  <div className="space-y-2 mt-2">
-                    <p>Shelf: {currentAlert.shelfLocation?.shelfCode}</p>
-                    <p>Time: {formatDate(new Date(currentAlert.createdAt))}</p>
+      {/* Delete Confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Shelf</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Are you sure you want to delete shelf{' '}
+                  <span className="font-semibold">&quot;{shelfToDelete?.shelfCode}&quot;</span>?
+                </p>
+                {shelfToDelete && (shelfToDelete.currentStock || 0) > 0 && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-amber-800 text-sm font-medium">
+                      ⚠️ This shelf contains{' '}
+                      <span className="font-bold">{shelfToDelete.currentStock} batch(es)</span>.
+                    </p>
+                    <p className="text-amber-700 text-xs mt-1">
+                      You can either move the batches first, or force delete to remove everything.
+                    </p>
                   </div>
                 )}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            {shelfToDelete && (shelfToDelete.currentStock || 0) > 0 ? (
               <AlertDialogAction
-                onClick={() => currentAlert && handleAcknowledgeAlert(currentAlert.id)}
+                onClick={() => handleDeleteShelf(true)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Acknowledge
+                Force Delete All
               </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            ) : (
+              <AlertDialogAction
+                onClick={() => handleDeleteShelf(false)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-        {/* Batch Details Dialog */}
-        <Dialog open={showBatchDetailsDialog} onOpenChange={setShowBatchDetailsDialog}>
-          <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="border-b pb-4">
-              <DialogTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Pill className="h-6 w-6 text-primary" />
+      {/* Alert Modal */}
+      <AlertDialog open={showAlertModal} onOpenChange={setShowAlertModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Incorrect Pick Alert</AlertDialogTitle>
+            <AlertDialogDescription>
+              {currentAlert && (
+                <div className="space-y-2 mt-2">
+                  <p>Shelf: {currentAlert.shelfLocation?.shelfCode}</p>
+                  <p>Time: {formatDate(new Date(currentAlert.createdAt))}</p>
                 </div>
-                Medicine & Batch Details
-              </DialogTitle>
-              <DialogDescription>
-                Comprehensive information about this inventory item
-              </DialogDescription>
-            </DialogHeader>
-            {selectedBatch &&
-              (() => {
-                const batchDaysUntilExpiry = selectedBatch.daysUntilExpiry ?? 999;
-                return (
-                  <div className="space-y-5 pt-2">
-                    {/* Medicine Header Card */}
-                    <Card
-                      className={cn(
-                        'border-2 shadow-sm',
-                        batchDaysUntilExpiry < 0
-                          ? 'border-red-500 bg-red-50'
-                          : batchDaysUntilExpiry <= 7
-                            ? 'border-red-400 bg-red-50'
-                            : batchDaysUntilExpiry <= 14
-                              ? 'border-orange-400 bg-orange-50'
-                              : batchDaysUntilExpiry <= 30
-                                ? 'border-amber-400 bg-amber-50'
-                                : 'border-emerald-400 bg-emerald-50'
-                      )}
-                    >
-                      <CardContent className="p-5">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-xl font-bold text-slate-900">
-                                {selectedBatch.drug?.brandName}
-                              </h3>
-                            </div>
-                            <p className="text-sm font-medium text-slate-600">
-                              {selectedBatch.drug?.genericName}
-                            </p>
-                            <div className="flex items-center gap-2 mt-3">
-                              <Badge variant="outline" className="font-mono text-xs">
-                                Batch: {selectedBatch.batchNumber}
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                Slot #{selectedBatch.slotPosition}
-                              </Badge>
-                            </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => currentAlert && handleAcknowledgeAlert(currentAlert.id)}
+            >
+              Acknowledge
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Batch Details Dialog */}
+      <Dialog open={showBatchDetailsDialog} onOpenChange={setShowBatchDetailsDialog}>
+        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Pill className="h-6 w-6 text-primary" />
+              </div>
+              Medicine & Batch Details
+            </DialogTitle>
+            <DialogDescription>
+              Comprehensive information about this inventory item
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBatch &&
+            (() => {
+              const batchDaysUntilExpiry = selectedBatch.daysUntilExpiry ?? 999;
+              return (
+                <div className="space-y-5 pt-2">
+                  {/* Medicine Header Card */}
+                  <Card
+                    className={cn(
+                      'border-2 shadow-sm',
+                      batchDaysUntilExpiry < 0
+                        ? 'border-red-500 bg-red-50'
+                        : batchDaysUntilExpiry <= 7
+                          ? 'border-red-400 bg-red-50'
+                          : batchDaysUntilExpiry <= 14
+                            ? 'border-orange-400 bg-orange-50'
+                            : batchDaysUntilExpiry <= 30
+                              ? 'border-amber-400 bg-amber-50'
+                              : 'border-emerald-400 bg-emerald-50'
+                    )}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-xl font-bold text-slate-900">
+                              {selectedBatch.drug?.brandName}
+                            </h3>
                           </div>
-                          <div className="text-right">
-                            {getExpiryStatusBadge(selectedBatch.daysUntilExpiry)}
+                          <p className="text-sm font-medium text-slate-600">
+                            {selectedBatch.drug?.genericName}
+                          </p>
+                          <div className="flex items-center gap-2 mt-3">
+                            <Badge variant="outline" className="font-mono text-xs">
+                              Batch: {selectedBatch.batchNumber}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              Slot #{selectedBatch.slotPosition}
+                            </Badge>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                        <div className="text-right">
+                          {getExpiryStatusBadge(selectedBatch.daysUntilExpiry)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                    {/* Expiry Information Card */}
-                    <Card className="border shadow-sm">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-primary" />
-                          Expiry Information
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              Expiry Date
-                            </Label>
-                            <p className="font-semibold text-base">
-                              {formatDate(new Date(selectedBatch.expiryDate))}
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              Days Remaining
-                            </Label>
+                  {/* Expiry Information Card */}
+                  <Card className="border shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-primary" />
+                        Expiry Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Expiry Date
+                          </Label>
+                          <p className="font-semibold text-base">
+                            {formatDate(new Date(selectedBatch.expiryDate))}
+                          </p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Days Remaining
+                          </Label>
+                          <p
+                            className={cn(
+                              'font-bold text-xl',
+                              batchDaysUntilExpiry < 0
+                                ? 'text-red-600'
+                                : batchDaysUntilExpiry <= 7
+                                  ? 'text-red-600'
+                                  : batchDaysUntilExpiry <= 14
+                                    ? 'text-orange-600'
+                                    : batchDaysUntilExpiry <= 30
+                                      ? 'text-amber-600'
+                                      : 'text-emerald-600'
+                            )}
+                          >
+                            {batchDaysUntilExpiry < 0
+                              ? `Expired ${Math.abs(batchDaysUntilExpiry)}d ago`
+                              : `${batchDaysUntilExpiry} days`}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Status Alert Box */}
+                      <div
+                        className={cn(
+                          'p-4 rounded-lg border-l-4',
+                          batchDaysUntilExpiry < 0
+                            ? 'bg-red-50 border-red-600'
+                            : batchDaysUntilExpiry <= 7
+                              ? 'bg-red-50 border-red-500'
+                              : batchDaysUntilExpiry <= 14
+                                ? 'bg-orange-50 border-orange-500'
+                                : batchDaysUntilExpiry <= 30
+                                  ? 'bg-amber-50 border-amber-500'
+                                  : 'bg-emerald-50 border-emerald-500'
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle
+                            className={cn(
+                              'h-5 w-5 mt-0.5 flex-shrink-0',
+                              batchDaysUntilExpiry < 0
+                                ? 'text-red-600'
+                                : batchDaysUntilExpiry <= 7
+                                  ? 'text-red-600'
+                                  : batchDaysUntilExpiry <= 14
+                                    ? 'text-orange-600'
+                                    : batchDaysUntilExpiry <= 30
+                                      ? 'text-amber-600'
+                                      : 'text-emerald-600'
+                            )}
+                          />
+                          <div className="space-y-1">
                             <p
                               className={cn(
-                                'font-bold text-xl',
+                                'text-sm font-bold',
                                 batchDaysUntilExpiry < 0
-                                  ? 'text-red-600'
+                                  ? 'text-red-900'
                                   : batchDaysUntilExpiry <= 7
-                                    ? 'text-red-600'
+                                    ? 'text-red-900'
                                     : batchDaysUntilExpiry <= 14
-                                      ? 'text-orange-600'
+                                      ? 'text-orange-900'
                                       : batchDaysUntilExpiry <= 30
-                                        ? 'text-amber-600'
-                                        : 'text-emerald-600'
+                                        ? 'text-amber-900'
+                                        : 'text-emerald-900'
                               )}
                             >
                               {batchDaysUntilExpiry < 0
-                                ? `Expired ${Math.abs(batchDaysUntilExpiry)}d ago`
-                                : `${batchDaysUntilExpiry} days`}
+                                ? 'EXPIRED - IMMEDIATE ACTION REQUIRED'
+                                : batchDaysUntilExpiry <= 7
+                                  ? 'URGENT - EXPIRES WITHIN 7 DAYS'
+                                  : batchDaysUntilExpiry <= 14
+                                    ? 'CRITICAL - EXPIRES WITHIN 14 DAYS'
+                                    : batchDaysUntilExpiry <= 30
+                                      ? 'WARNING - EXPIRES WITHIN 30 DAYS'
+                                      : 'NORMAL - SUFFICIENT TIME BEFORE EXPIRY'}
                             </p>
-                          </div>
-                        </div>
-
-                        {/* Status Alert Box */}
-                        <div
-                          className={cn(
-                            'p-4 rounded-lg border-l-4',
-                            batchDaysUntilExpiry < 0
-                              ? 'bg-red-50 border-red-600'
-                              : batchDaysUntilExpiry <= 7
-                                ? 'bg-red-50 border-red-500'
-                                : batchDaysUntilExpiry <= 14
-                                  ? 'bg-orange-50 border-orange-500'
-                                  : batchDaysUntilExpiry <= 30
-                                    ? 'bg-amber-50 border-amber-500'
-                                    : 'bg-emerald-50 border-emerald-500'
-                          )}
-                        >
-                          <div className="flex items-start gap-3">
-                            <AlertTriangle
+                            <p
                               className={cn(
-                                'h-5 w-5 mt-0.5 flex-shrink-0',
+                                'text-xs leading-relaxed',
                                 batchDaysUntilExpiry < 0
-                                  ? 'text-red-600'
+                                  ? 'text-red-700'
                                   : batchDaysUntilExpiry <= 7
-                                    ? 'text-red-600'
-                                    : batchDaysUntilExpiry <= 14
-                                      ? 'text-orange-600'
-                                      : batchDaysUntilExpiry <= 30
-                                        ? 'text-amber-600'
-                                        : 'text-emerald-600'
-                              )}
-                            />
-                            <div className="space-y-1">
-                              <p
-                                className={cn(
-                                  'text-sm font-bold',
-                                  batchDaysUntilExpiry < 0
-                                    ? 'text-red-900'
-                                    : batchDaysUntilExpiry <= 7
-                                      ? 'text-red-900'
-                                      : batchDaysUntilExpiry <= 14
-                                        ? 'text-orange-900'
-                                        : batchDaysUntilExpiry <= 30
-                                          ? 'text-amber-900'
-                                          : 'text-emerald-900'
-                                )}
-                              >
-                                {batchDaysUntilExpiry < 0
-                                  ? 'EXPIRED - IMMEDIATE ACTION REQUIRED'
-                                  : batchDaysUntilExpiry <= 7
-                                    ? 'URGENT - EXPIRES WITHIN 7 DAYS'
-                                    : batchDaysUntilExpiry <= 14
-                                      ? 'CRITICAL - EXPIRES WITHIN 14 DAYS'
-                                      : batchDaysUntilExpiry <= 30
-                                        ? 'WARNING - EXPIRES WITHIN 30 DAYS'
-                                        : 'NORMAL - SUFFICIENT TIME BEFORE EXPIRY'}
-                              </p>
-                              <p
-                                className={cn(
-                                  'text-xs leading-relaxed',
-                                  batchDaysUntilExpiry < 0
                                     ? 'text-red-700'
-                                    : batchDaysUntilExpiry <= 7
-                                      ? 'text-red-700'
-                                      : batchDaysUntilExpiry <= 14
-                                        ? 'text-orange-700'
-                                        : batchDaysUntilExpiry <= 30
-                                          ? 'text-amber-700'
-                                          : 'text-emerald-700'
-                                )}
-                              >
-                                {batchDaysUntilExpiry < 0
-                                  ? 'This medicine has expired and must be removed from inventory immediately. Do not dispense to patients.'
-                                  : batchDaysUntilExpiry <= 7
-                                    ? 'High priority: Consider returning to vendor or immediate sale with discount. Monitor daily.'
                                     : batchDaysUntilExpiry <= 14
-                                      ? 'Priority sale recommended. Contact vendor for return options or implement promotional pricing.'
+                                      ? 'text-orange-700'
                                       : batchDaysUntilExpiry <= 30
-                                        ? 'Monitor closely and consider promotional pricing to move stock before expiry.'
-                                        : 'Continue normal operations. Stock is within safe expiry range.'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Inventory Details Card */}
-                    <Card className="border shadow-sm">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Package className="h-4 w-4 text-primary" />
-                          Inventory Details
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              Quantity
-                            </Label>
-                            <p className="font-semibold text-base">
-                              {selectedBatch.quantity} units
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              Location
-                            </Label>
-                            <p className="font-semibold text-base">{selectedBatch.location}</p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              Date Added
-                            </Label>
-                            <p className="font-semibold text-base">
-                              {formatDate(new Date(selectedBatch.dateAdded))}
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              Supplier ID
-                            </Label>
-                            <p className="font-semibold font-mono text-sm">
-                              {selectedBatch.supplierId}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Financial Details Card */}
-                    <Card className="border shadow-sm bg-gradient-to-br from-slate-50 to-white">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4 text-primary" />
-                          Financial Information
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              Purchase Price
-                            </Label>
-                            <p className="font-semibold text-base">
-                              {formatCurrency(selectedBatch.purchasePrice)}
-                              <span className="text-xs text-muted-foreground ml-1">/ unit</span>
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              Sell Price
-                            </Label>
-                            <p className="font-semibold text-base">
-                              {formatCurrency(selectedBatch.sellPrice)}
-                              <span className="text-xs text-muted-foreground ml-1">/ unit</span>
-                            </p>
-                          </div>
-                          <div className="space-y-1.5 col-span-2">
-                            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              Total Inventory Value
-                            </Label>
-                            <p className="font-bold text-2xl text-primary">
-                              {formatCurrency(selectedBatch.sellPrice * selectedBatch.quantity)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Potential profit:{' '}
-                              {formatCurrency(
-                                (selectedBatch.sellPrice - selectedBatch.purchasePrice) *
-                                  selectedBatch.quantity
+                                        ? 'text-amber-700'
+                                        : 'text-emerald-700'
                               )}
+                            >
+                              {batchDaysUntilExpiry < 0
+                                ? 'This medicine has expired and must be removed from inventory immediately. Do not dispense to patients.'
+                                : batchDaysUntilExpiry <= 7
+                                  ? 'High priority: Consider returning to vendor or immediate sale with discount. Monitor daily.'
+                                  : batchDaysUntilExpiry <= 14
+                                    ? 'Priority sale recommended. Contact vendor for return options or implement promotional pricing.'
+                                    : batchDaysUntilExpiry <= 30
+                                      ? 'Monitor closely and consider promotional pricing to move stock before expiry.'
+                                      : 'Continue normal operations. Stock is within safe expiry range.'}
                             </p>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                );
-              })()}
-            <DialogFooter className="border-t pt-4 gap-2">
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Inventory Details Card */}
+                  <Card className="border shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Package className="h-4 w-4 text-primary" />
+                        Inventory Details
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Quantity
+                          </Label>
+                          <p className="font-semibold text-base">{selectedBatch.quantity} units</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Location
+                          </Label>
+                          <p className="font-semibold text-base">{selectedBatch.location}</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Date Added
+                          </Label>
+                          <p className="font-semibold text-base">
+                            {formatDate(new Date(selectedBatch.dateAdded))}
+                          </p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Supplier ID
+                          </Label>
+                          <p className="font-semibold font-mono text-sm">
+                            {selectedBatch.supplierId}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Financial Details Card */}
+                  <Card className="border shadow-sm bg-gradient-to-br from-slate-50 to-white">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        Financial Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Purchase Price
+                          </Label>
+                          <p className="font-semibold text-base">
+                            {formatCurrency(selectedBatch.purchasePrice)}
+                            <span className="text-xs text-muted-foreground ml-1">/ unit</span>
+                          </p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Sell Price
+                          </Label>
+                          <p className="font-semibold text-base">
+                            {formatCurrency(selectedBatch.sellPrice)}
+                            <span className="text-xs text-muted-foreground ml-1">/ unit</span>
+                          </p>
+                        </div>
+                        <div className="space-y-1.5 col-span-2">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Total Inventory Value
+                          </Label>
+                          <p className="font-bold text-2xl text-primary">
+                            {formatCurrency(selectedBatch.sellPrice * selectedBatch.quantity)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Potential profit:{' '}
+                            {formatCurrency(
+                              (selectedBatch.sellPrice - selectedBatch.purchasePrice) *
+                                selectedBatch.quantity
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()}
+          <DialogFooter className="border-t pt-4 gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowBatchDetailsDialog(false)}
+              className="flex-1"
+            >
+              Close
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => selectedBatch && openEditBatch(selectedBatch)}
+              className="flex-1"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Batch
+            </Button>
+            {selectedBatch && (selectedBatch.daysUntilExpiry ?? 999) <= 30 && (
               <Button
-                variant="outline"
-                onClick={() => setShowBatchDetailsDialog(false)}
-                className="flex-1"
-              >
-                Close
-              </Button>
-              <Button
-                variant="default"
-                onClick={() => selectedBatch && openEditBatch(selectedBatch)}
-                className="flex-1"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Batch
-              </Button>
-              {selectedBatch && (selectedBatch.daysUntilExpiry ?? 999) <= 30 && (
-                <Button
-                  className={cn(
-                    'flex-1',
-                    (selectedBatch.daysUntilExpiry ?? 999) < 0
+                className={cn(
+                  'flex-1',
+                  (selectedBatch.daysUntilExpiry ?? 999) < 0
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : (selectedBatch.daysUntilExpiry ?? 999) <= 7
                       ? 'bg-red-600 hover:bg-red-700'
-                      : (selectedBatch.daysUntilExpiry ?? 999) <= 7
-                        ? 'bg-red-600 hover:bg-red-700'
-                        : (selectedBatch.daysUntilExpiry ?? 999) <= 14
-                          ? 'bg-orange-600 hover:bg-orange-700'
-                          : 'bg-amber-600 hover:bg-amber-700'
-                  )}
-                  onClick={() => {
-                    // This would trigger the expiry action flow
-                    setShowBatchDetailsDialog(false);
-                    showNotification('Expiry management action triggered');
-                  }}
-                >
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Take Action
-                </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                      : (selectedBatch.daysUntilExpiry ?? 999) <= 14
+                        ? 'bg-orange-600 hover:bg-orange-700'
+                        : 'bg-amber-600 hover:bg-amber-700'
+                )}
+                onClick={() => {
+                  // This would trigger the expiry action flow
+                  setShowBatchDetailsDialog(false);
+                  showNotification('Expiry management action triggered');
+                }}
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Take Action
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Configure Batch Dialog - Add/Edit Batch Data */}
-        <Dialog open={showConfigureBatchDialog} onOpenChange={setShowConfigureBatchDialog}>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {configuringSlot?.existingBatch
-                  ? 'Edit Batch Data'
-                  : `Add Batch to Slot ${configuringSlot?.slotNumber}`}
-              </DialogTitle>
-            </DialogHeader>
+      {/* Configure Batch Dialog - Add/Edit Batch Data */}
+      <Dialog open={showConfigureBatchDialog} onOpenChange={setShowConfigureBatchDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {configuringSlot?.existingBatch
+                ? 'Edit Batch Data'
+                : `Add Batch to Slot ${configuringSlot?.slotNumber}`}
+            </DialogTitle>
+          </DialogHeader>
 
-            <div className="space-y-4 py-4">
-              {/* Drug Selection */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Medicine *</label>
-                <select
-                  className="w-full p-2 border rounded-md"
-                  value={batchFormData.drugId}
-                  onChange={(e) => setBatchFormData({ ...batchFormData, drugId: e.target.value })}
-                  required
-                >
-                  <option value="">Select a medicine...</option>
-                  {drugs.map((drug) => (
-                    <option key={drug.id} value={drug.id}>
-                      {drug.brand_name} ({drug.generic_name})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Batch Number */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Batch Number *</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded-md"
-                  value={batchFormData.batchNumber}
-                  onChange={(e) =>
-                    setBatchFormData({ ...batchFormData, batchNumber: e.target.value })
-                  }
-                  placeholder="e.g., B1234"
-                  required
-                />
-              </div>
-
-              {/* Quantity */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Quantity *</label>
-                <input
-                  type="number"
-                  className="w-full p-2 border rounded-md"
-                  value={batchFormData.quantity}
-                  onChange={(e) =>
-                    setBatchFormData({ ...batchFormData, quantity: parseInt(e.target.value) || 0 })
-                  }
-                  min="0"
-                  required
-                />
-              </div>
-
-              {/* Purchase Price */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Purchase Price *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="w-full p-2 border rounded-md"
-                  value={batchFormData.purchasePrice}
-                  onChange={(e) =>
-                    setBatchFormData({
-                      ...batchFormData,
-                      purchasePrice: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                  min="0"
-                  required
-                />
-              </div>
-
-              {/* Sell Price */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Sell Price *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="w-full p-2 border rounded-md"
-                  value={batchFormData.sellPrice}
-                  onChange={(e) =>
-                    setBatchFormData({
-                      ...batchFormData,
-                      sellPrice: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                  min="0"
-                  required
-                />
-              </div>
-
-              {/* Expiry Date */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Expiry Date *</label>
-                <input
-                  type="date"
-                  className="w-full p-2 border rounded-md"
-                  value={batchFormData.expiryDate}
-                  onChange={(e) =>
-                    setBatchFormData({ ...batchFormData, expiryDate: e.target.value })
-                  }
-                  required
-                />
-              </div>
-
-              {/* Supplier Selection */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Supplier</label>
-                <select
-                  className="w-full p-2 border rounded-md"
-                  value={batchFormData.supplierId}
-                  onChange={(e) =>
-                    setBatchFormData({ ...batchFormData, supplierId: e.target.value })
-                  }
-                >
-                  <option value="">Select a supplier...</option>
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Location */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Warehouse Location</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded-md"
-                  value={batchFormData.location}
-                  onChange={(e) => setBatchFormData({ ...batchFormData, location: e.target.value })}
-                  placeholder="e.g., Warehouse A"
-                />
-              </div>
+          <div className="space-y-4 py-4">
+            {/* Drug Selection */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Medicine *</label>
+              <select
+                className="w-full p-2 border rounded-md"
+                value={batchFormData.drugId}
+                onChange={(e) => setBatchFormData({ ...batchFormData, drugId: e.target.value })}
+                required
+              >
+                <option value="">Select a medicine...</option>
+                {drugs.map((drug) => (
+                  <option key={drug.id} value={drug.id}>
+                    {drug.brand_name} ({drug.generic_name})
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowConfigureBatchDialog(false)}
-                disabled={isSaving}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSaveBatch}
-                disabled={isSaving || !batchFormData.drugId || !batchFormData.batchNumber}
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : configuringSlot?.existingBatch ? (
-                  'Update Batch'
-                ) : (
-                  'Add to Slot'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            {/* Batch Number */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Batch Number *</label>
+              <input
+                type="text"
+                className="w-full p-2 border rounded-md"
+                value={batchFormData.batchNumber}
+                onChange={(e) =>
+                  setBatchFormData({ ...batchFormData, batchNumber: e.target.value })
+                }
+                placeholder="e.g., B1234"
+                required
+              />
+            </div>
 
-        {/* Discount Dialog */}
-        <Dialog open={showDiscountDialog} onOpenChange={setShowDiscountDialog}>
-          <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-              <DialogTitle className="text-lg">Apply Discount</DialogTitle>
-              <DialogDescription>
-                Reduce the price to accelerate sales before expiry
-              </DialogDescription>
-            </DialogHeader>
+            {/* Quantity */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Quantity *</label>
+              <input
+                type="number"
+                className="w-full p-2 border rounded-md"
+                value={batchFormData.quantity}
+                onChange={(e) =>
+                  setBatchFormData({ ...batchFormData, quantity: parseInt(e.target.value) || 0 })
+                }
+                min="0"
+                required
+              />
+            </div>
 
-            <div className="space-y-5 py-4">
-              {/* Current Batch Info */}
-              {currentBatch && (
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Product</span>
-                    <span className="text-sm font-semibold text-slate-900">
-                      {currentBatch.drug?.brandName}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Current Price</span>
-                    <span className="text-base font-bold text-slate-900">
-                      {formatCurrency(currentBatch.sellPrice)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Stock</span>
-                    <span className="text-sm font-semibold text-slate-900">
-                      {currentBatch.quantity} units
-                    </span>
-                  </div>
-                </div>
+            {/* Purchase Price */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Purchase Price *</label>
+              <input
+                type="number"
+                step="0.01"
+                className="w-full p-2 border rounded-md"
+                value={batchFormData.purchasePrice}
+                onChange={(e) =>
+                  setBatchFormData({
+                    ...batchFormData,
+                    purchasePrice: parseFloat(e.target.value) || 0,
+                  })
+                }
+                min="0"
+                required
+              />
+            </div>
+
+            {/* Sell Price */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Sell Price *</label>
+              <input
+                type="number"
+                step="0.01"
+                className="w-full p-2 border rounded-md"
+                value={batchFormData.sellPrice}
+                onChange={(e) =>
+                  setBatchFormData({
+                    ...batchFormData,
+                    sellPrice: parseFloat(e.target.value) || 0,
+                  })
+                }
+                min="0"
+                required
+              />
+            </div>
+
+            {/* Expiry Date */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Expiry Date *</label>
+              <input
+                type="date"
+                className="w-full p-2 border rounded-md"
+                value={batchFormData.expiryDate}
+                onChange={(e) => setBatchFormData({ ...batchFormData, expiryDate: e.target.value })}
+                required
+              />
+            </div>
+
+            {/* Supplier Selection */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Supplier</label>
+              <select
+                className="w-full p-2 border rounded-md"
+                value={batchFormData.supplierId}
+                onChange={(e) => setBatchFormData({ ...batchFormData, supplierId: e.target.value })}
+              >
+                <option value="">Select a supplier...</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Warehouse Location</label>
+              <input
+                type="text"
+                className="w-full p-2 border rounded-md"
+                value={batchFormData.location}
+                onChange={(e) => setBatchFormData({ ...batchFormData, location: e.target.value })}
+                placeholder="e.g., Warehouse A"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfigureBatchDialog(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveBatch}
+              disabled={isSaving || !batchFormData.drugId || !batchFormData.batchNumber}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : configuringSlot?.existingBatch ? (
+                'Update Batch'
+              ) : (
+                'Add to Slot'
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-              {/* Discount Input */}
-              <div className="space-y-2">
-                <Label htmlFor="discount" className="text-sm font-medium">
-                  Discount Percentage
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="discount"
-                    type="number"
-                    min="1"
-                    max="100"
-                    placeholder="Enter discount"
-                    value={discountPercentage || ''}
-                    onChange={(e) => setDiscountPercentage(parseFloat(e.target.value) || 0)}
-                    className="pr-10"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    %
+      {/* Discount Dialog */}
+      <Dialog open={showDiscountDialog} onOpenChange={setShowDiscountDialog}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Apply Discount</DialogTitle>
+            <DialogDescription>
+              Reduce the price to accelerate sales before expiry
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-4">
+            {/* Current Batch Info */}
+            {currentBatch && (
+              <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Product</span>
+                  <span className="text-sm font-semibold text-slate-900">
+                    {currentBatch.drug?.brandName}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Current Price</span>
+                  <span className="text-base font-bold text-slate-900">
+                    {formatCurrency(currentBatch.sellPrice)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Stock</span>
+                  <span className="text-sm font-semibold text-slate-900">
+                    {currentBatch.quantity} units
                   </span>
                 </div>
               </div>
+            )}
 
-              {/* New Price Preview */}
-              {currentBatch && discountPercentage > 0 && discountPercentage <= 100 && (
-                <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                        New Price
-                      </p>
-                      <p className="text-xl font-bold text-emerald-700 mt-1">
-                        {formatCurrency(currentBatch.sellPrice * (1 - discountPercentage / 100))}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Savings</p>
-                      <p className="text-base font-semibold text-amber-600">
-                        {formatCurrency(currentBatch.sellPrice * (discountPercentage / 100))} per
-                        unit
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* Discount Input */}
+            <div className="space-y-2">
+              <Label htmlFor="discount" className="text-sm font-medium">
+                Discount Percentage
+              </Label>
+              <div className="relative">
+                <Input
+                  id="discount"
+                  type="number"
+                  min="1"
+                  max="100"
+                  placeholder="Enter discount"
+                  value={discountPercentage || ''}
+                  onChange={(e) => setDiscountPercentage(parseFloat(e.target.value) || 0)}
+                  className="pr-10"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  %
+                </span>
+              </div>
             </div>
 
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDiscountDialog(false);
-                  setDiscountPercentage(0);
-                }}
-                disabled={isProcessingAction}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleApplyDiscount}
-                disabled={isProcessingAction || discountPercentage <= 0 || discountPercentage > 100}
-              >
-                {isProcessingAction ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Applying...
-                  </>
-                ) : (
-                  'Apply Discount'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Dispose Confirmation Dialog */}
-        <AlertDialog open={showDisposeDialog} onOpenChange={setShowDisposeDialog}>
-          <AlertDialogContent className="sm:max-w-[480px]">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Disposal</AlertDialogTitle>
-              <AlertDialogDescription asChild>
-                <div className="space-y-4 pt-2">
-                  <p>
-                    This will permanently remove the batch from your inventory. This action cannot
-                    be undone.
-                  </p>
-                  {currentBatch && (
-                    <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Product</span>
-                        <span className="text-sm font-semibold text-slate-900">
-                          {currentBatch.drug?.brandName}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Batch</span>
-                        <span className="text-sm font-mono text-slate-900">
-                          {currentBatch.batchNumber}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Quantity</span>
-                        <span className="text-sm font-semibold text-slate-900">
-                          {currentBatch.quantity} units
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-                        <span className="text-sm text-muted-foreground">Value to Write-off</span>
-                        <span className="text-base font-bold text-red-600">
-                          {formatCurrency(currentBatch.sellPrice * currentBatch.quantity)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+            {/* New Price Preview */}
+            {currentBatch && discountPercentage > 0 && discountPercentage <= 100 && (
+              <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      New Price
+                    </p>
+                    <p className="text-xl font-bold text-emerald-700 mt-1">
+                      {formatCurrency(currentBatch.sellPrice * (1 - discountPercentage / 100))}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Savings</p>
+                    <p className="text-base font-semibold text-amber-600">
+                      {formatCurrency(currentBatch.sellPrice * (discountPercentage / 100))} per unit
+                    </p>
+                  </div>
                 </div>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="gap-2">
-              <AlertDialogCancel disabled={isProcessingAction}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDisposeBatch}
-                disabled={isProcessingAction}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                {isProcessingAction ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  'Dispose Batch'
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* Toast Notification */}
-        {toast.visible && (
-          <div className={cn(
-            "fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg transition-all",
-            toast.type === 'error' 
-              ? 'bg-destructive text-destructive-foreground' 
-              : 'bg-primary text-primary-foreground'
-          )}>
-            {toast.type === 'success' ? (
-              <CheckCircle2 className="h-5 w-5" />
-            ) : (
-              <AlertTriangle className="h-5 w-5" />
+              </div>
             )}
-            <span className="font-medium">{toast.message}</span>
           </div>
-        )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDiscountDialog(false);
+                setDiscountPercentage(0);
+              }}
+              disabled={isProcessingAction}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApplyDiscount}
+              disabled={isProcessingAction || discountPercentage <= 0 || discountPercentage > 100}
+            >
+              {isProcessingAction ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                'Apply Discount'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dispose Confirmation Dialog */}
+      <AlertDialog open={showDisposeDialog} onOpenChange={setShowDisposeDialog}>
+        <AlertDialogContent className="sm:max-w-[480px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Disposal</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 pt-2">
+                <p>
+                  This will permanently remove the batch from your inventory. This action cannot be
+                  undone.
+                </p>
+                {currentBatch && (
+                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Product</span>
+                      <span className="text-sm font-semibold text-slate-900">
+                        {currentBatch.drug?.brandName}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Batch</span>
+                      <span className="text-sm font-mono text-slate-900">
+                        {currentBatch.batchNumber}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Quantity</span>
+                      <span className="text-sm font-semibold text-slate-900">
+                        {currentBatch.quantity} units
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+                      <span className="text-sm text-muted-foreground">Value to Write-off</span>
+                      <span className="text-base font-bold text-red-600">
+                        {formatCurrency(currentBatch.sellPrice * currentBatch.quantity)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={isProcessingAction}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDisposeBatch}
+              disabled={isProcessingAction}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isProcessingAction ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Dispose Batch'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Toast Notification */}
+      {toast.visible && (
+        <div
+          className={cn(
+            'fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg transition-all',
+            toast.type === 'error'
+              ? 'bg-destructive text-destructive-foreground'
+              : 'bg-primary text-primary-foreground'
+          )}
+        >
+          {toast.type === 'success' ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : (
+            <AlertTriangle className="h-5 w-5" />
+          )}
+          <span className="font-medium">{toast.message}</span>
+        </div>
+      )}
     </div>
   );
 }
