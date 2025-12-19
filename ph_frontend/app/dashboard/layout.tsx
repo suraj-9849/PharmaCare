@@ -100,7 +100,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!isAuthenticated) {
-    return null;
+    // Return loading state while redirect happens to prevent children from mounting
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner className="h-8 w-8" />
+      </div>
+    );
   }
 
   const userInitials = user?.name

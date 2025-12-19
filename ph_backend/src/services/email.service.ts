@@ -235,6 +235,149 @@ export class EmailService {
       console.error('Failed to send out of stock email:', error);
     }
   }
+
+  /**
+   * Send return to vendor notification email
+   */
+  static async sendReturnToVendorEmail(
+    supplierEmail: string,
+    supplierName: string,
+    returnData: {
+      drugs: Array<{
+        drugName: string;
+        brandName: string;
+        batchNumber: string;
+        quantity: number;
+        returnQuantity: number;
+        expiryDate: string;
+        reason: string;
+      }>;
+      collectionDays: number;
+      pharmacyName: string;
+      pharmacyAddress: string;
+      returnId: string;
+    }
+  ) {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('Resend API key not configured. Skipping email notification.');
+      return { success: false, error: 'Email not configured' };
+    }
+
+    try {
+      const totalItems = returnData.drugs.reduce((sum: number, d) => sum + d.returnQuantity, 0);
+      const collectionDate = new Date();
+      collectionDate.setDate(collectionDate.getDate() + returnData.collectionDays);
+
+      const emailBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #f8fafc;">
+          <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 26px;">📦 Product Return Request</h1>
+            <p style="color: #bfdbfe; margin: 10px 0 0 0; font-size: 14px;">Return ID: ${returnData.returnId}</p>
+          </div>
+          
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
+            <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin-bottom: 25px; border-radius: 4px;">
+              <p style="color: #1e40af; font-size: 16px; margin: 0;">
+                Dear <strong>${supplierName}</strong>,
+              </p>
+              <p style="color: #1e40af; font-size: 14px; margin: 10px 0 0 0;">
+                We are initiating a return request for the following items from our pharmacy inventory.
+              </p>
+            </div>
+
+            <h2 style="color: #1e293b; font-size: 18px; margin: 0 0 15px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+              📋 Items for Return
+            </h2>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+              <thead>
+                <tr style="background: #f1f5f9;">
+                  <th style="padding: 12px 10px; text-align: left; font-size: 12px; color: #475569; border-bottom: 2px solid #cbd5e1;">Drug Details</th>
+                  <th style="padding: 12px 10px; text-align: center; font-size: 12px; color: #475569; border-bottom: 2px solid #cbd5e1;">Batch No.</th>
+                  <th style="padding: 12px 10px; text-align: center; font-size: 12px; color: #475569; border-bottom: 2px solid #cbd5e1;">Return Qty</th>
+                  <th style="padding: 12px 10px; text-align: center; font-size: 12px; color: #475569; border-bottom: 2px solid #cbd5e1;">Expiry</th>
+                  <th style="padding: 12px 10px; text-align: left; font-size: 12px; color: #475569; border-bottom: 2px solid #cbd5e1;">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${returnData.drugs
+                  .map(
+                    (drug, index) => `
+                  <tr style="background: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 12px 10px; font-size: 13px;">
+                      <strong style="color: #1e293b;">${drug.brandName}</strong><br/>
+                      <span style="color: #64748b; font-size: 11px;">${drug.drugName}</span>
+                    </td>
+                    <td style="padding: 12px 10px; text-align: center; font-size: 13px; color: #475569; font-family: monospace;">
+                      ${drug.batchNumber}
+                    </td>
+                    <td style="padding: 12px 10px; text-align: center; font-size: 14px; color: #dc2626; font-weight: bold;">
+                      ${drug.returnQuantity}
+                    </td>
+                    <td style="padding: 12px 10px; text-align: center; font-size: 12px; color: #f59e0b;">
+                      ${drug.expiryDate}
+                    </td>
+                    <td style="padding: 12px 10px; font-size: 12px; color: #64748b;">
+                      ${drug.reason}
+                    </td>
+                  </tr>
+                `
+                  )
+                  .join('')}
+              </tbody>
+            </table>
+
+            <div style="display: flex; gap: 20px; margin-bottom: 25px;">
+              <div style="flex: 1; background: #fef3c7; border-radius: 8px; padding: 15px; text-align: center;">
+                <p style="color: #92400e; font-size: 12px; margin: 0 0 5px 0;">Total Items</p>
+                <p style="color: #78350f; font-size: 24px; font-weight: bold; margin: 0;">${totalItems}</p>
+              </div>
+              <div style="flex: 1; background: #dcfce7; border-radius: 8px; padding: 15px; text-align: center;">
+                <p style="color: #166534; font-size: 12px; margin: 0 0 5px 0;">Collection By</p>
+                <p style="color: #14532d; font-size: 16px; font-weight: bold; margin: 0;">${collectionDate.toLocaleDateString('en-US', { dateStyle: 'medium' })}</p>
+              </div>
+            </div>
+
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+              <h3 style="color: #991b1b; font-size: 14px; margin: 0 0 10px 0;">📍 Collection Address</h3>
+              <p style="color: #7f1d1d; font-size: 14px; margin: 0; line-height: 1.6;">
+                <strong>${returnData.pharmacyName}</strong><br/>
+                ${returnData.pharmacyAddress}
+              </p>
+            </div>
+
+            <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; border-radius: 4px;">
+              <p style="color: #166534; font-size: 14px; margin: 0;">
+                <strong>⏰ Collection Deadline:</strong> Please arrange for collection within <strong>${returnData.collectionDays} days</strong> (by ${collectionDate.toLocaleDateString('en-US', { dateStyle: 'full' })}).
+              </p>
+            </div>
+          </div>
+
+          <div style="background: #f1f5f9; padding: 20px; text-align: center; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="color: #64748b; font-size: 12px; margin: 0;">
+              This is an automated notification from <strong>${env.APP_NAME}</strong><br/>
+              For queries, please contact us at ${process.env.ADMIN_EMAIL || 'support@pharmacy.com'}
+            </p>
+          </div>
+        </div>
+      `;
+
+      await resend.emails.send({
+        from: 'DrugDesk <onboarding@resend.dev>',
+        // Note: Resend free tier only allows sending to verified emails
+        // In production, use supplierEmail directly with a verified domain
+        to: process.env.ADMIN_EMAIL || supplierEmail,
+        subject: `📦 Product Return Request - ${totalItems} Items | Return ID: ${returnData.returnId}`,
+        html: emailBody,
+      });
+
+      console.log(`✅ Return to vendor email sent to ${process.env.ADMIN_EMAIL || supplierEmail} (intended for: ${supplierEmail})`);
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to send return to vendor email:', error);
+      return { success: false, error: String(error) };
+    }
+  }
 }
 
 export const emailService = EmailService;

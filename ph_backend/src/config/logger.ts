@@ -16,8 +16,8 @@ const transports: winston.transport[] = [
   }),
 ];
 
-// Add Loki transport if not in test environment
-if (env.NODE_ENV !== 'test') {
+// Add Loki transport if not in test environment and explicitly enabled
+if (env.NODE_ENV !== 'test' && process.env.ENABLE_LOKI === 'true') {
   transports.push(
     new LokiTransport({
       host: process.env.LOKI_URL || 'http://localhost:3100',
