@@ -137,16 +137,39 @@ PostgreSQL pharmacy database tables:
 Key relationships: inventory_batches.drug_id->drugs.id, inventory_batches.supplier_id->suppliers.id, sale_items.sale_id->sales.id
 """
 
-CLASSIFICATION_PROMPT = """Classify the question as DATABASE (needs data query) or GENERAL (greeting/help/general knowledge).
-Respond with only: DATABASE or GENERAL"""
+CLASSIFICATION_PROMPT = """You are a pharmacy assistant classifier. Classify the question into one of these categories:
+- DATABASE: Needs pharmacy data query (drugs, inventory, sales, suppliers, customers, stock, expiry, orders)
+- GENERAL: Pharmacy-related greeting, help, or general pharmaceutical knowledge
+- REJECTED: Non-pharmacy topics (politics, entertainment, personal advice, coding, weather, sports, etc.)
+
+Respond with ONLY one word: DATABASE, GENERAL, or REJECTED"""
 
 SQL_SYSTEM_PROMPT = f"""Convert questions to PostgreSQL SELECT queries.
 {DB_SCHEMA}
-Rules: Use table aliases, CURRENT_DATE for dates, limit to 20 rows, wrap in ```sql``` blocks."""
+
+Rules:
+1. Use table aliases, CURRENT_DATE for dates, limit to 20 rows, wrap in ```sql``` blocks.
+2. SMART DRUG SUBSTITUTION: When searching for a specific medicine, ALWAYS also search for substitute medicines by matching the generic_name using ILIKE. Include a column indicating if it's the requested drug or a substitute.
+   Example: If user asks for "Crocin", query should find Crocin AND other drugs with similar generic_name (e.g., Paracetamol).
+   Use: WHERE (d.brand_name ILIKE '%requested_drug%' OR d.generic_name ILIKE (SELECT generic_name FROM drugs WHERE brand_name ILIKE '%requested_drug%' LIMIT 1))
+3. When checking stock availability, always JOIN with inventory_batches to show quantity and include substitute options if the requested drug has low/zero stock.
+4. Add a computed column like: CASE WHEN d.brand_name ILIKE '%requested%' THEN 'Requested' ELSE 'Substitute' END AS drug_type"""
 
 RESPONSE_SYSTEM_PROMPT = """Summarize query results professionally with key findings and recommendations. Use markdown formatting."""
 
-GENERAL_SYSTEM_PROMPT = """You are PharmaCare Assistant. Help with inventory, sales, expiry tracking. Be concise and friendly."""
+GENERAL_SYSTEM_PROMPT = """You are PharmaCare Assistant - a pharmacy-focused AI that ONLY handles pharmaceutical and pharmacy management topics.
+
+You can help with:
+- Drug information, dosages, side effects, interactions
+- Inventory management, stock levels, expiry tracking
+- Sales, billing, and payment queries
+- Supplier and customer management
+- Pharmacy operations and best practices
+
+IMPORTANT: If a user asks about non-pharmacy topics (politics, entertainment, personal advice, coding, weather, sports, general knowledge unrelated to pharmacy), politely respond:
+"I'm PharmaCare Assistant, specialized in pharmacy management. I can help you with drug information, inventory, sales, and pharmacy operations. Please ask me something related to pharmacy!"
+
+Be concise, professional, and friendly."""
 
 # Chatbot chains
 classification_chain = ChatPromptTemplate.from_messages([
@@ -174,6 +197,32 @@ response_chain_fb = ChatPromptTemplate.from_messages([
     ("system", RESPONSE_SYSTEM_PROMPT),
     ("human", "Question: {question}\nSQL: {sql}\nResults: {results}\nSummarize:")
 ]) | llm_fallback
+
+REJECTION_SYSTEM_PROMPT = """You are PharmaCare Assistant - a smart, friendly pharmacy management AI.
+
+The user asked something OUTSIDE your pharmacy scope. Generate a polite, witty, and contextual rejection message that:
+1. Acknowledges what they asked (be specific to their query)
+2. Gently explains you're a pharmacy-focused assistant
+3. Suggests pharmacy-related alternatives they could ask instead
+4. Keeps a friendly, professional tone with a touch of humor
+5. Keep it concise (2-3 sentences max)
+
+Examples of good responses:
+- For jokes: "I'd love to make you laugh, but my humor is limited to pharmacy puns! 💊 How about I help you check drug availability or track expiring medicines instead?"
+- For weather: "I can't predict rain, but I can predict which medicines are running low! Want me to check your inventory?"
+- For coding: "My code expertise is limited to drug codes and batch numbers! Need help finding a specific medicine?"
+
+Be creative and relevant to what they asked!"""
+
+rejection_chain = ChatPromptTemplate.from_messages([
+    ("system", REJECTION_SYSTEM_PROMPT),
+    ("human", "User asked: {input}\nGenerate a friendly rejection:")
+]) | llm_creative
+
+rejection_chain_fb = ChatPromptTemplate.from_messages([
+    ("system", REJECTION_SYSTEM_PROMPT),
+    ("human", "User asked: {input}\nGenerate a friendly rejection:")
+]) | llm_creative_fallback
 
 general_chain = ChatPromptTemplate.from_messages([
     ("system", GENERAL_SYSTEM_PROMPT), MessagesPlaceholder(variable_name="chat_history"), ("human", "{input}")
@@ -346,7 +395,13 @@ def classify_question(question: str) -> str:
     """Classify question type"""
     try:
         result = invoke_with_fallback(classification_chain, classification_chain_fb, {"input": question})
-        return "database" if "DATABASE" in result.content.upper() else "general"
+        content = result.content.upper()
+        if "REJECTED" in content:
+            return "rejected"
+        elif "DATABASE" in content:
+            return "database"
+        else:
+            return "general"
     except:
         return "database"
 
@@ -370,6 +425,11 @@ async def chat(request: ChatRequest):
     try:
         history = convert_history(request.history[-20:])
         query_type = classify_question(request.message)
+
+        # Handle non-pharmacy queries with dynamic rejection
+        if query_type == "rejected":
+            rejection_response = invoke_with_fallback(rejection_chain, rejection_chain_fb, {"input": request.message})
+            return ChatResponse(response=rejection_response.content, query_type="rejected")
 
         if query_type == "general":
             response = invoke_with_fallback(general_chain, general_chain_fb, {"chat_history": history, "input": request.message})
