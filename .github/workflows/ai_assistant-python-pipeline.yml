@@ -1,0 +1,92 @@
+name: AI Assistant Python Pipeline
+
+on:
+  push:
+    paths:
+      - 'ai_assistant/**'
+  pull_request:
+    paths:
+      - 'ai_assistant/**'
+
+jobs:
+  python-lint:
+    name: Python - Lint & Format
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Sync dependencies with dev tools
+        working-directory: ./ai_assistant
+        run: uv sync --extra dev
+
+      - name: Check formatting with black
+        working-directory: ./ai_assistant
+        run: uv run black --check .
+
+      - name: Lint with flake8
+        working-directory: ./ai_assistant
+        run: uv run flake8 .
+
+  python-type-check:
+    name: Python - Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Sync dependencies with dev tools
+        working-directory: ./ai_assistant
+        run: uv sync --extra dev
+
+      - name: Type check with mypy
+        working-directory: ./ai_assistant
+        run: uv run mypy .
+
+  python-test:
+    name: Python - Test
+    runs-on: ubuntu-latest
+    needs: [python-lint, python-type-check]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Sync dependencies with dev tools
+        working-directory: ./ai_assistant
+        run: uv sync --extra dev
+
+      - name: Run tests
+        working-directory: ./ai_assistant
+        run: |
+          if [ -d "tests" ] || [ -f "test_*.py" ]; then
+            uv run pytest -v
+          else
+            echo "No tests found, skipping"
+          fi
