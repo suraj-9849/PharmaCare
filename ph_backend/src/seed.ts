@@ -276,6 +276,228 @@ async function main() {
     }
     console.log(`✅ Created/Retrieved ${batches.length} inventory batches\n`);
 
+    // Create Near-Expiry Batches (expiring within 7-30 days)
+    console.log('⚠️  Creating near-expiry inventory batches...');
+    const nearExpiryBatches = [];
+    const nearExpiryData = [
+      { drugIndex: 0, days: 3, qty: 50, batch: 'PAR-EXP-001' },   // Paracetamol - 3 days
+      { drugIndex: 1, days: 5, qty: 30, batch: 'ASP-EXP-002' },   // Aspirin - 5 days
+      { drugIndex: 2, days: 7, qty: 25, batch: 'AMO-EXP-003' },   // Amoxicillin - 7 days
+      { drugIndex: 3, days: 10, qty: 40, batch: 'IBU-EXP-004' },  // Ibuprofen - 10 days
+      { drugIndex: 4, days: 14, qty: 20, batch: 'KOR-EXP-005' },  // Kortex - 14 days
+      { drugIndex: 5, days: 21, qty: 60, batch: 'COU-EXP-006' },  // Cough Syrup - 21 days
+      { drugIndex: 6, days: 25, qty: 35, batch: 'MET-EXP-007' },  // Metformin - 25 days
+      { drugIndex: 7, days: 28, qty: 45, batch: 'ATO-EXP-008' },  // Atorvastatin - 28 days
+      { drugIndex: 8, days: 30, qty: 55, batch: 'OME-EXP-009' },  // Omeprazole - 30 days
+      { drugIndex: 9, days: 2, qty: 100, batch: 'VIT-EXP-010' },  // Vitamin C - 2 days (critical!)
+    ];
+
+    for (const item of nearExpiryData) {
+      if (drugs[item.drugIndex]) {
+        const existing = await prisma.inventoryBatch.findFirst({
+          where: { batchNumber: item.batch },
+        });
+
+        if (!existing) {
+          const created = await prisma.inventoryBatch.create({
+            data: {
+              drugId: drugs[item.drugIndex].id,
+              batchNumber: item.batch,
+              quantity: item.qty,
+              purchasePrice: Math.floor(Math.random() * 30) + 5,
+              sellPrice: Math.floor(Math.random() * 60) + 15,
+              expiryDate: new Date(Date.now() + item.days * 24 * 60 * 60 * 1000),
+              supplierId: suppliers[item.drugIndex % suppliers.length].id,
+              location: `Expiry-Zone-${item.drugIndex + 1}`,
+            },
+          });
+          nearExpiryBatches.push(created);
+        } else {
+          nearExpiryBatches.push(existing);
+        }
+      }
+    }
+    console.log(`✅ Created/Retrieved ${nearExpiryBatches.length} near-expiry batches\n`);
+
+    // Create Already Expired Batches
+    console.log('🚨 Creating expired inventory batches...');
+    const expiredBatches = [];
+    const expiredData = [
+      { drugIndex: 0, daysAgo: 5, qty: 25, batch: 'PAR-OLD-001' },   // Paracetamol - expired 5 days ago
+      { drugIndex: 2, daysAgo: 10, qty: 15, batch: 'AMO-OLD-002' },  // Amoxicillin - expired 10 days ago
+      { drugIndex: 5, daysAgo: 3, qty: 30, batch: 'COU-OLD-003' },   // Cough Syrup - expired 3 days ago
+      { drugIndex: 7, daysAgo: 7, qty: 20, batch: 'ATO-OLD-004' },   // Atorvastatin - expired 7 days ago
+      { drugIndex: 9, daysAgo: 1, qty: 50, batch: 'VIT-OLD-005' },   // Vitamin C - expired yesterday
+    ];
+
+    for (const item of expiredData) {
+      if (drugs[item.drugIndex]) {
+        const existing = await prisma.inventoryBatch.findFirst({
+          where: { batchNumber: item.batch },
+        });
+
+        if (!existing) {
+          const created = await prisma.inventoryBatch.create({
+            data: {
+              drugId: drugs[item.drugIndex].id,
+              batchNumber: item.batch,
+              quantity: item.qty,
+              purchasePrice: Math.floor(Math.random() * 20) + 5,
+              sellPrice: Math.floor(Math.random() * 40) + 10,
+              expiryDate: new Date(Date.now() - item.daysAgo * 24 * 60 * 60 * 1000),
+              supplierId: suppliers[item.drugIndex % suppliers.length].id,
+              location: `Quarantine-${item.drugIndex + 1}`,
+            },
+          });
+          expiredBatches.push(created);
+        } else {
+          expiredBatches.push(existing);
+        }
+      }
+    }
+    console.log(`✅ Created/Retrieved ${expiredBatches.length} expired batches\n`);
+
+    // Create Low Stock Batches
+    console.log('📉 Creating low stock inventory batches...');
+    const lowStockBatches = [];
+    const lowStockData = [
+      { drugIndex: 0, qty: 5, batch: 'PAR-LOW-001' },   // Paracetamol - very low (reorder: 50)
+      { drugIndex: 2, qty: 8, batch: 'AMO-LOW-002' },   // Amoxicillin - low (reorder: 30)
+      { drugIndex: 3, qty: 10, batch: 'IBU-LOW-003' },  // Ibuprofen - low (reorder: 45)
+      { drugIndex: 6, qty: 12, batch: 'MET-LOW-004' },  // Metformin - low (reorder: 60)
+      { drugIndex: 9, qty: 15, batch: 'VIT-LOW-005' },  // Vitamin C - low (reorder: 100)
+    ];
+
+    for (const item of lowStockData) {
+      if (drugs[item.drugIndex]) {
+        const existing = await prisma.inventoryBatch.findFirst({
+          where: { batchNumber: item.batch },
+        });
+
+        if (!existing) {
+          const created = await prisma.inventoryBatch.create({
+            data: {
+              drugId: drugs[item.drugIndex].id,
+              batchNumber: item.batch,
+              quantity: item.qty,
+              purchasePrice: Math.floor(Math.random() * 30) + 10,
+              sellPrice: Math.floor(Math.random() * 50) + 20,
+              expiryDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), // 6 months from now
+              supplierId: suppliers[item.drugIndex % suppliers.length].id,
+              location: `Shelf-Main-${item.drugIndex + 1}`,
+            },
+          });
+          lowStockBatches.push(created);
+        } else {
+          lowStockBatches.push(existing);
+        }
+      }
+    }
+    console.log(`✅ Created/Retrieved ${lowStockBatches.length} low stock batches\n`);
+
+    // Delete existing shelf locations to start fresh
+    console.log('🗑️  Clearing existing shelf locations...');
+    await prisma.inventoryBatch.updateMany({
+      data: { shelfLocationId: null, slotPosition: null, queuePosition: null },
+    });
+    await prisma.shelfLocation.deleteMany({});
+    console.log('✅ Cleared existing shelf data\n');
+
+    // Create Shelf Locations for Smart Shelf Management (4 shelves, 4x5 matrix = 20 slots each)
+    console.log('🏪 Creating shelf locations (4 shelves with 4x5 matrix)...');
+    const shelfLocations = [];
+    const shelfData = [
+      { code: 'SHELF-A', name: 'Main Shelf A', row: '4', column: '5', zone: 'General', capacity: 20, notes: '4x5 matrix - Rows 1-4, Columns 1-5' },
+      { code: 'SHELF-B', name: 'Main Shelf B', row: '4', column: '5', zone: 'Prescription', capacity: 20, notes: '4x5 matrix - Rows 1-4, Columns 1-5' },
+      { code: 'SHELF-C', name: 'Main Shelf C', row: '4', column: '5', zone: 'OTC', capacity: 20, notes: '4x5 matrix - Rows 1-4, Columns 1-5' },
+      { code: 'SHELF-D', name: 'Expiry Watch Shelf', row: '4', column: '5', zone: 'Near Expiry', capacity: 20, notes: '4x5 matrix - Rows 1-4, Columns 1-5' },
+    ];
+
+    for (const shelf of shelfData) {
+      const created = await prisma.shelfLocation.create({
+        data: {
+          shelfCode: shelf.code,
+          shelfName: shelf.name,
+          row: shelf.row,
+          column: shelf.column,
+          zone: shelf.zone,
+          capacity: shelf.capacity,
+          status: 'ACTIVE',
+          notes: shelf.notes,
+        },
+      });
+      shelfLocations.push(created);
+    }
+    console.log(`✅ Created ${shelfLocations.length} shelf locations\n`);
+
+    // Assign ALL batches to shelf locations with slot positions (4x5 matrix: slots 1-20)
+    console.log('📍 Assigning all batches to shelf slots...');
+    let assignedCount = 0;
+    
+    // Track slot counts per shelf
+    const shelfSlotCounts = [0, 0, 0, 0]; // SHELF-A, B, C, D
+    
+    // First, distribute normal batches across shelves A, B, C
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      const shelfIndex = i % 3; // Rotate through A, B, C
+      const shelf = shelfLocations[shelfIndex];
+      const slotPosition = shelfSlotCounts[shelfIndex] + 1;
+      
+      await prisma.inventoryBatch.update({
+        where: { id: batch.id },
+        data: {
+          shelfLocationId: shelf.id,
+          slotPosition,
+          queuePosition: shelfSlotCounts[shelfIndex],
+        },
+      });
+      shelfSlotCounts[shelfIndex]++;
+      assignedCount++;
+    }
+    
+    // Distribute near-expiry batches across ALL 4 shelves (4-5 per shelf)
+    const expiringBatches = [...nearExpiryBatches, ...expiredBatches];
+    for (let i = 0; i < expiringBatches.length; i++) {
+      const batch = expiringBatches[i];
+      const shelfIndex = i % 4; // Rotate through all 4 shelves
+      const shelf = shelfLocations[shelfIndex];
+      const slotPosition = shelfSlotCounts[shelfIndex] + 1;
+      
+      await prisma.inventoryBatch.update({
+        where: { id: batch.id },
+        data: {
+          shelfLocationId: shelf.id,
+          slotPosition,
+          queuePosition: shelfSlotCounts[shelfIndex],
+        },
+      });
+      shelfSlotCounts[shelfIndex]++;
+      assignedCount++;
+    }
+    
+    // Distribute low stock batches across shelves A, B, C
+    for (let i = 0; i < lowStockBatches.length; i++) {
+      const batch = lowStockBatches[i];
+      const shelfIndex = i % 3; // Rotate through A, B, C
+      const shelf = shelfLocations[shelfIndex];
+      const slotPosition = shelfSlotCounts[shelfIndex] + 1;
+      
+      await prisma.inventoryBatch.update({
+        where: { id: batch.id },
+        data: {
+          shelfLocationId: shelf.id,
+          slotPosition,
+          queuePosition: shelfSlotCounts[shelfIndex],
+        },
+      });
+      shelfSlotCounts[shelfIndex]++;
+      assignedCount++;
+    }
+    
+    console.log(`✅ Assigned ${assignedCount} batches to shelf slots`);
+    console.log(`   SHELF-A: ${shelfSlotCounts[0]} items, SHELF-B: ${shelfSlotCounts[1]} items, SHELF-C: ${shelfSlotCounts[2]} items, SHELF-D: ${shelfSlotCounts[3]} items\n`);
+
     // Create Customers
     console.log('👥 Creating customers...');
     const customers = [];

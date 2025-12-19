@@ -3,15 +3,17 @@ import { Pool } from 'pg';
 import env from './env';
 import { PrismaClient } from '@prisma/client';
 
-// Configure PostgreSQL connection pool with proper timeout settings
+// Configure PostgreSQL connection pool with proper timeout settings for Neon serverless
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  max: 20, // Maximum number of clients in the pool
-  min: 2, // Minimum number of clients in the pool
+  max: 10, // Reduced for serverless - Maximum number of clients in the pool
+  min: 1, // Minimum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 20000, // Return an error after 20 seconds if connection could not be established
+  connectionTimeoutMillis: 60000, // Increased to 60 seconds for Neon cold starts
   keepAlive: true, // Keep TCP connections alive
   keepAliveInitialDelayMillis: 10000, // Start sending keep-alive packets after 10 seconds of inactivity
+  statement_timeout: 30000, // Statement timeout 30 seconds
+  query_timeout: 30000, // Query timeout 30 seconds
 });
 
 const adapter = new PrismaPg(pool);

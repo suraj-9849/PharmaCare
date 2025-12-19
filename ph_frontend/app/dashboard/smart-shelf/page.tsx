@@ -979,7 +979,7 @@ export default function SmartShelfPage() {
 
               {/* Batch Details Card */}
               <Card>
-                <CardHeader className="pb-3 border-b">
+                <CardHeader className="pb-3 border-b-2 ">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <CardTitle className="text-xl">
@@ -1008,7 +1008,7 @@ export default function SmartShelfPage() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-6">
+                <CardContent className="">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Quantity</p>
@@ -1033,17 +1033,17 @@ export default function SmartShelfPage() {
                     </div>
                   </div>
 
-                  <Separator className="my-6" />
+                  <Separator className="my-4" />
 
                   {/* Action Buttons */}
                   <div>
-                    <p className="text-sm font-medium mb-4">Take Action</p>
+                    <p className="text-xm font-medium mb-4">Take Action</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <Button
                         onClick={() => handleSwipe('RETURN_TO_VENDOR')}
                         disabled={isProcessingAction}
                         variant="outline"
-                        className="h-auto py-4 flex-col gap-2"
+                        className="h-auto py-4 flex-col gap-2 bg-green-200"
                       >
                         <ArrowRight className="h-5 w-5" />
                         <span className="font-semibold">Return to Vendor</span>
@@ -1053,7 +1053,7 @@ export default function SmartShelfPage() {
                         onClick={() => handleSwipe('DISCOUNT')}
                         disabled={isProcessingAction}
                         variant="outline"
-                        className="h-auto py-4 flex-col gap-2"
+                        className="h-auto py-4 flex-col gap-2 bg-orange-100"
                       >
                         <Percent className="h-5 w-5" />
                         <span className="font-semibold">Discount & Push</span>
@@ -1063,7 +1063,7 @@ export default function SmartShelfPage() {
                         onClick={() => handleSwipe('DISPOSE')}
                         disabled={isProcessingAction}
                         variant="outline"
-                        className="h-auto py-4 flex-col gap-2"
+                        className="h-auto py-4 flex-col gap-2 bg-red-200"
                       >
                         <Trash2 className="h-5 w-5" />
                         <span className="font-semibold">Dispose</span>
