@@ -4,7 +4,12 @@ import { config } from '../config/env';
 import { Prisma } from '@prisma/client';
 
 const openai = new OpenAI({
-  apiKey: config.OPENAI_API_KEY || '',
+  apiKey: config.OPENROUTER_API_KEY || '',
+  baseURL: 'https://openrouter.ai/api/v1',
+  defaultHeaders: {
+    'HTTP-Referer': 'http://localhost:5000',
+    'X-Title': 'PharmaCare',
+  },
 });
 
 interface PrescriptionData {
@@ -47,13 +52,13 @@ interface AvailabilityResult {
 
 export class PrescriptionService {
   /**
-   * Extract medications from prescription image using GPT-4o
+   * Extract medications from prescription image using OpenRouter (gpt-oss-120b:free)
    */
   async extractPrescriptionData(imageBuffer: Buffer, mimeType: string): Promise<PrescriptionData> {
     const base64Image = imageBuffer.toString('base64');
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-oss-120b:free',
       messages: [
         {
           role: 'user',
@@ -119,7 +124,7 @@ Important instructions:
   }
 
   /**
-   * Check availability of prescribed medications using GPT-4o for smart matching
+   * Check availability of prescribed medications using OpenRouter (gpt-oss-120b:free) for smart matching
    */
   async checkAvailability(
     medications: PrescriptionData['medications']
@@ -217,7 +222,7 @@ Important instructions:
         continue;
       }
 
-      // Use GPT-4o to intelligently match medication name with database drugs
+      // Use OpenRouter (gpt-oss-120b:free) to intelligently match medication name with database drugs
       const matchPrompt = `You are a pharmacy expert matching prescribed medications with available stock.
 
 Prescribed medication details:
@@ -261,7 +266,7 @@ Matching rules:
 - Return ONLY valid JSON, no markdown`;
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-oss-120b:free',
         messages: [
           {
             role: 'user',

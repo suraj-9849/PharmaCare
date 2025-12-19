@@ -5,7 +5,12 @@ import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 const openai = new OpenAI({
-  apiKey: config.OPENAI_API_KEY || '',
+  apiKey: config.OPENROUTER_API_KEY || '',
+  baseURL: 'https://openrouter.ai/api/v1',
+  defaultHeaders: {
+    'HTTP-Referer': 'http://localhost:5000',
+    'X-Title': 'PharmaCare',
+  },
 });
 
 interface InvoiceData {
@@ -43,13 +48,13 @@ interface DrugMatchResult {
 
 export class InvoiceService {
   /**
-   * Extract invoice data using GPT-4o
+   * Extract invoice data using OpenRouter (gpt-oss-120b:free)
    */
   async extractInvoiceData(imageBuffer: Buffer, mimeType: string): Promise<InvoiceData> {
     const base64Image = imageBuffer.toString('base64');
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-oss-120b:free',
       messages: [
         {
           role: 'user',
@@ -119,7 +124,7 @@ Important rules:
   }
 
   /**
-   * Match extracted drug name with existing drugs in database using GPT-4o
+   * Match extracted drug name with existing drugs in database using OpenRouter (gpt-oss-120b:free)
    */
   async matchDrug(extractedName: string, genericName?: string | null): Promise<DrugMatchResult> {
     // Get existing drugs from database
@@ -156,7 +161,7 @@ Matching rules:
 - Return ONLY valid JSON, no markdown`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-oss-120b:free',
       messages: [
         {
           role: 'user',

@@ -4,6 +4,10 @@ Includes: Text-to-SQL Chatbot + Intelligent Agent
 For ZENITH'25 Hackathon
 """
 
+# Suppress langgraph deprecation warnings
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -26,7 +30,9 @@ import pandas as pd
 # Load environment variables
 load_dotenv()
 
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+# Configure OpenRouter
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENROUTER_API_KEY")
+os.environ["OPENAI_API_BASE"] = "https://openrouter.ai/api/v1"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Import Agent Tools
@@ -87,8 +93,27 @@ def get_db_engine():
 
 # ==================== LLM SETUP ====================
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-llm_creative = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+llm = ChatOpenAI(
+    model="gpt-oss-120b:free",
+    temperature=0,
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    default_headers={
+        "HTTP-Referer": "http://localhost:8000",
+        "X-Title": "PharmaCare AI"
+    }
+)
+
+llm_creative = ChatOpenAI(
+    model="gpt-oss-120b:free",
+    temperature=0.7,
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    default_headers={
+        "HTTP-Referer": "http://localhost:8000",
+        "X-Title": "PharmaCare AI"
+    }
+)
 
 # ==================== CHATBOT (Text-to-SQL) ====================
 
@@ -303,7 +328,7 @@ async def health_check():
             conn.execute(text("SELECT 1"))
     except:
         db_status = "disconnected"
-    return HealthResponse(status="ok", database=db_status, model="gpt-4o-mini")
+    return HealthResponse(status="ok", database=db_status, model="gpt-oss-120b:free")
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
