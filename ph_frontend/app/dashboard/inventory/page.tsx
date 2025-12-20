@@ -52,9 +52,11 @@ import {
   AlertCircle,
   AlertTriangle,
   Package,
+  Download,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
+import { exportInventoryToExcel, generateFilename } from '@/lib/excel-export';
 import type { InventoryBatch, Drug, Supplier, PaginatedResponse } from '@/lib/types';
 
 interface BatchFormData {
@@ -86,6 +88,7 @@ export default function InventoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isExporting, setIsExporting] = useState(false);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -240,13 +243,34 @@ export default function InventoryPage() {
           <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
           <p className="text-gray-500">Manage inventory batches and stock levels</p>
         </div>
-        <Button
-          onClick={() => handleOpenDialog()}
-          className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-        >
-          <Plus className="h-4 w-4" />
-          Add Batch
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={async () => {
+              try {
+                setIsExporting(true);
+                exportInventoryToExcel(batches, generateFilename('inventory'));
+              } catch (error) {
+                console.error('Failed to export inventory:', error);
+                alert('Failed to export inventory to Excel');
+              } finally {
+                setIsExporting(false);
+              }
+            }}
+            disabled={isExporting || batches.length === 0}
+            variant="outline"
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {isExporting ? 'Exporting...' : 'Export Excel'}
+          </Button>
+          <Button
+            onClick={() => handleOpenDialog()}
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+          >
+            <Plus className="h-4 w-4" />
+            Add Batch
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

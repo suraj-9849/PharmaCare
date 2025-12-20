@@ -98,8 +98,8 @@ class FirebaseMessagingService {
 
     // Create notification channels for Android
     const androidChannel = AndroidNotificationChannel(
-      'DrugDesk_alerts',
-      'DrugDesk Alerts',
+      'pharmacare_alerts',
+      'pharmacare Alerts',
       description: 'Inventory and expiry alerts',
       importance: Importance.high,
       enableVibration: true,
@@ -208,8 +208,8 @@ class FirebaseMessagingService {
   /// Show local notification
   Future<void> _showLocalNotification(RemoteMessage message) async {
     const androidDetails = AndroidNotificationDetails(
-      'DrugDesk_alerts',
-      'DrugDesk Alerts',
+      'pharmacare_alerts',
+      'pharmacare Alerts',
       channelDescription: 'Inventory and expiry alerts',
       importance: Importance.high,
       priority: Priority.high,
@@ -231,7 +231,7 @@ class FirebaseMessagingService {
 
     await _localNotifications.show(
       message.hashCode,
-      message.notification?.title ?? 'DrugDesk Alert',
+      message.notification?.title ?? 'pharmacare Alert',
       message.notification?.body ?? 'New notification',
       notificationDetails,
       payload: message.data['type'],

@@ -288,16 +288,17 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
     if (firstExpiringBatch && firstExpiringBatch.id !== batch.id) {
       // Check if the first-expiring batch is already fully added to cart
       const firstBatchInCart = cart.find((i) => i.batchId === firstExpiringBatch.id);
-      const remainingFirstBatchQty = firstExpiringBatch.quantity - (firstBatchInCart?.quantity || 0);
-      
+      const remainingFirstBatchQty =
+        firstExpiringBatch.quantity - (firstBatchInCart?.quantity || 0);
+
       if (remainingFirstBatchQty > 0) {
         // Show FEFO Alert Dialog
         setFefoAlertData({
           batchNumber: firstExpiringBatch.batchNumber,
-          expiryDate: new Date(firstExpiringBatch.expiryDate).toLocaleDateString('en-IN', { 
-            day: '2-digit', 
-            month: 'short', 
-            year: 'numeric' 
+          expiryDate: new Date(firstExpiringBatch.expiryDate).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
           }),
           remainingQty: remainingFirstBatchQty,
         });
@@ -720,11 +721,15 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
                   const isExpiringSoon = daysUntilExpiry <= 90 && daysUntilExpiry > 0;
                   const isExpired = daysUntilExpiry <= 0;
                   const isFirstExpiring = isFirstExpiringBatch(batch);
-                  
+
                   // Check if this batch can be selected (FEFO compliance)
                   const firstExpiringBatch = getFirstExpiringBatchForDrug(batch.drugId);
-                  const firstBatchInCart = firstExpiringBatch ? cart.find((i) => i.batchId === firstExpiringBatch.id) : null;
-                  const remainingFirstBatchQty = firstExpiringBatch ? firstExpiringBatch.quantity - (firstBatchInCart?.quantity || 0) : 0;
+                  const firstBatchInCart = firstExpiringBatch
+                    ? cart.find((i) => i.batchId === firstExpiringBatch.id)
+                    : null;
+                  const remainingFirstBatchQty = firstExpiringBatch
+                    ? firstExpiringBatch.quantity - (firstBatchInCart?.quantity || 0)
+                    : 0;
                   const canSelect = isFirstExpiring || remainingFirstBatchQty <= 0;
 
                   return (
@@ -732,19 +737,21 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
                       key={batch.id}
                       onClick={() => addToCart(batch, 1)}
                       className={cn(
-                        "bg-white border-2 rounded-xl p-5 text-left transition-all group relative overflow-hidden",
-                        isFirstExpiring 
-                          ? "border-emerald-400 ring-2 ring-emerald-100 hover:border-emerald-500 hover:shadow-xl" 
+                        'bg-white border-2 rounded-xl p-5 text-left transition-all group relative overflow-hidden',
+                        isFirstExpiring
+                          ? 'border-emerald-400 ring-2 ring-emerald-100 hover:border-emerald-500 hover:shadow-xl'
                           : canSelect
-                            ? "border-gray-200 hover:border-emerald-500 hover:shadow-xl"
-                            : "border-gray-200 opacity-60 cursor-not-allowed"
+                            ? 'border-gray-200 hover:border-emerald-500 hover:shadow-xl'
+                            : 'border-gray-200 opacity-60 cursor-not-allowed'
                       )}
                     >
                       {/* Hover Effect */}
-                      <div className={cn(
-                        "absolute inset-0 bg-gradient-to-br to-transparent opacity-0 transition-opacity",
-                        canSelect ? "from-emerald-50 group-hover:opacity-100" : "from-gray-50"
-                      )} />
+                      <div
+                        className={cn(
+                          'absolute inset-0 bg-gradient-to-br to-transparent opacity-0 transition-opacity',
+                          canSelect ? 'from-emerald-50 group-hover:opacity-100' : 'from-gray-50'
+                        )}
+                      />
 
                       {/* FEFO Badge */}
                       {isFirstExpiring && !isExpired && (
@@ -754,11 +761,14 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
                           </Badge>
                         </div>
                       )}
-                      
+
                       {/* Locked Badge for non-first batches */}
                       {!isFirstExpiring && !canSelect && (
                         <div className="absolute -top-1 -right-1 z-10">
-                          <Badge variant="secondary" className="bg-gray-400 text-white text-[10px] px-2 py-0.5 shadow-md">
+                          <Badge
+                            variant="secondary"
+                            className="bg-gray-400 text-white text-[10px] px-2 py-0.5 shadow-md"
+                          >
                             FEFO LOCKED
                           </Badge>
                         </div>
@@ -766,10 +776,14 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
 
                       <div className="relative">
                         <div className="flex justify-between items-start mb-3">
-                          <h3 className={cn(
-                            "font-bold line-clamp-2 text-base leading-tight",
-                            canSelect ? "text-gray-900 group-hover:text-emerald-700" : "text-gray-500"
-                          )}>
+                          <h3
+                            className={cn(
+                              'font-bold line-clamp-2 text-base leading-tight',
+                              canSelect
+                                ? 'text-gray-900 group-hover:text-emerald-700'
+                                : 'text-gray-500'
+                            )}
+                          >
                             {batch.drug?.brandName || 'Unknown'}
                           </h3>
                           {(isExpiringSoon || isExpired) && (
@@ -1055,8 +1069,8 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
             ) : (
               <div className="p-4 space-y-3">
                 {cart.map((item, index) => (
-                  <div 
-                    key={item.batchId} 
+                  <div
+                    key={item.batchId}
                     className="bg-white rounded-xl border-2 border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all overflow-hidden"
                   >
                     {/* Item Header */}
@@ -1110,7 +1124,10 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
                             Batch: {item.batch.batchNumber}
                           </Badge>
                           {item.batch.shelfLocation && (
-                            <Badge variant="outline" className="font-medium text-blue-600 bg-blue-50 border-blue-200">
+                            <Badge
+                              variant="outline"
+                              className="font-medium text-blue-600 bg-blue-50 border-blue-200"
+                            >
                               <MapPinned className="h-3 w-3 mr-1" />
                               {item.batch.shelfLocation.shelfCode}
                             </Badge>
@@ -1299,9 +1316,10 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
             <AlertDialogDescription asChild>
               <div className="space-y-4 text-left">
                 <p className="text-gray-600">
-                  To maintain proper inventory rotation and regulatory compliance, you must sell the earliest expiring batch first.
+                  To maintain proper inventory rotation and regulatory compliance, you must sell the
+                  earliest expiring batch first.
                 </p>
-                
+
                 {fefoAlertData && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
                     <div className="flex justify-between items-center">
@@ -1314,19 +1332,22 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium text-gray-600">Available Quantity:</span>
-                      <span className="font-bold text-emerald-600">{fefoAlertData.remainingQty} units</span>
+                      <span className="font-bold text-emerald-600">
+                        {fefoAlertData.remainingQty} units
+                      </span>
                     </div>
                   </div>
                 )}
 
                 <p className="text-sm text-gray-500 italic">
-                  Please select the batch marked &quot;SELL FIRST&quot; before selecting other batches of the same product.
+                  Please select the batch marked &quot;SELL FIRST&quot; before selecting other
+                  batches of the same product.
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => setShowFefoAlert(false)}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
             >
@@ -1334,7 +1355,6 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-
       </AlertDialog>
 
       {/* Shelf Location View Dialog */}
@@ -1361,7 +1381,9 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <span>{viewingShelfData.row} × {viewingShelfData.column} Grid</span>
+                  <span>
+                    {viewingShelfData.row} × {viewingShelfData.column} Grid
+                  </span>
                   <span>•</span>
                   <span>{viewingShelfData.capacity} Total Slots</span>
                   {viewingShelfData.zone && (
@@ -1391,189 +1413,218 @@ export function POSMode({ isOpen, onClose, onSaleCreated }: POSModeProps) {
                   </div>
                   <div className="p-6 space-y-4 bg-gradient-to-br from-white via-slate-50/30 to-indigo-50/20">
                     {/* Rows */}
-                    {Array.from({ length: parseInt(viewingShelfData.row || '3') }).map((_, rowIdx) => {
-                      return (
-                        <div key={rowIdx} className="relative pl-20">
-                          {/* Row Label - Premium Professional Style */}
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 h-auto flex items-center">
-                            <div className="px-3 py-2 rounded-lg bg-gradient-to-br from-blue-500 via-indigo-500 to-slate-800 text-white text-[11px] font-bold shadow-lg border border-indigo-400/40 uppercase tracking-wider">
-                              Row {rowIdx + 1}
+                    {Array.from({ length: parseInt(viewingShelfData.row || '3') }).map(
+                      (_, rowIdx) => {
+                        return (
+                          <div key={rowIdx} className="relative pl-20">
+                            {/* Row Label - Premium Professional Style */}
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 h-auto flex items-center">
+                              <div className="px-3 py-2 rounded-lg bg-gradient-to-br from-blue-500 via-indigo-500 to-slate-800 text-white text-[11px] font-bold shadow-lg border border-indigo-400/40 uppercase tracking-wider">
+                                Row {rowIdx + 1}
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Shelf Container - Professional warehouse style */}
-                          <div className="bg-gradient-to-br from-white via-slate-50/50 to-indigo-50/40 rounded-xl border-2 border-indigo-300/60 p-4 shadow-lg">
-                            <div className="flex gap-2">
-                              {/* Slots */}
-                              {Array.from({ length: parseInt(viewingShelfData.column || '5') }).map((_, colIdx) => {
-                                const slotNumber = rowIdx * parseInt(viewingShelfData.column || '5') + colIdx + 1;
-                                const batchInSlot = viewingShelfData.batches?.find(
-                                  (b) => Number(b.slotPosition) === slotNumber
-                                );
-                                const isHighlighted = slotNumber === highlightedSlot;
+                            {/* Shelf Container - Professional warehouse style */}
+                            <div className="bg-gradient-to-br from-white via-slate-50/50 to-indigo-50/40 rounded-xl border-2 border-indigo-300/60 p-4 shadow-lg">
+                              <div className="flex gap-2">
+                                {/* Slots */}
+                                {Array.from({
+                                  length: parseInt(viewingShelfData.column || '5'),
+                                }).map((_, colIdx) => {
+                                  const slotNumber =
+                                    rowIdx * parseInt(viewingShelfData.column || '5') + colIdx + 1;
+                                  const batchInSlot = viewingShelfData.batches?.find(
+                                    (b) => Number(b.slotPosition) === slotNumber
+                                  );
+                                  const isHighlighted = slotNumber === highlightedSlot;
 
-                                // Determine color based on expiry status and highlight
-                                const batch = batchInSlot;
-                                const daysUntilExpiry = batch?.daysUntilExpiry ?? 999;
-                                
-                                const getSlotColor = () => {
-                                  if (isHighlighted) {
-                                    return {
-                                      bg: 'bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-100',
-                                      border: 'border-blue-500 ring-4 ring-blue-300/50',
-                                      text: 'text-blue-800',
-                                      indicator: 'bg-blue-200',
-                                      barColor: 'from-blue-600 to-indigo-500',
-                                    };
-                                  }
-                                  if (!batch) {
-                                    return {
-                                      bg: 'bg-gradient-to-br from-slate-50 to-slate-100',
-                                      border: 'border-slate-300',
-                                      text: 'text-slate-500',
-                                      indicator: 'bg-slate-200',
-                                      barColor: 'from-slate-400 to-slate-300',
-                                    };
-                                  }
-                                  if (daysUntilExpiry < 0) {
-                                    return {
-                                      bg: 'bg-gradient-to-br from-red-50 via-white to-red-50/50',
-                                      border: 'border-red-400/60',
-                                      text: 'text-red-900',
-                                      indicator: 'bg-red-200/70',
-                                      barColor: 'from-red-600 to-red-500',
-                                    };
-                                  } else if (daysUntilExpiry <= 7) {
-                                    return {
-                                      bg: 'bg-gradient-to-br from-red-50 via-white to-red-50/50',
-                                      border: 'border-red-400/60',
-                                      text: 'text-red-800',
-                                      indicator: 'bg-red-200/70',
-                                      barColor: 'from-red-600 to-red-500',
-                                    };
-                                  } else if (daysUntilExpiry <= 14) {
-                                    return {
-                                      bg: 'bg-gradient-to-br from-orange-50 via-white to-orange-50/50',
-                                      border: 'border-orange-400/60',
-                                      text: 'text-orange-900',
-                                      indicator: 'bg-orange-200/70',
-                                      barColor: 'from-orange-600 to-orange-500',
-                                    };
-                                  } else if (daysUntilExpiry <= 30) {
-                                    return {
-                                      bg: 'bg-gradient-to-br from-amber-50 via-white to-amber-50/50',
-                                      border: 'border-amber-400/60',
-                                      text: 'text-amber-900',
-                                      indicator: 'bg-amber-200/70',
-                                      barColor: 'from-amber-600 to-amber-500',
-                                    };
-                                  } else {
-                                    return {
-                                      bg: 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30',
-                                      border: 'border-indigo-300/60',
-                                      text: 'text-slate-800',
-                                      indicator: 'bg-indigo-200/70',
-                                      barColor: 'from-indigo-600 to-blue-500',
-                                    };
-                                  }
-                                };
+                                  // Determine color based on expiry status and highlight
+                                  const batch = batchInSlot;
+                                  const daysUntilExpiry = batch?.daysUntilExpiry ?? 999;
 
-                                const slotColor = getSlotColor();
+                                  const getSlotColor = () => {
+                                    if (isHighlighted) {
+                                      return {
+                                        bg: 'bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-100',
+                                        border: 'border-blue-500 ring-4 ring-blue-300/50',
+                                        text: 'text-blue-800',
+                                        indicator: 'bg-blue-200',
+                                        barColor: 'from-blue-600 to-indigo-500',
+                                      };
+                                    }
+                                    if (!batch) {
+                                      return {
+                                        bg: 'bg-gradient-to-br from-slate-50 to-slate-100',
+                                        border: 'border-slate-300',
+                                        text: 'text-slate-500',
+                                        indicator: 'bg-slate-200',
+                                        barColor: 'from-slate-400 to-slate-300',
+                                      };
+                                    }
+                                    if (daysUntilExpiry < 0) {
+                                      return {
+                                        bg: 'bg-gradient-to-br from-red-50 via-white to-red-50/50',
+                                        border: 'border-red-400/60',
+                                        text: 'text-red-900',
+                                        indicator: 'bg-red-200/70',
+                                        barColor: 'from-red-600 to-red-500',
+                                      };
+                                    } else if (daysUntilExpiry <= 7) {
+                                      return {
+                                        bg: 'bg-gradient-to-br from-red-50 via-white to-red-50/50',
+                                        border: 'border-red-400/60',
+                                        text: 'text-red-800',
+                                        indicator: 'bg-red-200/70',
+                                        barColor: 'from-red-600 to-red-500',
+                                      };
+                                    } else if (daysUntilExpiry <= 14) {
+                                      return {
+                                        bg: 'bg-gradient-to-br from-orange-50 via-white to-orange-50/50',
+                                        border: 'border-orange-400/60',
+                                        text: 'text-orange-900',
+                                        indicator: 'bg-orange-200/70',
+                                        barColor: 'from-orange-600 to-orange-500',
+                                      };
+                                    } else if (daysUntilExpiry <= 30) {
+                                      return {
+                                        bg: 'bg-gradient-to-br from-amber-50 via-white to-amber-50/50',
+                                        border: 'border-amber-400/60',
+                                        text: 'text-amber-900',
+                                        indicator: 'bg-amber-200/70',
+                                        barColor: 'from-amber-600 to-amber-500',
+                                      };
+                                    } else {
+                                      return {
+                                        bg: 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30',
+                                        border: 'border-indigo-300/60',
+                                        text: 'text-slate-800',
+                                        indicator: 'bg-indigo-200/70',
+                                        barColor: 'from-indigo-600 to-blue-500',
+                                      };
+                                    }
+                                  };
 
-                                return (
-                                  <div key={colIdx} className="flex-1 group/slot">
-                                    {/* Slot Card - Professional Design */}
-                                    <div
-                                      className={cn(
-                                        'relative h-28 rounded-xl border-2 flex flex-col transition-all duration-300',
-                                        'shadow-md hover:shadow-xl overflow-hidden',
-                                        isHighlighted && 'scale-105 -translate-y-1',
-                                        slotColor.bg,
-                                        slotColor.border
-                                      )}
-                                    >
-                                      {/* Smooth gradient overlay on hover */}
-                                      <div className="absolute inset-0 opacity-0 group-hover/slot:opacity-50 bg-gradient-to-br from-white via-transparent to-transparent transition-opacity duration-300"></div>
+                                  const slotColor = getSlotColor();
 
-                                      {/* Top Status Bar */}
-                                      <div className={cn(
-                                        'h-1.5 bg-gradient-to-r transition-all duration-300',
-                                        `${slotColor.barColor}`
-                                      )}></div>
+                                  return (
+                                    <div key={colIdx} className="flex-1 group/slot">
+                                      {/* Slot Card - Professional Design */}
+                                      <div
+                                        className={cn(
+                                          'relative h-28 rounded-xl border-2 flex flex-col transition-all duration-300',
+                                          'shadow-md hover:shadow-xl overflow-hidden',
+                                          isHighlighted && 'scale-105 -translate-y-1',
+                                          slotColor.bg,
+                                          slotColor.border
+                                        )}
+                                      >
+                                        {/* Smooth gradient overlay on hover */}
+                                        <div className="absolute inset-0 opacity-0 group-hover/slot:opacity-50 bg-gradient-to-br from-white via-transparent to-transparent transition-opacity duration-300"></div>
 
-                                      {/* Highlight Ping Animation */}
-                                      {isHighlighted && (
-                                        <div className="absolute top-1 right-1 z-20">
-                                          <span className="flex h-3 w-3">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600"></span>
-                                          </span>
-                                        </div>
-                                      )}
-
-                                      {batchInSlot ? (
-                                        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-2 py-2 gap-0.5">
-                                          {/* Icon Container */}
-                                          <div className={cn('p-1.5 rounded-lg', slotColor.indicator)}>
-                                            <Pill className={cn('h-3 w-3', slotColor.text)} />
-                                          </div>
-
-                                          {/* Brand Name */}
-                                          <p className={cn(
-                                            'text-[11px] font-bold truncate w-full text-center leading-snug',
-                                            slotColor.text
-                                          )}>
-                                            {batchInSlot.drug?.brandName || 'Medicine'}
-                                          </p>
-
-                                          {/* Quantity */}
-                                          <p className={cn(
-                                            'text-[10px] font-semibold opacity-85',
-                                            slotColor.text
-                                          )}>
-                                            QTY: {batchInSlot.quantity}
-                                          </p>
-
-                                          {/* Expiry Status */}
-                                          {daysUntilExpiry < 0 && (
-                                            <span className={cn(
-                                              'text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md',
-                                              slotColor.text, slotColor.indicator
-                                            )}>
-                                              EXPIRED
-                                            </span>
+                                        {/* Top Status Bar */}
+                                        <div
+                                          className={cn(
+                                            'h-1.5 bg-gradient-to-r transition-all duration-300',
+                                            `${slotColor.barColor}`
                                           )}
-                                          {daysUntilExpiry >= 0 && daysUntilExpiry <= 7 && (
-                                            <span className={cn(
-                                              'text-[9px] font-bold px-1.5 py-0.5 rounded-md',
-                                              slotColor.text, slotColor.indicator
-                                            )}>
-                                              {daysUntilExpiry}d left
+                                        ></div>
+
+                                        {/* Highlight Ping Animation */}
+                                        {isHighlighted && (
+                                          <div className="absolute top-1 right-1 z-20">
+                                            <span className="flex h-3 w-3">
+                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+                                              <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600"></span>
                                             </span>
-                                          )}
-                                        </div>
-                                      ) : (
-                                        <div className="relative z-10 flex flex-col items-center justify-center flex-1">
-                                          <div className={cn('p-1.5 rounded-lg mb-1', slotColor.indicator)}>
-                                            <Box className={cn('h-3 w-3', slotColor.text)} />
                                           </div>
-                                          <p className={cn(
-                                            'text-[9px] font-bold uppercase tracking-wider text-center',
-                                            slotColor.text
-                                          )}>
-                                            Empty
-                                          </p>
-                                        </div>
-                                      )}
+                                        )}
+
+                                        {batchInSlot ? (
+                                          <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-2 py-2 gap-0.5">
+                                            {/* Icon Container */}
+                                            <div
+                                              className={cn(
+                                                'p-1.5 rounded-lg',
+                                                slotColor.indicator
+                                              )}
+                                            >
+                                              <Pill className={cn('h-3 w-3', slotColor.text)} />
+                                            </div>
+
+                                            {/* Brand Name */}
+                                            <p
+                                              className={cn(
+                                                'text-[11px] font-bold truncate w-full text-center leading-snug',
+                                                slotColor.text
+                                              )}
+                                            >
+                                              {batchInSlot.drug?.brandName || 'Medicine'}
+                                            </p>
+
+                                            {/* Quantity */}
+                                            <p
+                                              className={cn(
+                                                'text-[10px] font-semibold opacity-85',
+                                                slotColor.text
+                                              )}
+                                            >
+                                              QTY: {batchInSlot.quantity}
+                                            </p>
+
+                                            {/* Expiry Status */}
+                                            {daysUntilExpiry < 0 && (
+                                              <span
+                                                className={cn(
+                                                  'text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md',
+                                                  slotColor.text,
+                                                  slotColor.indicator
+                                                )}
+                                              >
+                                                EXPIRED
+                                              </span>
+                                            )}
+                                            {daysUntilExpiry >= 0 && daysUntilExpiry <= 7 && (
+                                              <span
+                                                className={cn(
+                                                  'text-[9px] font-bold px-1.5 py-0.5 rounded-md',
+                                                  slotColor.text,
+                                                  slotColor.indicator
+                                                )}
+                                              >
+                                                {daysUntilExpiry}d left
+                                              </span>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <div className="relative z-10 flex flex-col items-center justify-center flex-1">
+                                            <div
+                                              className={cn(
+                                                'p-1.5 rounded-lg mb-1',
+                                                slotColor.indicator
+                                              )}
+                                            >
+                                              <Box className={cn('h-3 w-3', slotColor.text)} />
+                                            </div>
+                                            <p
+                                              className={cn(
+                                                'text-[9px] font-bold uppercase tracking-wider text-center',
+                                                slotColor.text
+                                              )}
+                                            >
+                                              Empty
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                );
-                              })}
+                                  );
+                                })}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      }
+                    )}
                   </div>
                 </div>
               )}

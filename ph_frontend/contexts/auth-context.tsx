@@ -37,30 +37,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedToken && storedUser) {
       // Set initial state from storage
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-
-      // Validate token with server
-      apiClient.auth
-        .validate()
-        .then((response) => {
-          if (response.success && response.data) {
-            const data = response.data as { valid: boolean; user: User };
-            if (data.valid) {
-              setUser(data.user);
-            } else {
-              logout();
-            }
-          }
-        })
-        .catch(() => {
-          logout();
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    } else {
-      setIsLoading(false);
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        // Invalid stored user, clear storage
+        logout();
+      }
     }
+    setIsLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npx prisma format:*)",
+      "Bash(npx prisma db push)",
+      "Bash(npx prisma generate:*)",
+      "Bash(if [ -f page.tsx.backup ])",
+      "Bash(then cp page.tsx.backup page.tsx)",
+      "Bash(else echo \"No backup found\")",
+      "Bash(fi)"
     ]
   }
 }

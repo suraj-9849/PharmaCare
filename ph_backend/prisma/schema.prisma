@@ -98,6 +98,7 @@ model Drug {
   saleItems        SaleItem[]
   stockAlerts      StockAlert[]
   reorderRequests  ReorderRequest[]
+  shelfItems       ShelfItem[] // NEW: Items on shelves
 
   @@map("drugs")
 }
@@ -119,30 +120,32 @@ model Supplier {
 }
 
 model InventoryBatch {
-  id            String   @id @default(cuid())
-  drugId        String   @map("drug_id")
-  batchNumber   String   @map("batch_number")
-  quantity      Int
-  purchasePrice Decimal  @map("purchase_price") @db.Decimal(10, 2)
-  sellPrice     Decimal  @map("sell_price") @db.Decimal(10, 2)
-  expiryDate    DateTime @map("expiry_date")
-  supplierId    String?  @map("supplier_id")
-  location      String?
-  shelfLocationId String? @map("shelf_location_id") // Link to smart shelf
-  slotPosition  Int?     @map("slot_position") // Physical slot position on shelf (1-N)
-  queuePosition Int?     @map("queue_position") // Position in virtual queue (0 = front)
-  dateAdded     DateTime @default(now()) @map("date_added")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(cuid())
+  drugId           String   @map("drug_id")
+  batchNumber      String   @map("batch_number")
+  quantity         Int // Total quantity in this batch
+  assignedQuantity Int      @default(0) @map("assigned_quantity") // Quantity assigned to shelves
+  purchasePrice    Decimal  @map("purchase_price") @db.Decimal(10, 2)
+  sellPrice        Decimal  @map("sell_price") @db.Decimal(10, 2)
+  expiryDate       DateTime @map("expiry_date")
+  supplierId       String?  @map("supplier_id")
+  location         String?
+  shelfLocationId  String?  @map("shelf_location_id") // Link to old smart shelf (deprecated, keeping for backward compatibility)
+  slotPosition     Int?     @map("slot_position") // Physical slot position on shelf (1-N) (deprecated)
+  queuePosition    Int?     @map("queue_position") // Position in virtual queue (0 = front) (deprecated)
+  dateAdded        DateTime @default(now()) @map("date_added")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   // Relations
-  drug          Drug           @relation(fields: [drugId], references: [id], onDelete: Cascade)
-  supplier      Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  shelfLocation ShelfLocation? @relation(fields: [shelfLocationId], references: [id], onDelete: SetNull)
-  saleItems     SaleItem[]
-  expiryActions ExpiryAction_Record[]
-  pickedAlerts  IncorrectPickAlert[] @relation("PickedBatch")
-  expectedAlerts IncorrectPickAlert[] @relation("ExpectedBatch")
+  drug           Drug                  @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  supplier       Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  shelfLocation  ShelfLocation?        @relation(fields: [shelfLocationId], references: [id], onDelete: SetNull)
+  saleItems      SaleItem[]
+  expiryActions  ExpiryAction_Record[]
+  pickedAlerts   IncorrectPickAlert[]  @relation("PickedBatch")
+  expectedAlerts IncorrectPickAlert[]  @relation("ExpectedBatch")
+  shelfItems     ShelfItem[] // NEW: Items on new shelf system
 
   @@map("inventory_batches")
 }
@@ -162,10 +165,10 @@ model Sale {
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  customer               Customer?               @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  saleItems              SaleItem[]
-  prescriptionHistories  PrescriptionHistory[]
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer              Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  saleItems             SaleItem[]
+  prescriptionHistories PrescriptionHistory[]
 
   @@map("sales")
 }
@@ -203,15 +206,15 @@ model Customer {
 }
 
 model StockAlert {
-  id               String   @id @default(cuid())
-  drugId           String   @map("drug_id")
-  batchId          String?  @map("batch_id") // For expiry alerts
-  alertType        String   @map("alert_type") // LOW_STOCK, EXPIRING_SOON, EXPIRED
+  id               String    @id @default(cuid())
+  drugId           String    @map("drug_id")
+  batchId          String?   @map("batch_id") // For expiry alerts
+  alertType        String    @map("alert_type") // LOW_STOCK, EXPIRING_SOON, EXPIRED
   message          String
-  isRead           Boolean  @default(false) @map("is_read")
-  notificationSent Boolean  @default(false) @map("notification_sent") // Track if FCM notification was sent
+  isRead           Boolean   @default(false) @map("is_read")
+  notificationSent Boolean   @default(false) @map("notification_sent") // Track if FCM notification was sent
   sentAt           DateTime? @map("sent_at") // When notification was sent
-  createdAt        DateTime @default(now()) @map("created_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
 
   // Relations
   drug Drug @relation(fields: [drugId], references: [id], onDelete: Cascade)
@@ -224,7 +227,7 @@ model UserDevice {
   userId    String   @map("user_id")
   fcmToken  String   @unique @map("fcm_token") // Firebase Cloud Messaging token
   deviceId  String?  @map("device_id") // Device identifier
-  platform  String?  // 'ios' or 'android'
+  platform  String? // 'ios' or 'android'
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -243,58 +246,58 @@ model SystemSetting {
 }
 
 model ReorderRequest {
-  id               String          @id @default(cuid())
-  drugId           String          @map("drug_id")
-  requestedBy      String          @map("requested_by") // User ID
-  requestedQty     Int             @map("requested_qty")
-  currentStock     Int             @default(0) @map("current_stock")
-  reorderLevel     Int             @map("reorder_level")
-  status           ReorderStatus   @default(PENDING)
-  priority         String          @default("MEDIUM") // HIGH, MEDIUM, LOW
-  notes            String?
-  approvedBy       String?         @map("approved_by") // User ID
-  approvedAt       DateTime?       @map("approved_at")
-  orderedAt        DateTime?       @map("ordered_at")
-  receivedAt       DateTime?       @map("received_at")
-  completedAt      DateTime?       @map("completed_at")
-  supplierId       String?         @map("supplier_id")
-  supplierName     String?         @map("supplier_name")
-  supplierEmail    String?         @map("supplier_email")
-  supplierUrl      String?         @map("supplier_url")
-  supplierSource   SupplierSource? @map("supplier_source")
-  estimatedCost    Decimal?        @map("estimated_cost") @db.Decimal(10, 2)
-  actualCost       Decimal?        @map("actual_cost") @db.Decimal(10, 2)
-  emailSent        Boolean         @default(false) @map("email_sent")
-  emailSentAt      DateTime?       @map("email_sent_at")
-  createdAt        DateTime        @default(now()) @map("created_at")
-  updatedAt        DateTime        @updatedAt @map("updated_at")
+  id             String          @id @default(cuid())
+  drugId         String          @map("drug_id")
+  requestedBy    String          @map("requested_by") // User ID
+  requestedQty   Int             @map("requested_qty")
+  currentStock   Int             @default(0) @map("current_stock")
+  reorderLevel   Int             @map("reorder_level")
+  status         ReorderStatus   @default(PENDING)
+  priority       String          @default("MEDIUM") // HIGH, MEDIUM, LOW
+  notes          String?
+  approvedBy     String?         @map("approved_by") // User ID
+  approvedAt     DateTime?       @map("approved_at")
+  orderedAt      DateTime?       @map("ordered_at")
+  receivedAt     DateTime?       @map("received_at")
+  completedAt    DateTime?       @map("completed_at")
+  supplierId     String?         @map("supplier_id")
+  supplierName   String?         @map("supplier_name")
+  supplierEmail  String?         @map("supplier_email")
+  supplierUrl    String?         @map("supplier_url")
+  supplierSource SupplierSource? @map("supplier_source")
+  estimatedCost  Decimal?        @map("estimated_cost") @db.Decimal(10, 2)
+  actualCost     Decimal?        @map("actual_cost") @db.Decimal(10, 2)
+  emailSent      Boolean         @default(false) @map("email_sent")
+  emailSentAt    DateTime?       @map("email_sent_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
   // Relations
-  drug           Drug      @relation(fields: [drugId], references: [id], onDelete: Cascade)
-  requestedByUser User     @relation("RequestedReorders", fields: [requestedBy], references: [id], onDelete: Cascade)
-  approvedByUser  User?    @relation("ApprovedReorders", fields: [approvedBy], references: [id], onDelete: SetNull)
+  drug            Drug      @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  requestedByUser User      @relation("RequestedReorders", fields: [requestedBy], references: [id], onDelete: Cascade)
+  approvedByUser  User?     @relation("ApprovedReorders", fields: [approvedBy], references: [id], onDelete: SetNull)
   supplier        Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
   @@map("reorder_requests")
 }
 
 model PrescriptionHistory {
-  id                  String   @id @default(cuid())
-  saleId              String   @map("sale_id")
-  patientName         String   @map("patient_name")
-  doctorName          String?  @map("doctor_name")
-  prescriptionDate    DateTime? @map("prescription_date")
-  medications         String   @db.Text // JSON array of medications
-  totalAmount         Decimal  @map("total_amount") @db.Decimal(10, 2)
-  paymentMethod       String   @map("payment_method")
-  customerName        String   @map("customer_name")
-  customerPhone       String?  @map("customer_phone")
-  customerEmail       String?  @map("customer_email")
-  customerAddress     String?  @map("customer_address")
-  notes               String?
-  confidence          Float?   @default(0.0) // AI scan confidence score
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  id               String    @id @default(cuid())
+  saleId           String    @map("sale_id")
+  patientName      String    @map("patient_name")
+  doctorName       String?   @map("doctor_name")
+  prescriptionDate DateTime? @map("prescription_date")
+  medications      String    @db.Text // JSON array of medications
+  totalAmount      Decimal   @map("total_amount") @db.Decimal(10, 2)
+  paymentMethod    String    @map("payment_method")
+  customerName     String    @map("customer_name")
+  customerPhone    String?   @map("customer_phone")
+  customerEmail    String?   @map("customer_email")
+  customerAddress  String?   @map("customer_address")
+  notes            String?
+  confidence       Float?    @default(0.0) // AI scan confidence score
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   // Relations
   sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
@@ -305,59 +308,110 @@ model PrescriptionHistory {
 // ==================== SMART SHELF MODELS ====================
 
 model ShelfLocation {
-  id            String       @id @default(cuid())
-  shelfCode     String       @unique @map("shelf_code") // e.g., "A1", "B2", "C3"
-  shelfName     String       @map("shelf_name")
-  row           String?      // Physical row identifier
-  column        String?      // Physical column identifier
-  zone          String?      // Storage zone (e.g., "Refrigerated", "Controlled", "General")
-  capacity      Int          @default(50) // Max items this shelf can hold
-  status        ShelfStatus  @default(ACTIVE)
-  qrCode        String?      @unique @map("qr_code") // QR code for scanning
-  notes         String?
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  id        String      @id @default(cuid())
+  shelfCode String      @unique @map("shelf_code") // e.g., "A1", "B2", "C3"
+  shelfName String      @map("shelf_name")
+  row       String? // Physical row identifier
+  column    String? // Physical column identifier
+  zone      String? // Storage zone (e.g., "Refrigerated", "Controlled", "General")
+  capacity  Int         @default(50) // Max items this shelf can hold
+  status    ShelfStatus @default(ACTIVE)
+  qrCode    String?     @unique @map("qr_code") // QR code for scanning
+  notes     String?
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
 
   // Relations
-  batches       InventoryBatch[]
-  pickAlerts    IncorrectPickAlert[]
+  batches    InventoryBatch[]
+  pickAlerts IncorrectPickAlert[]
 
   @@map("shelf_locations")
 }
 
 model IncorrectPickAlert {
-  id                String         @id @default(cuid())
-  shelfLocationId   String         @map("shelf_location_id")
-  batchIdPicked     String         @map("batch_id_picked") // The batch they tried to pick
-  batchIdExpected   String         @map("batch_id_expected") // The batch at front of queue
-  pickedBy          String?        @map("picked_by") // User ID
-  acknowledged      Boolean        @default(false)
-  acknowledgedAt    DateTime?      @map("acknowledged_at")
-  createdAt         DateTime       @default(now()) @map("created_at")
+  id              String    @id @default(cuid())
+  shelfLocationId String    @map("shelf_location_id")
+  batchIdPicked   String    @map("batch_id_picked") // The batch they tried to pick
+  batchIdExpected String    @map("batch_id_expected") // The batch at front of queue
+  pickedBy        String?   @map("picked_by") // User ID
+  acknowledged    Boolean   @default(false)
+  acknowledgedAt  DateTime? @map("acknowledged_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
 
   // Relations
-  shelfLocation     ShelfLocation  @relation(fields: [shelfLocationId], references: [id], onDelete: Cascade)
-  batchPicked       InventoryBatch @relation("PickedBatch", fields: [batchIdPicked], references: [id], onDelete: Cascade)
-  batchExpected     InventoryBatch @relation("ExpectedBatch", fields: [batchIdExpected], references: [id], onDelete: Cascade)
+  shelfLocation ShelfLocation  @relation(fields: [shelfLocationId], references: [id], onDelete: Cascade)
+  batchPicked   InventoryBatch @relation("PickedBatch", fields: [batchIdPicked], references: [id], onDelete: Cascade)
+  batchExpected InventoryBatch @relation("ExpectedBatch", fields: [batchIdExpected], references: [id], onDelete: Cascade)
 
   @@map("incorrect_pick_alerts")
 }
 
 model ExpiryAction_Record {
-  id             String        @id @default(cuid())
-  batchId        String        @map("batch_id")
+  id             String       @id @default(cuid())
+  batchId        String       @map("batch_id")
   action         ExpiryAction
-  performedBy    String?       @map("performed_by") // User ID
-  quantity       Int           // Quantity affected
+  performedBy    String?      @map("performed_by") // User ID
+  quantity       Int // Quantity affected
   reason         String?
-  vendorReturn   Boolean       @default(false) @map("vendor_return") // If returned to vendor
-  discountAmount Decimal?      @map("discount_amount") @db.Decimal(10, 2) // If discounted
+  vendorReturn   Boolean      @default(false) @map("vendor_return") // If returned to vendor
+  discountAmount Decimal?     @map("discount_amount") @db.Decimal(10, 2) // If discounted
   notes          String?
-  createdAt      DateTime      @default(now()) @map("created_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
 
   // Relations
-  batch          InventoryBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch InventoryBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@map("expiry_action_records")
 }
 
+// ==================== NEW SMART SHELF SYSTEM ====================
+
+model Cupboard {
+  id          String   @id @default(cuid())
+  name        String // "Cupboard A", "Refrigerated Storage", etc.
+  description String?  @db.Text
+  order       Int      @default(0) // Display order
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  shelves Shelf[]
+
+  @@map("cupboards")
+}
+
+model Shelf {
+  id               String   @id @default(cuid())
+  cupboardId       String   @map("cupboard_id")
+  name             String // "Shelf 1", "Top Shelf", etc.
+  capacity         Int // Maximum units this shelf can hold
+  currentOccupancy Int      @default(0) @map("current_occupancy") // Current total units
+  order            Int      @default(0) // Display order within cupboard
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  cupboard   Cupboard    @relation(fields: [cupboardId], references: [id], onDelete: Cascade)
+  shelfItems ShelfItem[]
+
+  @@map("shelves")
+}
+
+model ShelfItem {
+  id         String   @id @default(cuid())
+  shelfId    String   @map("shelf_id")
+  drugId     String   @map("drug_id")
+  batchId    String   @map("batch_id")
+  quantity   Int // Quantity of this drug on this shelf
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  shelf Shelf          @relation(fields: [shelfId], references: [id], onDelete: Cascade)
+  drug  Drug           @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  batch InventoryBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  // A drug-batch combination can only be on a shelf once
+  @@unique([shelfId, drugId, batchId])
+  @@map("shelf_items")
+}

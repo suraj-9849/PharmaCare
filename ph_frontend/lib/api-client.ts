@@ -58,6 +58,11 @@ class ApiClient {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle 401 Unauthorized - clear auth tokens (React auth context will handle redirect)
+        if (response.status === 401 && typeof window !== 'undefined') {
+          localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+          localStorage.removeItem(STORAGE_KEYS.USER);
+        }
         throw new Error(data.message || 'An error occurred');
       }
 

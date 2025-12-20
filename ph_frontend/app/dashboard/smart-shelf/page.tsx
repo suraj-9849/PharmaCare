@@ -142,8 +142,14 @@ export default function SmartShelfPage() {
   );
   const [showDiscountDialog, setShowDiscountDialog] = useState(false);
   const [showDisposeDialog, setShowDisposeDialog] = useState(false);
+  const [showReturnToVendorDialog, setShowReturnToVendorDialog] = useState(false);
   const [discountPercentage, setDiscountPercentage] = useState<number>(0);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const [returnToVendorData, setReturnToVendorData] = useState({
+    selectedSupplierId: '',
+    collectionDays: 7,
+    confirmText: '',
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -196,7 +202,7 @@ export default function SmartShelfPage() {
         setSuppliers(
           ((suppliersRes.data as Supplier[]) || []).map((supplier) => ({
             id: supplier.id,
-            name: supplier.name || '',
+            name: supplier.supplierName || supplier.name || '',
             contactEmail: supplier.email,
           }))
         );
@@ -498,22 +504,57 @@ export default function SmartShelfPage() {
       return;
     }
 
-    // For return to vendor, process immediately
+    // For return to vendor, show the popup dialog
+    if (action === 'RETURN_TO_VENDOR') {
+      setReturnToVendorData({
+        selectedSupplierId: currentBatch.supplier?.id || '',
+        collectionDays: 7,
+        confirmText: '',
+      });
+      setShowReturnToVendorDialog(true);
+      return;
+    }
+  };
+
+  // Handle Return to Vendor confirmation
+  const handleReturnToVendorConfirm = async () => {
+    if (!currentBatch) return;
+    if (returnToVendorData.confirmText.toLowerCase() !== 'confirm') {
+      showNotification('Please type "confirm" to proceed', 'error');
+      return;
+    }
+    if (!returnToVendorData.selectedSupplierId) {
+      showNotification('Please select a supplier', 'error');
+      return;
+    }
+
     try {
       setIsProcessingAction(true);
-      await apiClient.smartShelf.recordExpiryAction({
+      const response = await apiClient.smartShelf.returnToVendor({
         batchId: currentBatch.id,
-        action,
-        quantity: currentBatch.quantity,
-        vendorReturn: action === 'RETURN_TO_VENDOR',
-        reason: `${action} via Smart Shelf`,
+        supplierId: returnToVendorData.selectedSupplierId,
+        collectionDays: returnToVendorData.collectionDays,
       });
 
+      const result = response as { success: boolean; data?: { returnId: string; emailSent: boolean; returnQuantity: number; supplierEmail: string } };
+     
+      if (result.success && result.data) {
+        showNotification(
+          `Return processed! Return ID: ${result.data.returnId}. Email ${result.data.emailSent ? 'sent' : 'pending'} to supplier.`,
+          'success'
+        );
+      } else {
+        showNotification('Return processed successfully!', 'success');
+      }
+
+      setShowReturnToVendorDialog(false);
+      setReturnToVendorData({ selectedSupplierId: '', collectionDays: 7, confirmText: '' });
+     
       // Move to next batch
-      await moveToNextBatch();
+      await moveToNextBatch(true);
     } catch (err) {
-      console.error('Error recording expiry action:', err);
-      showNotification('Failed to record action. Please try again.', 'error');
+      console.error('Error processing return to vendor:', err);
+      showNotification('Failed to process return. Please try again.', 'error');
     } finally {
       setIsProcessingAction(false);
     }
@@ -979,7 +1020,7 @@ export default function SmartShelfPage() {
 
               {/* Batch Details Card */}
               <Card>
-                <CardHeader className="pb-3 border-b">
+                <CardHeader className="pb-3 border-b-2 ">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <CardTitle className="text-xl">
@@ -1008,7 +1049,7 @@ export default function SmartShelfPage() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-6">
+                <CardContent className="">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Quantity</p>
@@ -1033,17 +1074,17 @@ export default function SmartShelfPage() {
                     </div>
                   </div>
 
-                  <Separator className="my-6" />
+                  <Separator className="my-4" />
 
                   {/* Action Buttons */}
                   <div>
-                    <p className="text-sm font-medium mb-4">Take Action</p>
+                    <p className="text-xm font-medium mb-4">Take Action</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <Button
                         onClick={() => handleSwipe('RETURN_TO_VENDOR')}
                         disabled={isProcessingAction}
                         variant="outline"
-                        className="h-auto py-4 flex-col gap-2"
+                        className="h-auto py-4 flex-col gap-2 bg-green-200"
                       >
                         <ArrowRight className="h-5 w-5" />
                         <span className="font-semibold">Return to Vendor</span>
@@ -1053,7 +1094,7 @@ export default function SmartShelfPage() {
                         onClick={() => handleSwipe('DISCOUNT')}
                         disabled={isProcessingAction}
                         variant="outline"
-                        className="h-auto py-4 flex-col gap-2"
+                        className="h-auto py-4 flex-col gap-2 bg-orange-100"
                       >
                         <Percent className="h-5 w-5" />
                         <span className="font-semibold">Discount & Push</span>
@@ -1063,7 +1104,7 @@ export default function SmartShelfPage() {
                         onClick={() => handleSwipe('DISPOSE')}
                         disabled={isProcessingAction}
                         variant="outline"
-                        className="h-auto py-4 flex-col gap-2"
+                        className="h-auto py-4 flex-col gap-2 bg-red-200"
                       >
                         <Trash2 className="h-5 w-5" />
                         <span className="font-semibold">Dispose</span>
@@ -1421,14 +1462,14 @@ export default function SmartShelfPage() {
         {/* View Shelf Details Sheet */}
         <Sheet open={showViewShelfDialog} onOpenChange={setShowViewShelfDialog}>
           <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto p-0">
-            <SheetHeader className="px-6 pb-4 border-b">
+            {/* <SheetHeader className="px-6 pb-4 border-b">
               <SheetTitle className="text-2xl">Shelf Details</SheetTitle>
               <SheetDescription>
                 View and manage inventory layout for this shelf location
               </SheetDescription>
-            </SheetHeader>
+            </SheetHeader> */}
             {viewingShelf && (
-              <ScrollArea className="h-[calc(100vh-140px)]">
+              <ScrollArea className="">
                 <div className="p-6 space-y-6">
                   {/* Shelf Info Card */}
                   <Card>
@@ -2474,12 +2515,192 @@ export default function SmartShelfPage() {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* Return to Vendor Dialog */}
+        <Dialog open={showReturnToVendorDialog} onOpenChange={setShowReturnToVendorDialog}>
+          <DialogContent className="sm:max-w-[520px]">
+            <DialogHeader>
+              <DialogTitle className="text-lg flex items-center gap-2">
+                <Package className="h-5 w-5 text-blue-600" />
+                Return to Vendor
+              </DialogTitle>
+              <DialogDescription>
+                Process a return for near-expiry or expired products. An email will be sent to the supplier.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-5 py-4">
+              {/* Current Batch Info */}
+              {currentBatch && (
+                <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Product</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {currentBatch.drug?.brandName}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Generic Name</span>
+                    <span className="text-sm text-slate-700">
+                      {currentBatch.drug?.genericName}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Batch Number</span>
+                    <span className="text-sm font-mono text-slate-900">
+                      {currentBatch.batchNumber}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Current Stock</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {currentBatch.quantity} units
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Expiry Date</span>
+                    <Badge variant={currentBatch.daysUntilExpiry && currentBatch.daysUntilExpiry <= 0 ? 'destructive' : 'secondary'}>
+                      {formatDate(new Date(currentBatch.expiryDate))}
+                    </Badge>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-sm font-medium text-blue-700">Return Quantity (80%)</span>
+                    <span className="text-xl font-bold text-blue-700">
+                      {Math.ceil(currentBatch.quantity * 0.8)} units
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Return Value</span>
+                    <span className="text-lg font-semibold text-emerald-600">
+                      {formatCurrency(currentBatch.sellPrice * Math.ceil(currentBatch.quantity * 0.8))}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Supplier Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="supplier" className="text-sm font-medium">
+                  Select Supplier <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={returnToVendorData.selectedSupplierId}
+                  onValueChange={(value) =>
+                    setReturnToVendorData({ ...returnToVendorData, selectedSupplierId: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a supplier..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {suppliers.map((supplier) => (
+                      <SelectItem key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {returnToVendorData.selectedSupplierId && (
+                  <p className="text-xs text-muted-foreground">
+                    Email: {suppliers.find(s => s.id === returnToVendorData.selectedSupplierId)?.contactEmail || 'N/A'}
+                  </p>
+                )}
+              </div>
+
+              {/* Collection Days */}
+              <div className="space-y-2">
+                <Label htmlFor="collectionDays" className="text-sm font-medium">
+                  Collection Deadline (Days)
+                </Label>
+                <Select
+                  value={String(returnToVendorData.collectionDays)}
+                  onValueChange={(value) =>
+                    setReturnToVendorData({ ...returnToVendorData, collectionDays: parseInt(value) })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3">3 days</SelectItem>
+                    <SelectItem value="5">5 days</SelectItem>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="10">10 days</SelectItem>
+                    <SelectItem value="14">14 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Confirmation Input */}
+              <div className="space-y-2">
+                <Label htmlFor="confirmText" className="text-sm font-medium">
+                  Type &quot;confirm&quot; to proceed <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="confirmText"
+                  type="text"
+                  placeholder='Type "confirm" here...'
+                  value={returnToVendorData.confirmText}
+                  onChange={(e) =>
+                    setReturnToVendorData({ ...returnToVendorData, confirmText: e.target.value })
+                  }
+                  className={cn(
+                    returnToVendorData.confirmText.toLowerCase() === 'confirm' && 'border-green-500 bg-green-50'
+                  )}
+                />
+              </div>
+
+              {/* Info Note */}
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
+                <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-amber-800">
+                  An email notification will be sent to the supplier with return details and collection instructions.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowReturnToVendorDialog(false);
+                  setReturnToVendorData({ selectedSupplierId: '', collectionDays: 7, confirmText: '' });
+                }}
+                disabled={isProcessingAction}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleReturnToVendorConfirm}
+                disabled={
+                  isProcessingAction ||
+                  !returnToVendorData.selectedSupplierId ||
+                  returnToVendorData.confirmText.toLowerCase() !== 'confirm'
+                }
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isProcessingAction ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Package className="mr-2 h-4 w-4" />
+                    Confirm Return
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Toast Notification */}
         {toast.visible && (
           <div className={cn(
             "fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg transition-all",
-            toast.type === 'error' 
-              ? 'bg-destructive text-destructive-foreground' 
+            toast.type === 'error'
+              ? 'bg-destructive text-destructive-foreground'
               : 'bg-primary text-primary-foreground'
           )}>
             {toast.type === 'success' ? (

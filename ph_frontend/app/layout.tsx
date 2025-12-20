@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'DrugDesk - Pharmacy Management System',
@@ -21,7 +22,10 @@ export default function RootLayout({
         </style>
       </head>
       <body className={`inter font-sans antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <Toaster position="top-right" richColors />
+        </AuthProvider>
       </body>
     </html>
   );

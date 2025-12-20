@@ -38,6 +38,7 @@ import {
   Scan,
   RefreshCw,
   Warehouse,
+  Archive,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -52,6 +53,7 @@ const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Drugs', href: '/dashboard/drugs', icon: Pill },
   { title: 'Inventory', href: '/dashboard/inventory', icon: Boxes },
+  { title: 'Shelf Organizer', href: '/dashboard/shelf-organizer', icon: Archive },
   { title: 'Medicine Shelf', href: '/dashboard/smart-shelf', icon: Warehouse },
   { title: 'Sales', href: '/dashboard/sales', icon: ShoppingCart },
   { title: 'Suppliers', href: '/dashboard/suppliers', icon: Truck },
@@ -100,7 +102,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!isAuthenticated) {
-    return null;
+    // Return loading state while redirect happens to prevent children from mounting
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner className="h-8 w-8" />
+      </div>
+    );
   }
 
   const userInitials = user?.name

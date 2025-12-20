@@ -1,5 +1,5 @@
 [project]
-name = "DrugDesk-ai-assistant"
+name = "pharmacare-ai-assistant"
 version = "1.0.0"
 description = "DrugDesk AI Services - Text-to-SQL Chatbot + Intelligent Agent"
 requires-python = ">=3.11"
