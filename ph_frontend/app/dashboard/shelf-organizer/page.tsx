@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import {
   Dialog,
@@ -23,14 +22,14 @@ import {
   Package,
   Archive,
   Search,
-  X,
   GripVertical,
-  ChevronDown,
-  ChevronRight,
-  AlertCircle,
   Trash2,
   ArrowLeftRight,
+  Grid3x3,
+  Pill,
+  Box,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Types
 interface Drug {
@@ -68,6 +67,8 @@ interface Rack {
   currentOccupancy: number;
   order: number;
   shelfItems: RackItem[];
+  rows?: number;
+  columns?: number;
 }
 
 interface Shelf {
@@ -96,6 +97,8 @@ export default function ShelfOrganizerPage() {
   const [shelfDescription, setShelfDescription] = useState('');
   const [rackName, setRackName] = useState('');
   const [rackCapacity, setRackCapacity] = useState('500');
+  const [rackRows, setRackRows] = useState('5');
+  const [rackColumns, setRackColumns] = useState('1');
 
   // Drag state
   const [draggedItem, setDraggedItem] = useState<{
@@ -127,12 +130,15 @@ export default function ShelfOrganizerPage() {
         apiClient.get('/shelf-management/unassigned'),
       ]);
 
-      setShelves(shelvesRes.data || []);
-      setUnassignedInventory(inventoryRes.data || []);
+      const shelvesData = (shelvesRes as any).data || [];
+      const inventoryData = (inventoryRes as any).data || [];
+
+      setShelves(shelvesData);
+      setUnassignedInventory(inventoryData);
 
       // Select first shelf by default
-      if (shelvesRes.data && shelvesRes.data.length > 0 && !selectedShelfId) {
-        setSelectedShelfId(shelvesRes.data[0].id);
+      if (shelvesData && shelvesData.length > 0 && !selectedShelfId) {
+        setSelectedShelfId(shelvesData[0].id);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -172,6 +178,9 @@ export default function ShelfOrganizerPage() {
     }
 
     const capacity = parseInt(rackCapacity);
+    const rows = parseInt(rackRows);
+    const columns = parseInt(rackColumns);
+
     if (isNaN(capacity) || capacity <= 0) {
       toast.error('Please enter a valid capacity');
       return;
@@ -182,12 +191,16 @@ export default function ShelfOrganizerPage() {
         cupboardId: selectedShelfId,
         name: rackName,
         capacity,
+        rows: rows || 5,
+        columns: columns || 1,
       });
 
       toast.success('Rack created successfully');
       setShowRackDialog(false);
       setRackName('');
       setRackCapacity('500');
+      setRackRows('5');
+      setRackColumns('1');
       loadData();
     } catch (error) {
       console.error('Error creating rack:', error);
@@ -302,27 +315,6 @@ export default function ShelfOrganizerPage() {
     if (percentage >= 90) return 'text-red-500';
     if (percentage >= 70) return 'text-yellow-500';
     return 'text-green-500';
-  };
-
-  const getShelfColor = (percentage: number) => {
-    if (percentage >= 90) return 'bg-gradient-to-br from-rose-50 via-red-50 to-orange-50 border-rose-300';
-    if (percentage >= 70) return 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 border-amber-300';
-    if (percentage >= 40) return 'bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 border-sky-300';
-    return 'bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border-emerald-300';
-  };
-
-  const getDrugBoxColor = (index: number) => {
-    const colors = [
-      'bg-gradient-to-br from-violet-50 to-violet-100 border-violet-300 text-violet-900',
-      'bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 border-fuchsia-300 text-fuchsia-900',
-      'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 text-blue-900',
-      'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-300 text-emerald-900',
-      'bg-gradient-to-br from-amber-50 to-amber-100 border-amber-300 text-amber-900',
-      'bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-300 text-indigo-900',
-      'bg-gradient-to-br from-teal-50 to-teal-100 border-teal-300 text-teal-900',
-      'bg-gradient-to-br from-pink-50 to-pink-100 border-pink-300 text-pink-900',
-    ];
-    return colors[index % colors.length];
   };
 
   const handleRemoveItems = async () => {
@@ -625,13 +617,16 @@ export default function ShelfOrganizerPage() {
                     </div>
                   </div>
 
-                  {/* Racks Display - Stacked like real racks */}
-                  <div className="space-y-4">
+                  {/* Racks Display - Medical Shelf Style with Grid Layout */}
+                  <div className="space-y-6">
                     {selectedShelf.shelves
                       .sort((a, b) => a.order - b.order)
                       .map((rack) => {
                         const percentage = (rack.currentOccupancy / rack.capacity) * 100;
                         const isBeingDraggedOver = dragOverRackId === rack.id;
+                        const rackRows = rack.rows || 5;
+                        const rackColumns = rack.columns || 1;
+
                         return (
                           <div
                             key={rack.id}
@@ -640,42 +635,40 @@ export default function ShelfOrganizerPage() {
                               ${draggedRack === rack.id ? 'opacity-50' : ''}
                             `}
                           >
-                            {/* Rack Header */}
+                            {/* Rack Header with Drag Handle */}
                             <div
-                              className="flex items-center justify-between mb-2 px-2"
+                              className="flex items-center justify-between mb-3 px-2"
                               draggable
                               onDragStart={() => handleRackDragStart(rack.id)}
                             >
-                              <div className="flex items-center gap-2">
-                                <GripVertical className="h-4 w-4 text-gray-400 cursor-grab active:cursor-grabbing" />
-                                <h4 className="font-semibold text-sm">{rack.name}</h4>
+                              <div className="flex items-center gap-3">
+                                <GripVertical className="h-5 w-5 text-gray-400 cursor-grab active:cursor-grabbing" />
+                                <h4 className="font-bold text-base text-slate-800">{rack.name}</h4>
                                 <Badge
                                   variant="outline"
-                                  className={`text-xs ${getCapacityColor(percentage)}`}
+                                  className={`text-xs font-semibold ${getCapacityColor(percentage)}`}
                                 >
                                   {percentage.toFixed(0)}%
                                 </Badge>
-                              </div>
-                              <div className="flex items-center gap-2">
                                 <span className="text-xs text-gray-500">
-                                  {rack.currentOccupancy}/{rack.capacity}
+                                  {rack.currentOccupancy}/{rack.capacity} units
                                 </span>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setRackToDelete(rack.id);
-                                    setShowDeleteRackDialog(true);
-                                  }}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
                               </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRackToDelete(rack.id);
+                                  setShowDeleteRackDialog(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
 
-                            {/* Actual Rack with 3D effect */}
+                            {/* Medical Shelf Style Rack Display */}
                             <div
                               onDragOver={(e) => {
                                 handleDragOver(e, rack.id);
@@ -689,117 +682,166 @@ export default function ShelfOrganizerPage() {
                                 handleDrop(e, rack.id);
                                 handleRackDrop(e, rack.id);
                               }}
-                              className={`
-                                relative rounded-xl border-2 overflow-hidden
-                                transition-all duration-300 shadow-md
-                                ${getShelfColor(percentage)}
-                                ${isBeingDraggedOver
-                                  ? 'border-blue-400 shadow-2xl scale-[1.02] ring-4 ring-blue-200/50'
-                                  : 'hover:shadow-lg hover:scale-[1.01]'
-                                }
-                              `}
+                              className="bg-white rounded-2xl border-2 border-slate-200/60 shadow-lg overflow-hidden"
                             >
-                              {/* Rack top border - sleek metal effect */}
-                              <div className="h-2.5 bg-gradient-to-b from-slate-600 via-slate-700 to-slate-800 border-b border-slate-900/20 shadow-sm relative">
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                              {/* Rack Title Bar */}
+                              <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200/60 px-5 py-3">
+                                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                  <Grid3x3 className="h-4 w-4 text-blue-600" />
+                                  Inventory Grid ({rackRows} Rows × {rackColumns} Columns)
+                                </h3>
                               </div>
 
-                              {/* Rack content area */}
-                              <div className="p-4 min-h-[120px]">
-                                {rack.shelfItems.length > 0 ? (
-                                  <div className="flex flex-wrap gap-3">
-                                    {rack.shelfItems.map((item, index) => (
-                                      <div
-                                        key={item.id}
-                                        className="group relative"
-                                      >
-                                        {/* Drug box on shelf */}
-                                        <div className={`
-                                          border-2 rounded-lg shadow-md
-                                          p-3 min-w-[140px] max-w-[160px]
-                                          hover:shadow-xl hover:scale-105 transition-all duration-200
-                                          cursor-pointer relative overflow-hidden
-                                          ${getDrugBoxColor(index)}
-                                        `}>
-                                          {/* Subtle shine effect */}
-                                          <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-transparent pointer-events-none"></div>
-
-                                          <div className="flex items-start justify-between mb-1 relative z-10">
-                                            <div className="flex-1 min-w-0">
-                                              <h5 className="font-semibold text-xs truncate">
-                                                {item.drug.brandName}
-                                              </h5>
-                                              <p className="text-[10px] truncate font-medium opacity-80">
-                                                {item.drug.genericName}
-                                              </p>
-                                            </div>
-                                          </div>
-
-                                          <div className="mt-2 pt-2 border-t border-current/20 relative z-10">
-                                            <div className="flex items-center justify-between">
-                                              <span className="text-[10px] font-medium opacity-75">
-                                                {item.batch.batchNumber}
-                                              </span>
-                                              <Badge variant="secondary" className="text-[10px] h-5 px-2 font-semibold shadow-sm bg-white/40 border-current/30">
-                                                {item.quantity}
-                                              </Badge>
-                                            </div>
-                                          </div>
-
-                                          {/* Action buttons */}
-                                          <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-5 w-5 p-0 bg-white shadow-sm hover:bg-blue-50"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedRackItem(item);
-                                                setRemoveQuantity(item.quantity.toString());
-                                                setShowMoveDialog(true);
-                                              }}
-                                            >
-                                              <ArrowLeftRight className="h-3 w-3 text-blue-600" />
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-5 w-5 p-0 bg-white shadow-sm hover:bg-red-50"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedRackItem(item);
-                                                setRemoveQuantity(item.quantity.toString());
-                                                setShowRemoveDialog(true);
-                                              }}
-                                            >
-                                              <Trash2 className="h-3 w-3 text-red-600" />
-                                            </Button>
-                                          </div>
-                                        </div>
-
-                                        {/* Enhanced shadow under box */}
-                                        <div className="h-2 bg-black/10 rounded-full blur-md mt-1 mx-3"></div>
+                              {/* Grid Layout */}
+                              <div className={`p-6 space-y-4 bg-gradient-to-br from-white via-slate-50/30 to-indigo-50/20 transition-all duration-300 ${
+                                isBeingDraggedOver ? 'ring-4 ring-blue-300/50 bg-blue-50/30' : ''
+                              }`}>
+                                {Array.from({ length: rackRows }).map((_, rowIdx) => (
+                                  <div key={rowIdx} className="relative">
+                                    {/* Row Label */}
+                                    <div className="absolute -left-16 top-1/2 -translate-y-1/2">
+                                      <div className="px-3 py-2 rounded-lg bg-gradient-to-br from-blue-400 via-indigo-400 to-slate-900 text-white text-[10px] font-bold shadow-lg uppercase tracking-widest">
+                                        Row {rowIdx + 1}
                                       </div>
-                                    ))}
+                                    </div>
+
+                                    {/* Shelf Container */}
+                                    <div className="bg-gradient-to-br from-white via-slate-50/50 to-indigo-50/40 rounded-xl border-2 border-indigo-300/60 p-4 shadow-md">
+                                      <div className="flex gap-2">
+                                        {/* Slots in this row */}
+                                        {Array.from({ length: rackColumns }).map((_, colIdx) => {
+                                          const slotNumber = rowIdx * rackColumns + colIdx;
+                                          const itemInSlot = rack.shelfItems[slotNumber];
+
+                                          // Get color based on slot status
+                                          const getSlotColor = () => {
+                                            if (!itemInSlot) {
+                                              return {
+                                                bg: 'bg-gradient-to-br from-slate-50 to-slate-100',
+                                                border: 'border-slate-300',
+                                                text: 'text-slate-500',
+                                                indicator: 'bg-slate-200',
+                                                barColor: 'from-slate-400 to-slate-300',
+                                              };
+                                            }
+
+                                            // Default to healthy status
+                                            return {
+                                              bg: 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30',
+                                              border: 'border-indigo-300/60',
+                                              text: 'text-slate-800',
+                                              indicator: 'bg-indigo-200/70',
+                                              barColor: 'from-indigo-600 to-blue-500',
+                                            };
+                                          };
+
+                                          const slotColor = getSlotColor();
+
+                                          return (
+                                            <div key={colIdx} className="flex-1">
+                                              <div
+                                                className={cn(
+                                                  'relative h-28 rounded-xl border-2 flex flex-col cursor-pointer transition-all duration-300',
+                                                  'shadow-md hover:shadow-xl hover:-translate-y-1 overflow-hidden backdrop-blur-xs',
+                                                  slotColor.bg,
+                                                  slotColor.border
+                                                )}
+                                              >
+                                                {/* Top Status Bar */}
+                                                <div className={cn('h-2 bg-gradient-to-r', slotColor.barColor)}></div>
+
+                                                {itemInSlot ? (
+                                                  <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-2 py-2 gap-1">
+                                                    {/* Icon */}
+                                                    <div className={cn('p-2 rounded-lg mb-0.5', slotColor.indicator)}>
+                                                      <Pill className={cn('h-4 w-4', slotColor.text)} />
+                                                    </div>
+
+                                                    {/* Brand Name */}
+                                                    <p className={cn('text-xs font-bold truncate w-full text-center', slotColor.text)}>
+                                                      {itemInSlot.drug.brandName}
+                                                    </p>
+
+                                                    {/* Quantity */}
+                                                    <div className="flex flex-col items-center gap-0.5 mt-auto">
+                                                      <p className={cn('text-[11px] font-semibold', slotColor.text)}>
+                                                        QTY: {itemInSlot.quantity}
+                                                      </p>
+                                                    </div>
+
+                                                    {/* Action Buttons on Hover */}
+                                                    <div className="absolute top-1 right-1 flex gap-1 opacity-0 hover:opacity-100 transition-opacity">
+                                                      <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="h-5 w-5 p-0 bg-white shadow-sm hover:bg-blue-50"
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setSelectedRackItem(itemInSlot);
+                                                          setRemoveQuantity(itemInSlot.quantity.toString());
+                                                          setShowMoveDialog(true);
+                                                        }}
+                                                      >
+                                                        <ArrowLeftRight className="h-3 w-3 text-blue-600" />
+                                                      </Button>
+                                                      <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="h-5 w-5 p-0 bg-white shadow-sm hover:bg-red-50"
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setSelectedRackItem(itemInSlot);
+                                                          setRemoveQuantity(itemInSlot.quantity.toString());
+                                                          setShowRemoveDialog(true);
+                                                        }}
+                                                      >
+                                                        <Trash2 className="h-3 w-3 text-red-600" />
+                                                      </Button>
+                                                    </div>
+                                                  </div>
+                                                ) : (
+                                                  <div className="relative z-10 flex flex-col items-center justify-center flex-1">
+                                                    <div className={cn('p-2 rounded-lg mb-1', slotColor.indicator)}>
+                                                      <Box className={cn('h-4 w-4', slotColor.text)} />
+                                                    </div>
+                                                    <p className={cn('text-[9px] font-bold uppercase tracking-wider text-center', slotColor.text)}>
+                                                      Empty
+                                                    </p>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
                                   </div>
-                                ) : (
-                                  <div className="flex items-center justify-center h-24">
-                                    <div className={`text-center p-4 rounded-lg ${isBeingDraggedOver ? 'bg-blue-100/50 border-2 border-dashed border-blue-400' : 'bg-gray-100/50'}`}>
+                                ))}
+
+                                {/* Empty State */}
+                                {rack.shelfItems.length === 0 && (
+                                  <div className="flex items-center justify-center py-8">
+                                    <div className={`text-center p-6 rounded-xl ${isBeingDraggedOver ? 'bg-blue-100 border-2 border-dashed border-blue-400' : 'bg-slate-100/50'}`}>
+                                      <Package className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                                       <p className="text-sm font-bold text-gray-600">
-                                        {isBeingDraggedOver ? '📦 Drop here!' : '✨ Empty rack'}
+                                        {isBeingDraggedOver ? 'Drop items here!' : 'Empty Rack'}
+                                      </p>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Drag inventory items to this rack
                                       </p>
                                     </div>
                                   </div>
                                 )}
                               </div>
 
-                              {/* Rack bottom border - sleek metal effect */}
-                              <div className="h-3 bg-gradient-to-t from-slate-700 via-slate-600 to-slate-500 border-t border-slate-400/30 shadow-inner relative">
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                              </div>
-
-                              {/* Progress bar at bottom */}
-                              <div className="px-4 pb-2.5 bg-white/30">
+                              {/* Progress Bar Footer */}
+                              <div className="px-5 py-3 bg-gradient-to-r from-slate-50 to-slate-100/50 border-t border-slate-200/60">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-medium text-slate-600">Capacity Usage</span>
+                                  <span className={cn('text-xs font-bold', getCapacityColor(percentage))}>
+                                    {rack.currentOccupancy} / {rack.capacity}
+                                  </span>
+                                </div>
                                 <Progress value={percentage} className="h-2 bg-white/50" />
                               </div>
                             </div>
@@ -807,17 +849,17 @@ export default function ShelfOrganizerPage() {
                         );
                       })}
 
-                        {selectedShelf.shelves.length === 0 && (
-                          <div className="text-center py-8">
-                            <Package className="h-10 w-10 mx-auto text-gray-300 mb-2" />
-                            <p className="text-sm text-gray-400 mb-3">No racks in this shelf</p>
-                            <Button size="sm" onClick={() => setShowRackDialog(true)}>
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add First Rack
-                            </Button>
-                          </div>
-                        )}
+                    {selectedShelf.shelves.length === 0 && (
+                      <div className="text-center py-12 bg-gradient-to-br from-slate-50 to-indigo-50/20 rounded-2xl border-2 border-dashed border-slate-300">
+                        <Archive className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                        <p className="text-sm text-gray-500 mb-4 font-medium">No racks in this shelf</p>
+                        <Button size="sm" onClick={() => setShowRackDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add First Rack
+                        </Button>
                       </div>
+                    )}
+                  </div>
                     </div>
                   ) : (
                     <div className="text-center py-12">
@@ -873,26 +915,53 @@ export default function ShelfOrganizerPage() {
           <DialogHeader>
             <DialogTitle>Create New Rack</DialogTitle>
             <DialogDescription>
-              Add a new rack to {selectedShelf?.name}
+              Add a new rack to {selectedShelf?.name} with customizable grid layout
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
               <Label>Rack Name</Label>
               <Input
-                placeholder="e.g., Rack 1, Top Rack"
+                placeholder="e.g., Medicine Rack, Antibiotics Rack"
                 value={rackName}
                 onChange={(e) => setRackName(e.target.value)}
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Rows (Shelves)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="5"
+                  value={rackRows}
+                  onChange={(e) => setRackRows(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Columns (Slots per row)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="1"
+                  value={rackColumns}
+                  onChange={(e) => setRackColumns(e.target.value)}
+                />
+              </div>
+            </div>
             <div>
-              <Label>Capacity (units)</Label>
+              <Label>Total Capacity (units)</Label>
               <Input
                 type="number"
                 placeholder="500"
                 value={rackCapacity}
                 onChange={(e) => setRackCapacity(e.target.value)}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Grid will have {parseInt(rackRows) || 5} × {parseInt(rackColumns) || 1} = {(parseInt(rackRows) || 5) * (parseInt(rackColumns) || 1)} slots
+              </p>
             </div>
           </div>
           <DialogFooter>
