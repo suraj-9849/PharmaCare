@@ -1,0 +1,57 @@
+{
+  "name": "PharmaCare",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PharmaCare - Professional Pharmacy Management System",
+  "packages": [
+    "ph_backend",
+    "ph_frontend",
+    "ai_assistant"
+  ],
+  "scripts": {
+    "prepare": "[[ ! -d '.git' ]] || husky install || true",
+    "validate": "node scripts/validate.js",
+    "backend:dev": "cd ph_backend && pnpm dev",
+    "backend:build": "cd ph_backend && pnpm build",
+    "backend:type-check": "cd ph_backend && pnpm type-check",
+    "backend:lint": "cd ph_backend && pnpm lint",
+    "backend:lint:fix": "cd ph_backend && pnpm lint:fix",
+    "backend:format": "cd ph_backend && pnpm format",
+    "backend:format:check": "cd ph_backend && pnpm format:check",
+    "frontend:dev": "cd ph_frontend && pnpm dev",
+    "frontend:build": "cd ph_frontend && pnpm build",
+    "frontend:type-check": "cd ph_frontend && pnpm type-check",
+    "frontend:lint": "cd ph_frontend && pnpm lint",
+    "frontend:lint:fix": "cd ph_frontend && pnpm lint:fix",
+    "frontend:format": "cd ph_frontend && pnpm format",
+    "frontend:format:check": "cd ph_frontend && pnpm format:check",
+    "ai:setup": "cd ai_assistant && python -m venv .venv && .venv/bin/pip install --upgrade pip && .venv/bin/pip install uv && .venv/bin/uv pip install -e '.[dev]' && .venv/bin/uv pip install uvicorn",
+    "ai:dev": "cd ai_assistant && .venv/bin/uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "ai:lint": "cd ai_assistant && .venv/bin/flake8 .",
+    "ai:format": "cd ai_assistant && .venv/bin/black .",
+    "ai:format:check": "cd ai_assistant && .venv/bin/black --check .",
+    "ai:type-check": "cd ai_assistant && .venv/bin/mypy . --ignore-missing-imports || true",
+    "ai:test": "cd ai_assistant && .venv/bin/pytest -v",
+    "dev": "concurrently \"pnpm backend:dev\" \"pnpm frontend:dev\"",
+    "type-check": "pnpm backend:type-check && pnpm frontend:type-check && pnpm ai:type-check",
+    "lint": "pnpm backend:lint && pnpm frontend:lint && pnpm ai:lint",
+    "lint:fix": "pnpm backend:lint:fix && pnpm frontend:lint:fix",
+    "format": "pnpm backend:format && pnpm frontend:format && pnpm ai:format",
+    "format:check": "pnpm backend:format:check && pnpm frontend:format:check && pnpm ai:format:check",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "keywords": [
+    "pharmacy",
+    "healthcare",
+    "management",
+    "monorepo"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "husky": "^9.1.7"
+  }
+}
