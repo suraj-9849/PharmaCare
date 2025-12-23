@@ -18,8 +18,8 @@ interface ExpiringDrug {
 class ExpiryCheckService {
   private cronJob: cron.ScheduledTask | null = null;
   startDailyExpiryCheck() {
-    this.cronJob = cron.schedule('0 * * * *', async () => {
-      logger.info('Running daily expiry check...');
+    this.cronJob = cron.schedule('0 0 1 * *', async () => {
+      logger.info('Running monthly expiry check...');
       await this.checkExpiringDrugs();
     });
 
