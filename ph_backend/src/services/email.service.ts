@@ -403,9 +403,9 @@ export class EmailService {
 
     try {
       // Categorize by urgency
-      const critical = expiringDrugs.filter((d) => d.daysUntilExpiry <= 7); 
-      const urgent = expiringDrugs.filter((d) => d.daysUntilExpiry > 7 && d.daysUntilExpiry <= 15); 
-      const upcoming = expiringDrugs.filter((d) => d.daysUntilExpiry > 15); 
+      const critical = expiringDrugs.filter((d) => d.daysUntilExpiry <= 7);
+      const urgent = expiringDrugs.filter((d) => d.daysUntilExpiry > 7 && d.daysUntilExpiry <= 15);
+      const upcoming = expiringDrugs.filter((d) => d.daysUntilExpiry > 15);
 
       const totalValue = expiringDrugs.reduce((sum, drug) => sum + drug.currentStock, 0);
 
