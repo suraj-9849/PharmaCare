@@ -175,14 +175,15 @@ export default function SmartShelfPage() {
       setIsLoading(true);
       try {
         // Fetch all data in parallel
-        const [shelvesRes, analyticsRes, alertsRes, drugsRes, suppliersRes, expiringRes] = await Promise.all([
-          apiClient.smartShelf.getAllShelves({ limit: 100 }),
-          apiClient.smartShelf.getAnalytics(),
-          apiClient.smartShelf.getUnacknowledgedAlerts(50),
-          apiClient.drugs.getAll(1, 200),
-          apiClient.suppliers.getAll(1, 100),
-          apiClient.smartShelf.getExpiringBatches({ days: 30, limit: 100 }),
-        ]);
+        const [shelvesRes, analyticsRes, alertsRes, drugsRes, suppliersRes, expiringRes] =
+          await Promise.all([
+            apiClient.smartShelf.getAllShelves({ limit: 100 }),
+            apiClient.smartShelf.getAnalytics(),
+            apiClient.smartShelf.getUnacknowledgedAlerts(50),
+            apiClient.drugs.getAll(1, 200),
+            apiClient.suppliers.getAll(1, 100),
+            apiClient.smartShelf.getExpiringBatches({ days: 30, limit: 100 }),
+          ]);
 
         const shelvesData = (shelvesRes.data as ShelfLocation[]) || [];
 
@@ -206,7 +207,7 @@ export default function SmartShelfPage() {
         // Use the getExpiringBatches API which filters out processed batches
         // (those with DISCOUNT, RETURN_TO_VENDOR, or DISPOSE actions already applied)
         const expiringBatchesData = (expiringRes.data as InventoryBatch[]) || [];
-        
+
         // Enrich batches with shelf location data
         const enrichedBatches = expiringBatchesData.map((batch) => {
           // Find the shelf for this batch
@@ -598,7 +599,7 @@ export default function SmartShelfPage() {
 
       // Use the getExpiringBatches API which filters out processed batches
       const expiringBatchesData = (expiringRes.data as InventoryBatch[]) || [];
-      
+
       // Enrich batches with shelf location data
       const enrichedBatches = expiringBatchesData.map((batch) => {
         const shelf = shelvesData.find((s) => s.id === batch.shelfLocationId);

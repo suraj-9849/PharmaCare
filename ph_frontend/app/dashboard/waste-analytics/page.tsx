@@ -341,9 +341,9 @@ Implementing these recommendations could reduce waste by **20-30%**, saving appr
                 }
                 setShowAIInsights(!showAIInsights);
               }}
-              variant={showAIInsights ? "outline" : "default"}
+              variant={showAIInsights ? 'outline' : 'default'}
             >
-              {showAIInsights ? "Hide Insights" : "Get AI Insights"}
+              {showAIInsights ? 'Hide Insights' : 'Get AI Insights'}
             </Button>
           </div>
         </CardHeader>
@@ -365,38 +365,22 @@ Implementing these recommendations could reduce waste by **20-30%**, saving appr
                       </h2>
                     ),
                     h3: ({ children }) => (
-                      <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-3">
-                        {children}
-                      </h3>
+                      <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-3">{children}</h3>
                     ),
                     p: ({ children }) => (
-                      <p className="text-gray-700 leading-relaxed mb-3">
-                        {children}
-                      </p>
+                      <p className="text-gray-700 leading-relaxed mb-3">{children}</p>
                     ),
-                    ul: ({ children }) => (
-                      <ul className="space-y-2 mb-4 ml-4">
-                        {children}
-                      </ul>
-                    ),
+                    ul: ({ children }) => <ul className="space-y-2 mb-4 ml-4">{children}</ul>,
                     ol: ({ children }) => (
-                      <ol className="space-y-2 mb-4 ml-4 list-decimal">
-                        {children}
-                      </ol>
+                      <ol className="space-y-2 mb-4 ml-4 list-decimal">{children}</ol>
                     ),
                     li: ({ children }) => (
-                      <li className="text-gray-700 leading-relaxed">
-                        {children}
-                      </li>
+                      <li className="text-gray-700 leading-relaxed">{children}</li>
                     ),
                     strong: ({ children }) => (
-                      <strong className="font-semibold text-gray-900">
-                        {children}
-                      </strong>
+                      <strong className="font-semibold text-gray-900">{children}</strong>
                     ),
-                    hr: () => (
-                      <hr className="my-6 border-gray-200" />
-                    ),
+                    hr: () => <hr className="my-6 border-gray-200" />,
                   }}
                 >
                   {aiSummary}
