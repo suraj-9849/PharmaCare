@@ -112,7 +112,7 @@ export default function InvoiceUploadPage() {
     try {
       const response = await apiClient.invoices.extract(selectedFile);
       // New API returns { extractedData, validation }
-      const data = response.data as any;
+      const data = response.data as Record<string, unknown>;
       setValidation(data.validation || null);
       setExtractedData(data.extractedData || data);
     } catch (err) {

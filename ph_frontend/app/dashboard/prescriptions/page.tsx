@@ -14,8 +14,6 @@ import {
   Calendar,
   Eye,
   Search,
-  MapPin,
-  Minus,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';

@@ -36,7 +36,6 @@ import {
   Bot,
   FileText,
   Scan,
-  RefreshCw,
   Warehouse,
   Archive,
   Trash2,

@@ -109,7 +109,19 @@ interface DrugMovementTreeMapProps {
   isLoading?: boolean;
 }
 
-const CustomTreeMapContent = (props: any) => {
+interface TreeMapContentProps {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  name: string;
+  stock: number;
+  soldUnits: number;
+  type: string;
+  [key: string]: unknown;
+}
+
+const CustomTreeMapContent = (props: TreeMapContentProps) => {
   const { x, y, width, height, name, stock, soldUnits, type } = props;
 
   // Don't render if too small

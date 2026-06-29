@@ -1,5 +1,4 @@
 import prisma from '../config/database';
-import { Prisma } from '@prisma/client';
 
 interface CreateCupboardDto {
   name: string;

@@ -50,9 +50,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
 } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -76,14 +73,8 @@ import {
   Box,
   Loader2,
   Pill,
-  BarChart3,
-  Activity,
   Info,
-  Search,
-  Filter,
-  Download,
   RefreshCw,
-  Settings,
 } from 'lucide-react';
 
 export default function SmartShelfPage() {

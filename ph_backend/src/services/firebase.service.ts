@@ -36,7 +36,7 @@ export const initializeFirebase = () => {
           '💡 Download from: https://console.firebase.google.com/project/pharmaapp-63c5b/settings/serviceaccounts/adminsdk'
         );
         console.log('💡 Save as: ph_backend/firebase-service-account.json');
-        throw new Error('Firebase credentials not configured');
+        throw new Error('Firebase credentials not configured', { cause: fileError });
       }
     }
 
@@ -72,7 +72,8 @@ export const sendNotification = async (
     }
 
     const { title, body, data = {} } = payload;
-    let { tokens, topic, priority = 'high' } = options;
+    let { tokens, topic } = options;
+    const { priority = 'high' } = options;
 
     // If no tokens or topic specified, get all active device tokens
     if (!tokens && !topic) {

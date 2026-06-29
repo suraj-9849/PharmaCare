@@ -165,14 +165,16 @@ export class SmartShelfService {
         const field = (error.meta as { target?: string[] } | undefined)?.target?.[0];
         if (field === 'shelf_code') {
           throw new Error(
-            `Shelf code "${data.shelfCode}" already exists. Please use a different code.`
+            `Shelf code "${data.shelfCode}" already exists. Please use a different code.`,
+            { cause: error }
           );
         } else if (field === 'qr_code') {
           throw new Error(
-            `QR code "${data.qrCode}" already exists. Please use a different QR code.`
+            `QR code "${data.qrCode}" already exists. Please use a different QR code.`,
+            { cause: error }
           );
         }
-        throw new Error('A shelf with this information already exists.');
+        throw new Error('A shelf with this information already exists.', { cause: error });
       }
       throw error;
     }

@@ -133,7 +133,7 @@ Important instructions:
     } catch (error) {
       console.error('Error in extractPrescriptionData:', error);
       if (error instanceof Error) {
-        throw new Error(`Failed to extract prescription data: ${error.message}`);
+        throw new Error(`Failed to extract prescription data: ${error.message}`, { cause: error });
       }
       throw error;
     }
@@ -149,7 +149,7 @@ Important instructions:
 
     for (const med of medications) {
       // Get all drugs from database with their inventory batches
-      let allDrugs: DrugWithBatches[] = [];
+      let allDrugs: DrugWithBatches[];
 
       try {
         console.log('Processing medication:', med.medicationName);

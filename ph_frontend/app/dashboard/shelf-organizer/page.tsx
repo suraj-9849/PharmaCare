@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import {
   Dialog,
@@ -23,11 +22,7 @@ import {
   Package,
   Archive,
   Search,
-  X,
   GripVertical,
-  ChevronDown,
-  ChevronRight,
-  AlertCircle,
   Trash2,
   ArrowLeftRight,
 } from 'lucide-react';
@@ -117,6 +112,7 @@ export default function ShelfOrganizerPage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -209,9 +205,9 @@ export default function ShelfOrganizerPage() {
         setSelectedShelfId('');
       }
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting shelf:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete shelf');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete shelf');
     }
   };
 
@@ -224,9 +220,9 @@ export default function ShelfOrganizerPage() {
       setShowDeleteRackDialog(false);
       setRackToDelete('');
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting rack:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete rack');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete rack');
     }
   };
 
@@ -285,9 +281,9 @@ export default function ShelfOrganizerPage() {
       setDraggedItem(null);
       setSelectedQuantity({});
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error assigning to rack:', error);
-      toast.error(error.response?.data?.message || 'Failed to assign items');
+      toast.error(error instanceof Error ? error.message : 'Failed to assign items');
     }
   };
 
@@ -348,9 +344,9 @@ export default function ShelfOrganizerPage() {
       setSelectedRackItem(null);
       setRemoveQuantity('');
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error removing items:', error);
-      toast.error(error.response?.data?.message || 'Failed to remove items');
+      toast.error(error instanceof Error ? error.message : 'Failed to remove items');
     }
   };
 
@@ -380,9 +376,9 @@ export default function ShelfOrganizerPage() {
       setRemoveQuantity('');
       setTargetRackId('');
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error moving items:', error);
-      toast.error(error.response?.data?.message || 'Failed to move items');
+      toast.error(error instanceof Error ? error.message : 'Failed to move items');
     }
   };
 
@@ -428,9 +424,9 @@ export default function ShelfOrganizerPage() {
       toast.success('Rack reordered successfully');
       setDraggedRack(null);
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error reordering racks:', error);
-      toast.error(error.response?.data?.message || 'Failed to reorder racks');
+      toast.error(error instanceof Error ? error.message : 'Failed to reorder racks');
     }
   };
 

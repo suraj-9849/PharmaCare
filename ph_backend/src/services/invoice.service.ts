@@ -223,7 +223,6 @@ Matching rules:
    * Validate invoice items for missing required fields
    */
   validateInvoiceItems(extractedData: InvoiceData): ValidationResult {
-    const requiredFields = ['drugName', 'batchNumber', 'quantity', 'unitPrice', 'expiryDate'];
     const itemsWithMissingFields: Array<{
       itemIndex: number;
       drugName: string;
@@ -372,7 +371,7 @@ Matching rules:
             // Match drug with existing or get suggestion for new drug
             const matchResult = await this.matchDrug(item.drugName, item.genericName);
 
-            let drugId = matchResult.matchedDrugId;
+            const drugId = matchResult.matchedDrugId;
 
             // If no match found and it's a new drug, skip it - user needs to create drug manually
             if (matchResult.isNewDrug || !drugId) {

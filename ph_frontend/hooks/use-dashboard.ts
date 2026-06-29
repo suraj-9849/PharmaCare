@@ -100,7 +100,7 @@ export function useDashboard() {
         ).data || [];
 
       // Get drug movement data from API
-      const drugMovement = (drugMovementRes as { data?: any }).data || {
+      const drugMovement = (drugMovementRes as { data?: { fastMoving: unknown[]; slowMoving: unknown[] } }).data || {
         fastMoving: [],
         slowMoving: [],
       };

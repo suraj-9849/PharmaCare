@@ -15,6 +15,7 @@
     "prisma:studio": "prisma studio",
     "setup": "bun run prisma:generate && bun run prisma:push && bun run seed",
     "setup:minimal": "bun run prisma:generate && bun run prisma:push && bun run seed:minimal",
+    "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\""
@@ -61,6 +62,7 @@
     ]
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -75,6 +77,7 @@
     "dotenv": "^17.2.3",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.7.0",
     "husky": "^9.1.7",
     "install": "^0.13.0",
     "lint-staged": "^16.2.7",
