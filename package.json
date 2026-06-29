@@ -51,7 +51,12 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "baseline-browser-mapping": "^2.10.40",
     "concurrently": "^9.1.2",
     "husky": "^9.1.7"
-  }
+  },
+  "workspaces": [
+    "ph_backend",
+    "ph_frontend"
+  ]
 }
