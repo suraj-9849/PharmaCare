@@ -34,6 +34,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Run validation suite
         run: node scripts/validate.js
 
