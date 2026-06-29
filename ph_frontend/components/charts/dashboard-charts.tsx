@@ -109,19 +109,8 @@ interface DrugMovementTreeMapProps {
   isLoading?: boolean;
 }
 
-interface TreeMapContentProps {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  name: string;
-  stock: number;
-  soldUnits: number;
-  type: string;
-  [key: string]: unknown;
-}
-
-const CustomTreeMapContent = (props: TreeMapContentProps) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CustomTreeMapContent = (props: any) => {
   const { x, y, width, height, name, stock, soldUnits, type } = props;
 
   // Don't render if too small

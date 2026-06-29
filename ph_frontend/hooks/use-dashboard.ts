@@ -11,6 +11,7 @@ import type {
   ChartData,
   TopSellingDrug,
   PaymentMethodData,
+  DrugMovementData,
 } from '@/lib/types';
 
 export function useDashboard() {
@@ -100,7 +101,11 @@ export function useDashboard() {
         ).data || [];
 
       // Get drug movement data from API
-      const drugMovement = (drugMovementRes as { data?: { fastMoving: unknown[]; slowMoving: unknown[] } }).data || {
+      const drugMovement = (
+        drugMovementRes as {
+          data?: { fastMoving: DrugMovementData[]; slowMoving: DrugMovementData[] };
+        }
+      ).data || {
         fastMoving: [],
         slowMoving: [],
       };

@@ -17,15 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import {
-  Plus,
-  Package,
-  Archive,
-  Search,
-  GripVertical,
-  Trash2,
-  ArrowLeftRight,
-} from 'lucide-react';
+import { Plus, Package, Archive, Search, GripVertical, Trash2, ArrowLeftRight } from 'lucide-react';
 
 // Types
 interface Drug {
