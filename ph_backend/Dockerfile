@@ -1,19 +1,17 @@
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install
+COPY package.json bun.lockb ./
+RUN bun install
 COPY . .
-RUN pnpm prisma:generate
-RUN pnpm build
+RUN bun run prisma:generate
+RUN bun run build
 
-FROM node:20-alpine
+FROM oven/bun:1-alpine
 WORKDIR /app
 
-RUN npm install -g pnpm
-
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --ignore-scripts
+COPY package.json bun.lockb ./
+RUN bun install --production --ignore-scripts
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
@@ -23,4 +21,4 @@ ENV NODE_ENV=production
 
 EXPOSE 5000
 
-CMD ["node", "dist/src/index.js"]
+CMD ["bun", "run", "dist/src/index.js"]

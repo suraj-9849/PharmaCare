@@ -13,8 +13,8 @@
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "setup": "pnpm prisma:generate && pnpm prisma:push && pnpm seed",
-    "setup:minimal": "pnpm prisma:generate && pnpm prisma:push && pnpm seed:minimal",
+    "setup": "bun run prisma:generate && bun run prisma:push && bun run seed",
+    "setup:minimal": "bun run prisma:generate && bun run prisma:push && bun run seed:minimal",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\""

@@ -1,33 +1,30 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json bun.lockb ./
 
 # Install dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build Next.js
-RUN pnpm build
+RUN bun run build
 
 # Runtime stage
-FROM node:20-alpine
+FROM oven/bun:1-alpine
 
 WORKDIR /app
 
-# Install pnpm in runtime image
-RUN npm install -g pnpm
-
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json bun.lockb ./
 
 # Install production dependencies only (skip prepare script)
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Copy built application from builder
 COPY --from=builder /app/.next ./.next
@@ -45,4 +42,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})" || exit 1
 
 # Run application with explicit port
-CMD ["sh", "-c", "PORT=3000 pnpm start"]
+CMD ["sh", "-c", "PORT=3000 bun run start"]
