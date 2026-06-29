@@ -140,7 +140,7 @@ async function checkConfigurationFiles() {
 
   const requiredFiles = {
     'package.json': 'Root package configuration',
-    'pnpm-workspace.yaml': 'pnpm workspace configuration',
+    'bun.lock': 'bun lock file',
     '.github/workflows/ci.yml': 'CI/CD workflow',
     'ph_backend/package.json': 'Backend package configuration',
     'ph_backend/tsconfig.json': 'Backend TypeScript config',
@@ -173,13 +173,13 @@ async function checkNodeSetup() {
     logError('Node.js not found. Please install Node.js 20+');
   }
 
-  // Check pnpm
+  // Check bun
   totalChecks++;
   try {
-    const result = execSync('pnpm --version', { encoding: 'utf-8' }).trim();
-    logSuccess(`pnpm installed: ${result}`);
+    const result = execSync('bun --version', { encoding: 'utf-8' }).trim();
+    logSuccess(`bun installed: ${result}`);
   } catch {
-    logError('pnpm not found. Please install pnpm 9+');
+    logError('bun not found. Please install bun');
   }
 }
 
@@ -250,10 +250,10 @@ async function checkDependenciesIntegrity() {
 
   // Check lock file
   totalChecks++;
-  if (fileExists('pnpm-lock.yaml')) {
-    logSuccess('pnpm lock file exists');
+  if (fileExists('bun.lock')) {
+    logSuccess('bun lock file exists');
   } else {
-    logWarning('pnpm lock file not found. Run "pnpm install" first');
+    logWarning('bun lock file not found. Run "bun install" first');
   }
 }
 
@@ -307,10 +307,10 @@ async function runValidationChecks() {
   printHeader('Running Validation Checks');
 
   const checks = [
-    { name: 'Backend: Type Check', cmd: 'pnpm', args: ['--filter', 'ph_backend', 'type-check'], cwd: rootDir },
-    { name: 'Backend: Lint Check', cmd: 'pnpm', args: ['--filter', 'ph_backend', 'lint'], cwd: rootDir },
-    { name: 'Frontend: Type Check', cmd: 'pnpm', args: ['--filter', 'ph_frontend', 'type-check'], cwd: rootDir },
-    { name: 'Frontend: Lint Check', cmd: 'pnpm', args: ['--filter', 'ph_frontend', 'lint'], cwd: rootDir },
+    { name: 'Backend: Type Check', cmd: 'bun', args: ['run', 'type-check'], cwd: path.join(rootDir, 'ph_backend') },
+    { name: 'Backend: Lint Check', cmd: 'bun', args: ['run', 'lint'], cwd: path.join(rootDir, 'ph_backend') },
+    { name: 'Frontend: Type Check', cmd: 'bun', args: ['run', 'type-check'], cwd: path.join(rootDir, 'ph_frontend') },
+    { name: 'Frontend: Lint Check', cmd: 'bun', args: ['run', 'lint'], cwd: path.join(rootDir, 'ph_frontend') },
     { name: 'Python: Format Check', cmd: 'bash', args: ['-c', 'cd ai_assistant && test -d .venv && .venv/bin/black --check . || echo "venv not ready"'], cwd: rootDir },
     { name: 'Python: Lint Check', cmd: 'bash', args: ['-c', 'cd ai_assistant && test -d .venv && .venv/bin/flake8 *.py --count --select=E9,F63,F7,F82 || echo "venv not ready"'], cwd: rootDir },
     { name: 'Python: Type Check', cmd: 'bash', args: ['-c', 'cd ai_assistant && test -d .venv && .venv/bin/mypy . --ignore-missing-imports || echo "venv not ready"'], cwd: rootDir },

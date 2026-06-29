@@ -85,7 +85,7 @@ test_backend() {
         print_info "Running Jest tests..."
         ((TOTAL_TESTS++))
         
-        if pnpm test --passWithNoTests 2>&1 | tee /tmp/backend-test.log; then
+        if bun test --passWithNoTests 2>&1 | tee /tmp/backend-test.log; then
             print_success "Backend tests passed"
         else
             print_error "Backend tests failed"
@@ -127,7 +127,7 @@ test_frontend() {
         print_info "Running Jest tests..."
         ((TOTAL_TESTS++))
         
-        if pnpm test --passWithNoTests 2>&1 | tee /tmp/frontend-test.log; then
+        if bun test --passWithNoTests 2>&1 | tee /tmp/frontend-test.log; then
             print_success "Frontend tests passed"
         else
             print_error "Frontend tests failed"
@@ -226,7 +226,7 @@ test_code_quality() {
     if [ -d "$PROJECT_ROOT/ph_backend" ]; then
         print_info "Backend ESLint..."
         cd "$PROJECT_ROOT/ph_backend"
-        if pnpm lint --max-warnings=0 2>/dev/null; then
+        if bun lint --max-warnings=0 2>/dev/null; then
             print_success "Backend linting passed"
         else
             print_warning "Backend linting issues found"
@@ -237,7 +237,7 @@ test_code_quality() {
     if [ -d "$PROJECT_ROOT/ph_frontend" ]; then
         print_info "Frontend ESLint..."
         cd "$PROJECT_ROOT/ph_frontend"
-        if pnpm lint --max-warnings=0 2>/dev/null; then
+        if bun lint --max-warnings=0 2>/dev/null; then
             print_success "Frontend linting passed"
         else
             print_warning "Frontend linting issues found"
@@ -283,7 +283,7 @@ test_type_checking() {
     if [ -d "$PROJECT_ROOT/ph_backend" ]; then
         print_info "Backend TypeScript type check..."
         cd "$PROJECT_ROOT/ph_backend"
-        if pnpm type-check 2>/dev/null; then
+        if bun type-check 2>/dev/null; then
             print_success "Backend type checking passed"
         else
             print_warning "Backend type checking issues found"
@@ -294,7 +294,7 @@ test_type_checking() {
     if [ -d "$PROJECT_ROOT/ph_frontend" ]; then
         print_info "Frontend TypeScript type check..."
         cd "$PROJECT_ROOT/ph_frontend"
-        if pnpm type-check 2>/dev/null; then
+        if bun type-check 2>/dev/null; then
             print_success "Frontend type checking passed"
         else
             print_warning "Frontend type checking issues found"
@@ -316,9 +316,9 @@ test_builds() {
         print_info "Building Backend..."
         cd "$PROJECT_ROOT/ph_backend"
         ((TOTAL_TESTS++))
-        if pnpm build 2>&1 | grep -q "Successfully compiled"; then
+        if bun build 2>&1 | grep -q "Successfully compiled"; then
             print_success "Backend build successful"
-        elif pnpm build >/dev/null 2>&1; then
+        elif bun build >/dev/null 2>&1; then
             print_success "Backend build successful"
         else
             print_warning "Backend build had warnings"
@@ -330,7 +330,7 @@ test_builds() {
         print_info "Building Frontend..."
         cd "$PROJECT_ROOT/ph_frontend"
         ((TOTAL_TESTS++))
-        if pnpm build >/dev/null 2>&1; then
+        if bun build >/dev/null 2>&1; then
             print_success "Frontend build successful"
         else
             print_error "Frontend build failed"

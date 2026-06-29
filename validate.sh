@@ -61,9 +61,9 @@ if [ ! -d "ph_backend" ]; then
     echo -e "${RED}✗ Backend directory not found!${NC}"
     FAILED=1
 else
-    run_check "Backend: Type Check" "pnpm type-check" "ph_backend"
-    run_check "Backend: Lint Check" "pnpm lint" "ph_backend"
-    run_check "Backend: Format Check" "pnpm format:check" "ph_backend"
+    run_check "Backend: Type Check" "bun type-check" "ph_backend"
+    run_check "Backend: Lint Check" "bun lint" "ph_backend"
+    run_check "Backend: Format Check" "bun format:check" "ph_backend"
 fi
 
 # =============================================================================
@@ -75,9 +75,9 @@ if [ ! -d "ph_frontend" ]; then
     echo -e "${RED}✗ Frontend directory not found!${NC}"
     FAILED=1
 else
-    run_check "Frontend: Type Check" "pnpm type-check" "ph_frontend"
-    run_check "Frontend: Lint Check" "pnpm lint" "ph_frontend"
-    run_check "Frontend: Format Check" "pnpm format:check" "ph_frontend"
+    run_check "Frontend: Type Check" "bun type-check" "ph_frontend"
+    run_check "Frontend: Lint Check" "bun lint" "ph_frontend"
+    run_check "Frontend: Format Check" "bun format:check" "ph_frontend"
 fi
 
 # =============================================================================
@@ -102,8 +102,8 @@ else
     echo -e "${RED}║                                                       ║${NC}"
     echo -e "${RED}║  Please fix the errors above before pushing:         ║${NC}"
     echo -e "${RED}║                                                       ║${NC}"
-    echo -e "${RED}║  - Run 'pnpm lint:fix' to fix linting issues         ║${NC}"
-    echo -e "${RED}║  - Run 'pnpm format' to fix formatting issues        ║${NC}"
+    echo -e "${RED}║  - Run 'bun lint:fix' to fix linting issues         ║${NC}"
+    echo -e "${RED}║  - Run 'bun format' to fix formatting issues        ║${NC}"
     echo -e "${RED}║  - Fix TypeScript errors manually                    ║${NC}"
     echo -e "${RED}╚═══════════════════════════════════════════════════════╝${NC}"
     echo ""
